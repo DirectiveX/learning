@@ -78,3 +78,71 @@ D-NAT（目标地址转换）：将公网目标地址转换成真正的目标地
 ![D-NAT](picture/D-NAT.png)
 ##### DR（直接路由）模型
 ![DR](picture/DR.png)
+##### TUN（隧道）模型
+![TUN](picture/TUN.png)
+
+### LVS（Linux Virtual Server）
+#### 隐藏vip
+![隐藏VIP的前置知识](picture/隐藏VIP的前置知识.png)
+在这个基础知识的前提下，先通过修改linux内核映射的文件信息，也就是配置信息，将arp_ignore设置为1，arp_announce设置为2，就可以阻止刚上电的时候就将网卡信息广播出去，但是还有一个问题需要解决，就是如何不让外界发现，因为一旦外界直接与该网卡相接触，仍然会发现，所以还需要一个虚拟网卡，即lo，内部环形网卡，这个网卡永远不会对外发送信息，将我们的虚拟IP地址加在这块网卡上，就能实现对内部可见，对外部隐藏。
+
+ps: 用重定向去改协议
+
+#### 调度算法
+静态调度：
+rr：轮询
+wrr：加权轮询
+dh：目标地址散列
+sh：源地址散列
+
+动态调度
+lc ：最少连接数
+wlc：加权最少连接数
+sed：最短期望延迟
+nq：never queue
+LBLC：基于本地最少连接
+
+#### ipvs内核模块（被Linux创始人收录进了内核中）
+使用ipvsadm去操作这个模块
+yum install ipvsadm -y
+
+##### 管理集群服务
+添加： -A -t|u|f service -address [-s scheduler]
+-t:TCP
+-u:UDP
+service-address:Mark Number
+修改：-E
+删除：-D -t|u|f service -address
+
+eg：ipvsadm -A -t 192.168.9.100:80 -s rr
+
+##### 管理集群服务中的RS
+添加： -a -t|u|f service -address -r server-address \[-g|i|m][-w weight]
+g:DR模型
+i:TUN模型
+m:NAT模型
+修改：-e
+删除：-d -t|u|f service -address -r server-address
+eg：ipvsadm -a -t 192.168.9.100:80 -r 192.168.10.8  -g
+
+##### 查看
+-L|I
+-n:数字格式显示主机地址和端口
+--stats:统计数据
+--rate:速率
+-- timeout:显示tcp、fin和udp的会话超时时长
+-c:显示当前的ipvs连接状况
+
+##### 删除所有集群服务
+-C: 清空ipvs规则
+
+##### 保存规则
+保存规则
+-S
+eg: ipvsadm -S > /path/to/somefile
+
+##### 载入此前的规则:
+-R
+eg: ipvsadm -R </path/form/Somefile
+
+
