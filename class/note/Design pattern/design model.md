@@ -1,5 +1,5 @@
 # 设计原则
-## 6大设计原则
+## 六大设计原则（solid）
 ### 单一职责原则
 一个类，接口，方法，尽量做到只有一个原因引起变化
 
@@ -301,3 +301,211 @@ public class WoodDesk extends Desk {
     }
 }
 ```
+## 外观（门面）模式
+一批对象对外提供接口去调度，而不是直接调度，说到底就是API
+```java
+//被调度的类
+public class CPU {
+    public void dispatch(){
+        System.out.println("cpu dispatched thread xxx");
+    }
+}
+public class HardDisk {
+    public void save(){
+        System.out.println("HardDisk save data");
+    }
+}
+public class Memory {
+    public void load(){
+        System.out.println("Memory loading ...");
+    }
+}
+```
+```java
+//门面
+public class ComputerFacade {
+    private CPU cpu;
+    private HardDisk hardDisk;
+    private Memory memory;
+
+    public void startComputer(){
+        cpu.dispatch();
+        memory.load();
+        hardDisk.save();
+    }
+}
+```
+## 调度者（中介者）模式
+内部简化方法间的调用，用一个管家去管理，例如MQ,MVC,遵循迪米特法则，几个类之间能够互相影响
+```java
+//中介者
+public class HouseKeeperMediator {
+    private Staff maid;
+    private Staff guard;
+    private Staff gardener;
+    private Staff privateDoctor;
+
+    public HouseKeeperMediator(Staff maid,Staff guard,Staff gardener,Staff privateDoctor) {
+        this.maid = maid;
+        this.guard = guard;
+        this.gardener = gardener;
+        this.privateDoctor = privateDoctor;
+    }
+
+    public void addMaidSalary(int number){
+        privateDoctor.salaryDown(number);
+    }
+
+    public void addGuardSalary(int number){
+        gardener.salaryDown(number);
+    }
+}
+```
+```java
+//抽象同事类
+public abstract class Staff {
+    protected HouseKeeperMediator houseKeeperMediator;
+    public Staff(HouseKeeperMediator houseKeeperMediator){
+        this.houseKeeperMediator = houseKeeperMediator;
+    }
+    public abstract void salaryUp(int number);
+    public abstract void salaryDown(int number);
+}
+```
+```java
+//具体相互影响的类
+public class Maid extends Staff {
+    private int salary;
+
+    public Maid(HouseKeeperMediator houseKeeperMediator) {
+        super(houseKeeperMediator);
+    }
+
+    @Override
+    public void salaryUp(int number) {
+        salary += number;
+        this.houseKeeperMediator.addMaidSalary(number);
+    }
+
+    @Override
+    public void salaryDown(int number) {
+        salary -= number;
+    }
+}
+
+public class PrivateDoctor extends Staff {
+    private int salary;
+
+    public PrivateDoctor(HouseKeeperMediator houseKeeperMediator) {
+        super(houseKeeperMediator);
+    }
+
+    @Override
+    public void salaryUp(int number) {
+        salary += number;
+    }
+
+    @Override
+    public void salaryDown(int number) {
+        salary -= number;
+    }
+}
+public class Guard extends Staff {
+    private int salary;
+
+    public Guard(HouseKeeperMediator houseKeeperMediator) {
+        super(houseKeeperMediator);
+    }
+
+    @Override
+    public void salaryUp(int number) {
+        salary += number;
+        this.houseKeeperMediator.addGuardSalary(number);
+    }
+
+    @Override
+    public void salaryDown(int number) {
+        salary -= number;
+    }
+}
+public class Gardener extends Staff {
+    private int salary;
+
+    public Gardener(HouseKeeperMediator houseKeeperMediator) {
+        super(houseKeeperMediator);
+    }
+
+    @Override
+    public void salaryUp(int number) {
+        salary += number;
+    }
+
+    @Override
+    public void salaryDown(int number) {
+        salary -= number;
+    }
+}
+```
+## 装饰模式
+常用于一键换肤，用组合替代继承
+```java
+//抽象被装饰的类
+public abstract class Pet {
+    public abstract void talk();
+}
+//抽象装饰类
+public abstract class PetDecorator extends Pet{
+    protected Pet pet;
+
+    public PetDecorator(Pet pet){
+        this.pet = pet;
+    }
+}
+```
+```java
+//被装饰类实现
+public class Cat extends Pet {
+    @Override
+    public void talk() {
+        System.out.println("Cat mow");
+    }
+}
+public class Dog extends Pet {
+    @Override
+    public void talk() {
+        System.out.println("Dog wang");
+    }
+}
+//装饰类实现
+public class LowerPetDecorator extends PetDecorator{
+    public LowerPetDecorator(Pet pet) {
+        super(pet);
+    }
+
+    @Override
+    public void talk() {
+        pet.talk();
+        talkLower();
+    }
+
+    private void talkLower(){
+        System.out.println("more lower!!!!!");
+    }
+}
+public class HigherPetDecorator extends PetDecorator{
+    public HigherPetDecorator(Pet pet) {
+        super(pet);
+    }
+
+    @Override
+    public void talk() {
+        pet.talk();
+        talkHigher();
+    }
+
+    private void talkHigher(){
+        System.out.println("more higher!!!!!");
+    }
+}
+```
+## 职责链模式
