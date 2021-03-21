@@ -81,7 +81,7 @@ java是单继承多实现的语言，使用runnable更好
 线程处于终止状态
 
 ### 线程状态转化图
-![image](C:\Users\28267\Desktop\笔记\picture\线程状态转化图.png)
+![image](picture/线程状态转化图.png)
 
 ## 线程的打断（interrupt）
 ### 相关方法
@@ -112,3 +112,18 @@ java是单继承多实现的语言，使用runnable更好
 
 4.interrupt 结束线程
 
+## 并发编程的三大特性
+### 可见性（visibility）
+保证在线程中运行的变量对所有线程可见
+#### volatile
+使用volatile保证属性可见（主要的工作是每次用到volitile的属性时都从主内存读，而不是从线程缓存中读）
+volatile修饰引用类型，引用类型内部属性更改对其他线程不可见
+ps:某些语句操作的时候会触发缓存同步
+
+#### 三级缓存
+
+#### 缓存行
+一次读64字节（Byte），通过缓存一致性协议去保持一致
+
+### 有序性（ordering）
+### 原子性（atomicity）
