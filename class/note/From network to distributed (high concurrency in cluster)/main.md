@@ -106,7 +106,8 @@ LBLC：基于本地最少连接
 使用ipvsadm去操作这个模块
 yum install ipvsadm -y
 
-##### 管理集群服务
+**管理集群服务**
+
 添加： -A -t|u|f service -address [-s scheduler]
 -t:TCP
 -u:UDP
@@ -116,7 +117,8 @@ service-address:Mark Number
 
 eg：ipvsadm -A -t 192.168.9.100:80 -s rr
 
-##### 管理集群服务中的RS
+**管理集群服务中的RS**
+
 添加： -a -t|u|f service -address -r server-address \[-g|i|m][-w weight]
 g:DR模型
 i:TUN模型
@@ -125,7 +127,8 @@ m:NAT模型
 删除：-d -t|u|f service -address -r server-address
 eg：ipvsadm -a -t 192.168.9.100:80 -r 192.168.10.8  -g
 
-##### 查看
+**查看**
+
 -L|I
 -n:数字格式显示主机地址和端口
 --stats:统计数据
@@ -133,15 +136,18 @@ eg：ipvsadm -a -t 192.168.9.100:80 -r 192.168.10.8  -g
 -- timeout:显示tcp、fin和udp的会话超时时长
 -c:显示当前的ipvs连接状况
 
-##### 删除所有集群服务
+**删除所有集群服务**
+
 -C: 清空ipvs规则
 
-##### 保存规则
+**保存规则**
+
 保存规则
 -S
 eg: ipvsadm -S > /path/to/somefile
 
-##### 载入此前的规则:
+**载入此前的规则:**
+
 -R
 eg: ipvsadm -R </path/form/Somefile
 

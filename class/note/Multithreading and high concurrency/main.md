@@ -112,19 +112,19 @@ java是单继承多实现的语言，使用runnable更好
 
 4.interrupt 结束线程
 
-## 并发编程的三大特性
-### 可见性（visibility）
+# 并发编程的三大特性
+## 可见性（visibility）
 保证在线程中运行的变量对所有线程可见
-#### volatile
+### volatile
 使用volatile保证属性可见（主要的工作是每次用到volitile的属性时都从主内存读，而不是从线程缓存中读）
 volatile修饰引用类型，引用类型内部属性更改对其他线程不可见
 ps:某些语句操作的时候会触发缓存同步
 
-#### 三级缓存
+### 三级缓存
 
 ![多核CPU](picture/多核CPU.png)
 
-#### 缓存行
+### 缓存行
 一次读64字节（Byte），CPU之间通过缓存一致性协议去保持一致
 
 **使用**
@@ -133,8 +133,8 @@ Disruptor(单机效率最高的MQ)中有用到缓存行对齐
 
 **1.8时使用@Contended来保证数据不在同一行，只有1.8起作用，使用时要指定-XX:-RestrictContended**
 
-### 有序性（ordering）
-#### 乱序的验证
+## 有序性（ordering）
+### 乱序的验证
 ```java
 //乱序代码
 public class Test {
@@ -177,10 +177,10 @@ public class Test {
     }
 }
 ```
-#### 为什么会存在乱序
+### 为什么会存在乱序
 cpu去内存读取数据的时候，可能先做一些本地的操作，在不影响单线程最终一致性的情况下，先执行某些语句
 
-#### 创建对象
+### 创建对象
 ```
 0 new #2 <java/lang/Object> //申请空间
 3 dup
@@ -189,7 +189,41 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 8 return
 ```
 
-#### this对象逸出
-在执行对象初始化时进行this对象的调用，由于指令重排序，47重排，可能会找到还未被初始化好的值
+### this对象逸出
+在执行对象初始化时进行this对象的调用，由于指令重排序，47重排，可能会找到还未被初始化好的值，这件事情警告我们千万不要在初始化方法中启动线程（调用start方法）
 
-### 原子性（atomicity）
+## 原子性（atomicity）
+
+# 线程池
+## 常用线程池体系结构
+1.Executor:线程池顶级接口，定义了execute方法
+2.ExecutorService:线程池次级接口，扩展Executor接口，在Executor基础上增加了线程池的服务
+3.ScheduledExecutorService:扩展ExecutorService接口，增加定时任务
+4.AbstractExecutorService:抽象类，实现了一部分方法，运用了模板方法的设计模式
+5.ThreadPoolExecutor:普通线程池
+6.ScheduledThreadPoolExecutor:定时任务线程池
+7.ForkJoinPool:java7新增线程池，基于工作窃取（work-stealing）理论实现，拆分大任务变成小任务，分部运算，得到结果
+7.Excutors:线程池工具类，定义了一些操作线程池的方法
+
+### Future的意义
+主要用来控制线程，控制线程执行，取消，获取线程执行结果
+
+### ExecutorService
+给线程池提供一些基础服务
+```java
+void shutdown();
+List<Runnable> shutdownNow();
+boolean isShutdown();
+<T> Future<T> submit(Callable<T> task);
+```
+### AbstractExecutorService
+定义一些模板方法，实现了对线程池中线程的启动和关闭
+
+**invokeAll** 
+执行所有任务
+
+ps：调用invokeAll方法时如果时间给的很短，会导致所有的任务取消，所以会有一些任务没有执行的返回值
+
+**invokeAny**
+
+只要有一个完成，就完成任务
