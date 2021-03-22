@@ -122,8 +122,74 @@ ps:某些语句操作的时候会触发缓存同步
 
 #### 三级缓存
 
+![多核CPU](picture/多核CPU.png)
+
 #### 缓存行
-一次读64字节（Byte），通过缓存一致性协议去保持一致
+一次读64字节（Byte），CPU之间通过缓存一致性协议去保持一致
+
+**使用**
+LinkedBlockingQueue
+Disruptor(单机效率最高的MQ)中有用到缓存行对齐
+
+**1.8时使用@Contended来保证数据不在同一行，只有1.8起作用，使用时要指定-XX:-RestrictContended**
 
 ### 有序性（ordering）
+#### 乱序的验证
+```java
+//乱序代码
+public class Test {
+    static int a;
+    static int b;
+    static int x;
+    static int y;
+
+    public static void main(String[] args) throws InterruptedException {
+        int i = 0;
+        while (true) {
+            a = 0;
+            b = 0;
+            x = 0;
+            y = 0;
+            CountDownLatch countDownLatch = new CountDownLatch(2);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    a = 1;
+                    y = b;
+                    countDownLatch.countDown();
+                }
+            }).start();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    b = 1;
+                    x = a;
+                    countDownLatch.countDown();
+                }
+            }).start();
+            countDownLatch.await();
+            i++;
+            if (x == 0 && y == 0) {
+                System.out.println("第" + i + "次");
+                break;
+            }
+        }
+    }
+}
+```
+#### 为什么会存在乱序
+cpu去内存读取数据的时候，可能先做一些本地的操作，在不影响单线程最终一致性的情况下，先执行某些语句
+
+#### 创建对象
+```
+0 new #2 <java/lang/Object> //申请空间
+3 dup
+4 invokespecial #1 <java/lang/Object.<init>> //初始化
+7 astore_1   // 连接
+8 return
+```
+
+#### this对象逸出
+在执行对象初始化时进行this对象的调用，由于指令重排序，47重排，可能会找到还未被初始化好的值
+
 ### 原子性（atomicity）
