@@ -249,3 +249,207 @@ a&(~a+1)
 提取最后一个1
 将两部分分开
 求一部分的全部异或，就为其中一个值a，将a与eor异或，就是b
+
+## 链表
+**反转链表**
+用next保存下一个值，用pre保存初始值
+```java
+// 迭代
+    private static Node reverseList(Node head){
+        Node pre = null;
+        Node next = null;
+        while (head != null){
+            next = head.next;
+            head.next = pre;
+            pre = head;
+            head = next;
+        }
+        return pre;
+    }
+//递归
+    private static Node reverseList(Node node){
+        if(node == null || node.next == null)return node;
+        Node head = reverseList(node.next);
+        node.next.next = node;
+        node.next = null;
+        return head;
+    }
+```
+**链表删值**
+先删前面，然后后面寻找
+```java
+//迭代
+    private static Node reverseList(Node node,int value){
+        Node head = null;
+        while (node != null && node.val == value){
+            node = node.next;
+        }
+        head = node;
+        Node pre = head;
+
+        while(node != null){
+            if(node.val == value){
+                pre.next = node.next;
+            }else{
+                pre = node;
+            }
+            node = node.next;
+        }
+        return head;
+    }
+```
+
+## 栈和队列常见题
+1.用数组实现队列
+
+思路：循环队列
+代码：
+```java
+class MyQueue{
+        private int [] arr;
+        private int size;
+        private int limit;
+        private int head;
+        private int tail;
+
+        public MyQueue(int size){
+            arr = new int[size];
+            head = 0;
+            tail = 0;
+            this.size = 0;
+            limit = size;
+        }
+
+        public int poll(){
+            if(size == 0){
+                throw new RuntimeException("gun");
+            }
+            size --;
+            int value = arr[head];
+            head = getNextIndex(head);
+            return value;
+        }
+
+        public void offer(int value){
+            if(size == limit){
+                throw new RuntimeException("gun");
+            }
+            size ++;
+            arr[tail] = value;
+            tail = getNextIndex(tail);
+        }
+
+        private int getNextIndex(int index){
+            return (index + 1)%limit;
+        }
+    }
+```
+
+2.实现特殊栈，在基本功能基础上，增加返回栈中最小元素的功能
+
+思路：双栈
+代码：
+```java
+class SpecificStack{
+        Stack<Integer> mainStack = new Stack<>();
+        Stack<Integer> helperStack = new Stack<>();
+
+        public void push(int value){
+            mainStack.push(value);
+            if(helperStack.isEmpty()){
+                helperStack.push(value);
+            }else{
+                Integer peek = helperStack.peek();
+                if(value < peek){
+                    helperStack.push(value);
+                }else{
+                    helperStack.push(peek);
+                }
+            }
+        }
+
+        public Integer minElement(){
+            if(helperStack.isEmpty())return null;
+            return helperStack.peek();
+        }
+
+        public Integer poll(){
+            if(mainStack.isEmpty()){
+                return null;
+            }else{
+                Integer value = mainStack.pop();
+                helperStack.pop();
+                return value;
+            }
+        }
+    }
+```
+
+3.栈实现队列
+双栈实现
+```java
+class MyQueue{
+        Stack<Integer> mainStack = new Stack<>();
+        Stack<Integer> helperStack = new Stack<>();
+
+        public void offer(int value){
+            mainStack.push(value);
+            mainToHelp();
+        }
+
+        public Integer poll(){
+            mainToHelp();
+            if(helperStack.isEmpty())return null;
+            return helperStack.pop();
+        }
+
+        private void mainToHelp(){
+            if(!mainStack.isEmpty()){
+                if(helperStack.isEmpty()){
+                    while (!mainStack.isEmpty()){
+                        helperStack.push(mainStack.pop());
+                    }
+                }
+            }
+        }
+    }
+```
+
+4.队列实现栈
+双队列实现，保持一个队列为空，每次取到最后一个值
+```java
+ class MyStack{
+        Queue<Integer> mainQueue = new LinkedList<>();
+        Queue<Integer> helperQueue = new LinkedList<>();
+
+        public void push(int value){
+            setEmptyQueue();
+            mainQueue.offer(value);
+        }
+
+        public Integer pop(){
+            setEmptyQueue();
+            Integer res = null;
+            int i = 0;
+            int size = mainQueue.size();
+            while(!mainQueue.isEmpty()){
+                res = mainQueue.poll();
+                if(i < size - 1) {
+                    helperQueue.offer(res);
+                }
+                i ++;
+            }
+            return res;
+        }
+
+        private void setEmptyQueue(){
+            mainQueue = mainQueue.isEmpty()?helperQueue:mainQueue;
+            helperQueue = new LinkedList<>();
+        }
+    }
+```
+
+## 递归
+递归的时间复杂度
+T(N) = aT(N/B)+O($N^d$)
+子问题的规模X次数+O(N)
