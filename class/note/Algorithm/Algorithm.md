@@ -101,6 +101,184 @@
 时间复杂度：O($N{^2}$)
 （额外）空间复杂度：O(1)
 
+###  归并排序
+**方式**
+先让左和右有序，然后借助中间数组合起来，实质是把比较行为变为有序信息并传递
+
+**代码**
+```java
+//递归
+    public static void mergeSort(int [] arr,int l,int r){
+        if(l == r)return;
+        int mid = l + ((r - l) >> 1);
+        mergeSort(arr,l,mid);
+        mergeSort(arr,mid + 1,r);
+        merge(arr,l,r);
+    }
+
+    public static void merge(int [] arr,int l,int r){
+        int mid = l + ((r - l) >> 1);
+        int p1 = l;
+        int p2 = mid + 1;
+        int [] temp = new int[r - l + 1];
+        int index = 0;
+        while (p1 <= mid && p2 <= r){
+            temp[index ++] = arr[p1]<arr[p2]?arr[p1 ++]:arr[p2 ++];
+        }
+        while (p1 <= mid){
+            temp[index ++] = arr[p1 ++];
+        }
+        while (p2 <= r){
+            temp[index ++] = arr[p2 ++];
+        }
+        for(int i = 0;i < temp.length;i ++){
+            arr[l + i] = temp[i];
+        }
+    }
+//迭代
+    public static void mergeSort(int [] arr){
+        int mergeSize = 1;
+        int n = arr.length;
+        while (mergeSize < n){
+            int l = 0;
+            while (l < n){
+                int mid = l + mergeSize - 1;
+                if(mid >= n)break;
+                int r = Math.min(mid + mergeSize,n - 1);
+                merge(arr,l,r,mid);
+                l = r + 1;
+            }
+            //防止越界
+            if(mergeSize > n/2){
+                break;
+            }
+            mergeSize <<= 1;
+        }
+        return sum;
+    }
+
+    public static void merge(int [] arr,int l,int r,int mid){
+        int p1 = l;
+        int p2 = mid + 1;
+        int [] temp = new int[r - l + 1];
+        int index = 0;
+        while (p1 <= mid && p2 <= r){
+            if(arr[p1] <= arr[p2]){
+                temp[index ++] = arr[p1 ++];
+            }else{
+                temp[index ++] = arr[p2 ++];
+            }
+        }
+        while (p1 <= mid){
+            temp[index ++] = arr[p1 ++];
+        }
+        while (p2 <= r){
+            temp[index ++] = arr[p2 ++];
+        }
+        for(int i = 0;i < temp.length;i ++){
+            arr[l + i] = temp[i];
+        }
+        return sum;
+    }
+```
+**复杂度**
+时间复杂度：O($N\log{N}$)
+空间复杂度：O(N)
+
+#### 归并题目
+1.一个数组中，一个数左边比它小的数的总和叫数的小和，所有小和加起来叫数组小和，求数组小和
+```java
+    public static int mergeSort(int [] arr){
+        int mergeSize = 1;
+        int n = arr.length;
+        int sum = 0;
+        while (mergeSize < n){
+            int l = 0;
+            while (l < n){
+                int mid = l + mergeSize - 1;
+                if(mid >= n)break;
+                int r = Math.min(mid + mergeSize,n - 1);
+                sum += merge(arr,l,r,mid);
+                l = r + 1;
+            }
+            //防止越界
+            if(mergeSize > n/2){
+                break;
+            }
+            mergeSize <<= 1;
+        }
+        return sum;
+    }
+
+    public static int merge(int [] arr,int l,int r,int mid){
+        int sum = 0;
+        int p1 = l;
+        int p2 = mid + 1;
+        int [] temp = new int[r - l + 1];
+        int index = 0;
+        while (p1 <= mid && p2 <= r){
+            if(arr[p1] <= arr[p2]){
+                sum += arr[p1]*(r - p2 + 1);
+                temp[index ++] = arr[p1 ++];
+            }else{
+                temp[index ++] = arr[p2 ++];
+            }
+        }
+        while (p1 <= mid){
+            temp[index ++] = arr[p1 ++];
+        }
+        while (p2 <= r){
+            temp[index ++] = arr[p2 ++];
+        }
+        for(int i = 0;i < temp.length;i ++){
+            arr[l + i] = temp[i];
+        }
+        return sum;
+    }
+```
+2.求一个数组中所有的降序对个数
+```java
+    public static int mergeSort(int [] arr,int l,int r){
+        if(l == r)return 0;
+        int mid = l + ((r - l) >> 1);
+        return mergeSort(arr,l,mid)+
+        mergeSort(arr,mid + 1,r)+
+        merge(arr,l,r);
+    }
+
+    public static int merge(int [] arr,int l,int r){
+        int mid = l + ((r - l) >> 1);
+        int p1 = l;
+        int p2 = mid + 1;
+        int [] temp = new int[r - l + 1];
+        int index = 0;
+        int res = 0;
+        while (p1 <= mid && p2 <= r){
+            if(arr[p1] > arr[p2]){
+                res += (mid - p1 + 1);
+                temp[index ++] = arr[p2 ++];
+            }else{
+                temp[index ++] = arr[p1 ++];
+            }
+        }
+        while (p1 <= mid){
+            temp[index ++] = arr[p1 ++];
+        }
+        while (p2 <= r){
+            temp[index ++] = arr[p2 ++];
+        }
+        for(int i = 0;i < temp.length;i ++){
+            arr[l + i] = temp[i];
+        }
+        return res;
+    }
+```
+
+** 适用**
+右（左）边有多少个数比某个数大（小）
+
+### 快速排序
+
 ## 对数器
 ### 制作对数器
 1.想测的方法a
@@ -451,5 +629,20 @@ class MyQueue{
 
 ## 递归
 递归的时间复杂度
-T(N) = aT(N/B)+O($N^d$)
-子问题的规模X次数+O(N)
+T(N) = aT($\frac{N}{b}$)+O($N^d$)
+子问题的规模X次数+O(N),a,b,d为常数
+
+求时间复杂度的Master
+1.当 $\log_{b}{a}$ < d ,复杂度为O($N^d$)
+2.当 $\log_{b}{a}$ > d ,复杂度为O($N^{\log_{b}{a}}$)
+3.当 $\log_{b}{a}$ == d ,复杂度为O($N^d$ $\log{N}$)
+
+## 常用容器的复杂度
+**HashMap**
+增删改查全为O(1)
+
+**TreeMap**
+增删改查全为O($\log{N}$)
+
+
+
