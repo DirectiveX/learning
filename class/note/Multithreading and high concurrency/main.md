@@ -258,17 +258,16 @@ public ThreadPoolExecutor(int corePoolSize,
 策略模式，当任务数量 > `maximumPoolSize + workQueue.size()`,拒绝任务处理器，四种拒绝策略
 
 1.ThreadPoolExecutor.AbortPolicy
-终止策略：死给你看，抛出RejectedExecutionException异常
+终止策略（默认）：死给你看，抛出RejectedExecutionException异常
 
 2.ThreadPoolExecutor.CallerRunsPolicy
-呼叫者自处理策略：自己玩去
+呼叫者自处理策略：自己玩去（背压：用消费者抑制生产者的生产水平）
 
 3.ThreadPoolExecutor.DiscardPolicy
 丢弃策略：全给你丢完
 
 4.ThreadPoolExecutor.DiscardOldestPolicy
 丢弃老的策略：老的不用了，把最前面没执行的干掉，你去排队
-
 
 **BlockingQueue（interface）**
 生产者消费者模型（线程安全）,定义了阻塞队列的增删改查
@@ -277,6 +276,7 @@ public ThreadPoolExecutor(int corePoolSize,
 **==DefaultThreadFactory==**
 1.创建的线程是不是守护线程，如果没有设置，默认是守护线程
 2.默认的权限是正常权限NORM_PRIORITY=5
+
 ```java
 //src
 //class: Executors
@@ -331,3 +331,22 @@ private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
     private static int workerCountOf(int c)  { return c & CAPACITY; }
     private static int ctlOf(int rs, int wc) { return rs | wc; }
 ```
+
+**状态转换**
+
+```java
+RUNNING -> SHUTDOWN：shutdown()
+(RUNNING or SHUTDOWN) -> STOP：shutdownNow()
+SHUTDOWN -> TIDYING：当Queue和线程池均为空
+STOP -> TIDYING：线程池为空
+TIDYING -> TERMINATED：terminated()回调完成
+```
+
+### CAS
+compareAndSwap
+对比某个地址上的值是否与期望值相等，相等就替换
+
+实现自旋锁的原理：
+无限制与某块地址进行比较，如果为初始值，就修改值并退出，如果不为初始值，就代表有其他线程正在使用，轮循访问那块地址，直到其他地方的线程将其改回成初始值
+
+## AQS
