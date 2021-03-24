@@ -274,10 +274,70 @@
     }
 ```
 
-** 适用**
+**适用**
 右（左）边有多少个数比某个数大（小）
 
 ### 快速排序
+**荷兰国旗问题**
+```java
+    private static int[] process(int [] arr,int l,int r){
+        int left = l - 1;
+        int right = r;
+        int index = l;
+        while(index < right){
+            if(arr[r] < arr[index]){
+                swap(arr,-- right,index);
+            }else if(arr[r] > arr[index]){
+                swap(arr,++ left,index ++);
+            }else{
+                index ++;
+            }
+        }
+        swap(arr,r,right);
+        return new int[]{left + 1,right};
+    }
+```
+**快速排序代码**
+
+**方式**
+用荷兰国旗问题求一组数的位置，然后递归求值，随机数导致结果的不确定性，根据数学期望求值，可以得出时间复杂度为O($N\log{N}$)
+
+先分治，再荷兰国旗
+
+**代码**
+```java
+//递归
+    private static void quickSort(int [] arr,int l,int r){
+        if(l >= r)return;
+        int[] ranges = process(arr, l, r);
+        quickSort(arr,l,ranges[0] - 1);
+        quickSort(arr,ranges[1] + 1,r);
+    }
+
+    private static int[] process(int [] arr,int l,int r){
+        if(r < l)return new int[]{-1,-1};
+        if(r == l)return new int[]{l,l};
+        int left = l - 1;
+        int right = r + 1;
+        int index = l;
+        int aim = l + (int)(Math.random()*(r - l + 1));
+        int tar = arr[aim];
+        while(index < right){
+            if(tar < arr[index]){
+                swap(arr,-- right,index);
+            }else if(tar > arr[index]){
+                swap(arr,++ left,index ++);
+            }else{
+                index ++;
+            }
+        }
+        return new int[]{left + 1,right - 1};
+    }
+```
+**复杂度**
+时间复杂度：O($N\log{N}$)
+空间复杂度：O($\log{N}$)
+
 
 ## 对数器
 ### 制作对数器

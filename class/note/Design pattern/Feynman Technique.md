@@ -124,7 +124,7 @@ slfj日志
 
 **常用**
 
-暂无
+QueueingFuture 和 FutureTask
 
 ## 代理模式
 **定义**

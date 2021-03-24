@@ -219,11 +219,115 @@ boolean isShutdown();
 ### AbstractExecutorService
 定义一些模板方法，实现了对线程池中线程的启动和关闭
 
-**invokeAll** 
+**invokeAll()** 
 执行所有任务
 
 ps：调用invokeAll方法时如果时间给的很短，会导致所有的任务取消，所以会有一些任务没有执行的返回值
 
-**invokeAny**
+**invokeAny()**
 
 只要有一个完成，就完成任务
+
+**cancelAll()**
+jdk11中出现，打断所有正在运行的线程
+
+**ExecutorCompletionService**
+当任务完成后或抛出异常后或被中断后，将Future类型的实例放入到completionQueue中
+通过poll可以取到最先完成的任务
+
+### ThreadPoolExecutor
+线程池的组成：线程容器，任务队列（BlockingQueue）（如果没有指定大小，就是无限大小），创建线程的工厂（threadFactory），核心线程数（corePoolSize）（长期占有机器资源），最大线程数（maximumPoolSize）（最大线程数=核心线程数+临时线程数），keepAliveTime（临时线程，不需要的时候释放资源）等待时间，TimeUnit 时间单位，RejectExecutionHandler 拒绝执行处理器（任务队列满的时候要执行什么策略）
+
+**构造函数**
+```java
+public ThreadPoolExecutor(int corePoolSize,
+                     int maximumPoolSize,
+                     long keepAliveTime,
+                     TimeUnit unit,
+                     BlockingQueue<Runnable> workQueue,
+                     ThreadFactory threadFactory,
+                     RejectedExecutionHandler handler)
+```
+
+**ThreadFactory（interface）**
+创建线程
+
+**RejectExecutionHandler（interface）**
+当workQueue未设置容量，永远不会产生RejectExecutionHandler
+
+策略模式，当任务数量 > `maximumPoolSize + workQueue.size()`,拒绝任务处理器，四种拒绝策略
+
+1.ThreadPoolExecutor.AbortPolicy
+终止策略：死给你看，抛出RejectedExecutionException异常
+
+2.ThreadPoolExecutor.CallerRunsPolicy
+呼叫者自处理策略：自己玩去
+
+3.ThreadPoolExecutor.DiscardPolicy
+丢弃策略：全给你丢完
+
+4.ThreadPoolExecutor.DiscardOldestPolicy
+丢弃老的策略：老的不用了，把最前面没执行的干掉，你去排队
+
+
+**BlockingQueue（interface）**
+生产者消费者模型（线程安全）,定义了阻塞队列的增删改查
+阻塞队列：当存的时候，如果队列满，就阻塞，当取的时候，如果队列空，就阻塞
+
+**==DefaultThreadFactory==**
+1.创建的线程是不是守护线程，如果没有设置，默认是守护线程
+2.默认的权限是正常权限NORM_PRIORITY=5
+```java
+//src
+//class: Executors
+    static class DefaultThreadFactory implements ThreadFactory {
+        private static final AtomicInteger poolNumber = new AtomicInteger(1);
+        private final ThreadGroup group;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        private final String namePrefix;
+
+        DefaultThreadFactory() {
+            SecurityManager s = System.getSecurityManager();
+            group = (s != null) ? s.getThreadGroup() :
+                                  Thread.currentThread().getThreadGroup();
+            namePrefix = "pool-" +
+                          poolNumber.getAndIncrement() +
+                         "-thread-";
+        }
+
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(group, r,
+                                  namePrefix + threadNumber.getAndIncrement(),
+                                  0);
+            if (t.isDaemon())
+                t.setDaemon(false);
+            if (t.getPriority() != Thread.NORM_PRIORITY)
+                t.setPriority(Thread.NORM_PRIORITY);
+            return t;
+        }
+```
+**状态参数**
+ctl中前3位存储了线程池状态，后29位存储了工作线程数，分别通过runStateOf和workerCountOf去计算，默认running状态
+
+```java
+private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
+    private static final int COUNT_BITS = Integer.SIZE - 3;
+    private static final int CAPACITY   = (1 << COUNT_BITS) - 1;
+
+    // runState is stored in the high-order bits
+	//接受新任务并且处理队列任务
+    private static final int RUNNING    = -1 << COUNT_BITS;
+	//不接受新任务，但是执行队列任务
+    private static final int SHUTDOWN   =  0 << COUNT_BITS;
+	//不接受新任务，不执行队列任务，并且中断正在执行的任务
+    private static final int STOP       =  1 << COUNT_BITS;
+	//所有任务中断，workerCount清0，回调terminated()方法
+    private static final int TIDYING    =  2 << COUNT_BITS;
+	//terminated()执行完成
+    private static final int TERMINATED =  3 << COUNT_BITS;
+
+    // Packing and unpacking ctl
+    private static int runStateOf(int c)     { return c & ~CAPACITY; }
+    private static int workerCountOf(int c)  { return c & CAPACITY; }
+    private static int ctlOf(int rs, int wc) { return rs | wc; }
+```
