@@ -338,6 +338,190 @@
 时间复杂度：O($N\log{N}$)
 空间复杂度：O($\log{N}$)
 
+### 堆排序
+**方式**
+用数组建堆，加入时加到末尾，向上调整，删除时用堆尾替换堆首，向下调整
+
+**特点**
+是一棵完全二叉树
+
+**代码**
+```java
+    public static void heapSort(MyHeapSort myHeapSort){
+        while(-- myHeapSort.heapSize >= 0){
+            myHeapSort.swap(myHeapSort.heapSize,0);
+            myHeapSort.heapify();
+        }
+    }
+
+    private static class MyHeapSort{
+        private int heapSize;
+        private int maxSize;
+        private int [] heap;
+
+        public MyHeapSort(int maxSize){
+            this.maxSize = maxSize;
+            this.heap = new int[maxSize];
+            this.heapSize = 0;
+        }
+
+        public void push(int value){
+            if(heapSize == maxSize)return;
+            heap[heapSize ++] = value;
+            heapInsert();
+        }
+
+        //可优化
+        private void heapInsert(){
+            int index = heapSize - 1;
+            int parent = (index - 1) >> 1;
+            while(index != 0 && heap[index] > heap[parent]){
+                swap(index,parent);
+                index = parent;
+                parent = (index - 1) >> 1;
+            }
+        }
+
+        public Integer pop(){
+            if(heapSize == 0)return null;
+            int res = heap[0];
+            swap(0,-- heapSize);
+            heapify();
+            return res;
+        }
+
+        private void heapify(){
+            int index = 0;
+            while (index < heapSize){
+                int left = index * 2 + 1;
+                if(left >= heapSize)break;
+                int largest = (left + 1) >= heapSize?left:(heap[left] > heap[left + 1]?left:left + 1);
+                largest = heap[largest] > heap[index]?largest:index;
+                if(largest == index)break;
+                swap(index,largest);
+                index = largest;
+            }
+        }
+
+        private void swap(int x,int y){
+            int temp = heap[x];
+            heap[x] = heap[y];
+            heap[y] = temp;
+        }
+    }
+```
+```java
+// log(N)方式建大根堆
+    public static void createHeap(int [] arr){
+        for(int i = (arr.length - 1)/2;i >= 0;i --){
+            heapify(arr,i);
+        }
+    }
+
+    private static void heapify(int [] heap,int index){
+        int heapSize = heap.length;
+        while (index < heapSize){
+            int left = index * 2 + 1;
+            if(left >= heapSize)break;
+            int largest = (left + 1) >= heapSize?left:(heap[left] > heap[left + 1]?left:left + 1);
+            largest = heap[largest] > heap[index]?largest:index;
+            if(largest == index)break;
+            swap(heap,index,largest);
+            index = largest;
+        }
+    }
+```
+
+**复杂度**
+时间复杂度：O($N\log{N}$)
+空间复杂度：O(1)
+
+#### 语言提供的堆排序PriorityQueue与自己写的
+1、给一个几乎有序的数组（排完序后数组位置移动不超过k,k相对于n很小），进行排序
+```java
+    private static void sort(int [] arr,int k){
+        PriorityQueue<Integer> priorityQueue = new PriorityQueue();
+        for(int i = 0;i <= k;i ++) {
+            priorityQueue.add(arr[i]);
+        }
+        for(int i = k + 1;i < arr.length;i ++){
+            Integer poll = priorityQueue.poll();
+            arr[i - k - 1] = poll;
+            priorityQueue.add(arr[i]);
+        }
+        int index = arr.length - k - 1;
+        while (!priorityQueue.isEmpty()){
+            arr[index ++] = priorityQueue.poll();
+        }
+    }
+```
+2.给定一个对象数组，在数据进入堆之后，对象数组的内容会进行改变，此时无法使用系统给定的堆，要自己写
+```java
+public class MyHeapSort<T> {
+    private ArrayList<T> arr = new ArrayList<>();
+    private Comparator<? super T> comparator;
+    private Map<T,Integer> map = new HashMap<>();
+
+    public MyHeapSort(Comparator<? super T> comparator) {
+        this.comparator = comparator;
+    }
+
+    public void push(T value){
+        arr.add(value);
+        map.put(value,arr.size() - 1);
+        heapInsert(arr.size() - 1);
+    }
+
+    public T pop(){
+        T res = arr.get(0);
+        swap(0,arr.size() - 1);
+        map.remove(res);
+        arr.remove(arr.size() - 1);
+        heapify(0);
+        return res;
+    }
+
+    private void heapInsert(int index){
+        int parentIndex = (index - 1)/2;
+        T value = arr.get(index);
+        T parent = arr.get(parentIndex);
+        while (comparator.compare(value,parent) > 0){
+            swap(index,parentIndex);
+            index = parentIndex;
+            parentIndex = (index - 1)/2;
+            value = arr.get(index);
+            parent = arr.get(parentIndex);
+        }
+    }
+
+    public void resign(T value){
+        Integer integer = map.get(value);
+        heapify(integer);
+        heapInsert(integer);
+    }
+
+    private void heapify(int index){
+        int left = index * 2 + 1;
+        while(left < arr.size()){
+            int largest = left + 1 < arr.size() && comparator.compare(arr.get(left + 1),arr.get(left)) > 0?left + 1:left;
+            largest = comparator.compare(arr.get(index),arr.get(largest)) > 0?index:largest;
+            if(largest == index)break;
+            swap(largest,index);
+            index = largest;
+            left = index * 2 + 1;
+        }
+    }
+
+    private void swap(int x,int y){
+        T t1 = arr.get(x);
+        T t2 = arr.get(y);
+        arr.set(y,t1);
+        arr.set(x,t2);
+        map.put(t1,y);
+        map.put(t2,x);
+    }
+}
+```
 
 ## 对数器
 ### 制作对数器
