@@ -411,7 +411,7 @@
     }
 ```
 ```java
-// log(N)方式建大根堆
+// O(N)方式建大根堆，从下往上建堆，根据数学计算收敛于O(N)，如果从上往下，达不到O(N)
     public static void createHeap(int [] arr){
         for(int i = (arr.length - 1)/2;i >= 0;i --){
             heapify(arr,i);
@@ -888,5 +888,87 @@ T(N) = aT($\frac{N}{b}$)+O($N^d$)
 **TreeMap**
 增删改查全为O($\log{N}$)
 
+## 前缀树
+**代码**
+```java
 
+public class Trie {
+    private Node root;
+    public Trie(){
+        root = new Node();
+    }
+
+    public void insert(String string){
+        if(string == null || string == "")return;
+        char[] str = string.toCharArray();
+        Node node = root;
+        node.pass ++;
+        for(char ch : str){
+            if(!node.nexts.containsKey(ch)){
+                node.nexts.put(ch,new Node());
+            }
+            node = node.nexts.get(ch);
+            node.pass ++;
+        }
+        node.end ++;
+    }
+
+    public int search(String string){
+        if(string == null || string == "")return 0;
+        char[] str = string.toCharArray();
+        Node node = root;
+        for(char ch : str){
+            if(!node.nexts.containsKey(ch)){
+                return 0;
+            }
+            node = node.nexts.get(ch);
+        }
+        return node.end;
+    }
+
+    public int searchPrefix(String string){
+        if(string == null || string == "")return 0;
+        char[] str = string.toCharArray();
+        Node node = root;
+        for(char ch : str){
+            if(!node.nexts.containsKey(ch))return 0;
+            node = node.nexts.get(ch);
+        }
+        return node.pass;
+    }
+
+
+
+    public void delete(String string){
+        if(string == null || string == "")return;
+        if(search(string) > 0){
+            char[] str = string.toCharArray();
+            Node node = root;
+            node.pass --;
+            for(char ch : str){
+                if(-- node.pass == 0){
+                    node.nexts = new HashMap<>();
+                    return;
+                }
+                node = node.nexts.get(ch);
+            }
+            node.end --;
+        }
+    }
+
+    class Node{
+        private Map<Character,Node> nexts = new HashMap<>();
+        private int pass;
+        private int end;
+
+        public Node(){
+            pass = 0;
+            end = 0;
+        }
+    }
+}
+```
+
+**复杂度**
+时间复杂度：O(N)
 

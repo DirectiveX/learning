@@ -307,7 +307,7 @@ public ThreadPoolExecutor(int corePoolSize,
         }
 ```
 **状态参数**
-ctl中前3位存储了线程池状态，后29位存储了工作线程数，分别通过runStateOf和workerCountOf去计算，默认running状态
+ctl中前3位存储了线程池状态，后29位存储了工作线程数（所以工作线程数上限为2^29 - 1），分别通过runStateOf和workerCountOf去计算，默认running状态
 
 ```java
 private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
@@ -341,7 +341,7 @@ SHUTDOWN -> TIDYING：当Queue和线程池均为空
 STOP -> TIDYING：线程池为空
 TIDYING -> TERMINATED：terminated()回调完成
 ```
-
+#### 方法解析
 **==execute方法==**
 1.如果当前线程数小于核心线程数，直接加核心线程并启动
 2.如果核心线程数满，放入阻塞队列
@@ -351,6 +351,23 @@ TIDYING -> TERMINATED：terminated()回调完成
 1.判断线程池状态是否能够添加新的工作线程，如果能就先增加工作线程数量计数器
 2.创建工作线程并添加进工作线程组（HashSet中）
 3.如果添加成功，启动线程，如果添加失败，试图从移除刚加入的工作线程，并减少工作线程数量计数器
+
+**runWorker方法**
+1.判断线程池状态，如果不能执行任务，就将所有任务包括队列中的任务中断
+2.如果能执行，就执行任务，在执行任务前调用beforeExecute处理，在执行任务后调用afterExecute处理
+
+**processWorkerExit方法**
+清理工作线程，如果线程正常退出，如果异常退出（beforeExecute，afterExecute出错），就减少工作线程数量计数器
+
+#### 题目
+1.如何获取线程池中线程执行抛出的异常？
+①继承ThreadPoolExecutor并重写afterExecute方法
+②自己线程内部用try catch包裹
+③从FutureTask中获取
+④线程池中创建线程的时候给线程设置未捕捉异常处理器（uncaughtExceptionHandler）
+
+2.当线程遭遇了用户异常，会新起一个线程吗？
+不一定，但是肯定不是用原来那个，因为遭遇异常时会先将移除当前工作线程，如果线程池中还有正在工作的线程，则用那个线程去执行，否则重新添加一个非核心线程去执行
 
 ### CAS
 
