@@ -437,7 +437,9 @@
 空间复杂度：O(1)
 
 #### 语言提供的堆排序PriorityQueue与自己写的
+
 1、给一个几乎有序的数组（排完序后数组位置移动不超过k,k相对于n很小），进行排序
+
 ```java
     private static void sort(int [] arr,int k){
         PriorityQueue<Integer> priorityQueue = new PriorityQueue();
@@ -455,7 +457,9 @@
         }
     }
 ```
+
 2.给定一个对象数组，在数据进入堆之后，对象数组的内容会进行改变，此时无法使用系统给定的堆，要自己写
+
 ```java
 public class MyHeapSort<T> {
     private ArrayList<T> arr = new ArrayList<>();
@@ -523,7 +527,128 @@ public class MyHeapSort<T> {
 }
 ```
 
+## 
+
+### 桶排序（不基于比较的排序）
+**方式**
+用空间换时间，限制较大，要满足特定情况才能使用
+
+**复杂度**
+时间复杂度：O(N)
+空间复杂度：O(M)
+
+#### 计数排序
+当数据量比较小时，可以用一个范围建桶进行排序
+```java
+    public int [] counterSort(int [] arr){
+        if(arr == null || arr.length < 2)return arr;
+        //1.计算当前最大值
+        int max = calculateMax(arr);
+        //2.建桶放入数据
+        int [] bucket = new int[max + 1];
+        for(int i = 0;i < arr.length;i ++){
+            bucket[arr[i]] ++;
+        }
+        //3.排序
+        int [] res  = new int[arr.length];
+        int index = 0;
+        for(int i = 1;i < bucket.length;i ++){
+            while (bucket[i] > 0){
+                res[index ++] = i;
+                bucket[i] --;
+            }
+        }
+        return res;
+    }
+
+    private int calculateMax(int [] arr){
+        int max = -1;
+        for(int i = 0;i < arr.length;i ++){
+            max = Math.max(max, arr[i]);
+        }
+        return max;
+    }
+```
+
+#### 基数排序
+当数据非负时，可以使用
+```java
+    public void radixSort(int [] arr){
+        int radix = 10;
+        int length = String.valueOf(calculateMax(arr)).length();
+        for(int i = 0;i < length;i ++){
+            int [] bucket = new int[radix];
+            for(int j = 0;j < arr.length;j ++){
+                int indexValue = getIndexValue(arr[j], i, radix);
+                bucket[indexValue]++;
+            }
+            //转换bucket
+            for(int j = 0;j < bucket.length - 1;j ++){
+                bucket[j + 1] += bucket[j];
+            }
+            //插入
+            int [] res = new int[arr.length];
+            for(int j = arr.length - 1;j >= 0;j --){
+                int indexValue = getIndexValue(arr[j], i, radix);
+                res[-- bucket[indexValue]] = arr[j];
+            }
+            arr = res;
+        }
+    }
+
+    private int getIndexValue(int num,int index,int radix){
+        for(int i = 0;i < index;i ++){
+            num = num / radix;
+        }
+        return num % radix;
+    }
+    
+    private int calculateMax(int [] arr){
+        int max = -1;
+        for(int i = 0;i < arr.length;i ++){
+            max = Math.max(max, arr[i]);
+        }
+        return max;
+    }
+```
+
+### 稳定性
+选择排序：不稳定
+冒泡排序：稳定
+插入排序：稳定
+归并排序：稳定
+快速排序：不稳定，速度最快
+堆排序：不稳定，空间最小
+计数排序：稳定
+基数排序：稳定
+
+### 常见坑
+1.归并排序空间复杂度可以变成O(1)，但是会丢失稳定性（归并排序内部缓存法）
+2.原地归并排序垃圾算法，时间复杂度为O($N^{2}$)
+3.快排可以变稳定，（01 stable sort），但是这样对数据要求很高，不如使用桶排序
+4.在整型数组中，将奇数部分放左边，将偶数部分放右边，要求时间复杂度O(N)，空间复杂度O(1)并且具有稳定性?
+不可能完成，因为这种情况是partition的算法，如果能做到的话，快速排序怎么没法做到稳定
+
+### 总结
+
+|          | 时间复杂度 | 空间复杂度 | 稳定性 |
+| -------- | ---------- | ---------- | ------ |
+| 选择排序 | O($N^2$)        | O(1) | 不稳定 |
+| 冒泡排序 | O($N^2$) | O(1) | 稳定 |
+| 插入排序 | O($N^2$) | O(1) | 稳定 |
+| 归并排序 | O($N\log{N}$) | O(N) | 稳定 |
+| 堆排序 | O($N\log{N}$) | O(1) | 不稳定 |
+| 快速排序 | O($N\log{N}$) | O($\log{N}$) | 不稳定 |
+| 计数排序 | O(max(N)) | O(1) | 稳定 |
+| 基数排序 | O($\log_{radix}{max(N)}$) | O(1) | 稳定 |
+
+### 工程上对排序的改进
+1.基于稳定性考虑
+2.基于O($N\log{N}$)与O(N^2)算法的优势考虑
+
+
 ## 对数器
+
 ### 制作对数器
 1.想测的方法a
 2.实现复杂度不好但是容易实现的方法b
