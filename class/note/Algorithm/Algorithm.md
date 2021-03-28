@@ -846,7 +846,300 @@ a&(~a+1)
     }
 ```
 
+### 链表题目
+1.输入链表头节点，奇数长度返回中点，偶数长度返回上中点
+```java
+    private static Node getMiddle(Node head){
+        if(head == null || head.getNext() == null || head.getNext().getNext() == null)return head;
+        Node slow = head.getNext();
+        Node fast = head.getNext().getNext();
+        while(fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+        return slow;
+    }
+```
+
+2.输入链表头节点，奇数长度返回中点，偶数长度返回下中点
+```java
+    private static Node getUnderMiddle(Node head){
+        if(head == null || head.getNext() == null)return head;
+        Node slow = head.getNext();
+        Node fast = head.getNext();
+        while(fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+        return slow;
+    }
+```
+
+3.输入链表头节点，奇数长度返回中点前一个，偶数长度返回上中点前一个
+```java
+    private static Node getPreUnderMiddle(Node head){
+        if(head == null || head.getNext() == null)return head;
+        Node slow = head.getNext();
+        Node fast = head.getNext();
+        while(fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+        return slow;
+    }
+```
+
+4.输入链表头节点，奇数长度返回中点前一个，偶数长度返回下中点前一个
+```java
+    private static Node getPreUnderMiddle(Node head){
+        if(head == null || head.getNext() == null)return head;
+        Node slow = head;
+        Node fast = head.getNext();
+        while(fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+        return slow;
+    }
+```
+
+5.给定一个单链表的头，判断是否为回文链表
+①全部节点入栈，然后出栈一一比较
+②快慢指针找中点，逆序比较
+```java
+    private static boolean isPalindromic(Node head){
+        if(head == null || head.getNext() == null)return true;
+        boolean res = true;
+        Node slow = head;
+        Node fast = head;
+        while(fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+        }
+        Node right = reverseLinklist(slow);
+        Node left = head;
+        Node tail = right;
+        while (left != null && left.getVal() == right.getVal()){
+            left = left.getNext();
+            right = right.getNext();
+        }
+        if(left != null){
+            res = false;
+        }
+        reverseLinklist(tail);
+        return res;
+    }
+
+    private static Node reverseLinklist(Node head){
+        Node pre = null;
+        while (head != null){
+            Node next = head.getNext();
+            head.setNext(pre);
+            pre = head;
+            head = next;
+        }
+        return pre;
+    }
+```
+6.将单链表按某值分为左小中等右大的形式
+```java
+//六指针完成
+    private static Node partitionLink(Node head,int target){
+        if(head == null || head.getNext() == null)return head;
+        Node lH = null;
+        Node lT = null;
+        Node mH = null;
+        Node mT = null;
+        Node rH = null;
+        Node rT = null;
+        while(head != null){
+            Node next = head.getNext();
+            head.setNext(null);
+            if(head.getVal() < target){
+                if(lH == null){
+                    lH = head;
+                }else{
+                    lT.setNext(head);
+                }
+                lT = head;
+            }else if(head.getVal() == target){
+                if(mH == null){
+                    mH = head;
+                }else{
+                    mT.setNext(head);
+                }
+                mT = head;
+            }else{
+                if(rH == null){
+                    rH = head;
+                }else{
+                    rT.setNext(head);
+                }
+                rT = head;
+            }
+            head = next;
+        }
+        Node res = null;
+        if(lH != null){
+            res = lH;
+            if(mH == null){
+                lT.setNext(rH);
+            }else{
+                lT.setNext(mH);
+                mT.setNext(rH);
+            }
+        }else if(mH != null){
+            res = mH;
+            mT.setNext(rH);
+        }else{
+            res = rH;
+        }
+        return res;
+    }
+```
+7.rand指针时单链表节点结构中新增的指针，rand可能指向链表中的任意一个节点，也可能指向null，给定一个由Node节点类型组成的无环单链表的头节点head，请实现一个函数完成这个链表的复制，并返回复制的新链表的头结点
+要求：时间复杂度O(N),额外空间复杂度O(1)
+```java
+    private static Node copyLinkedList(Node head){
+        if(head == null)return null;
+        //节点增值
+        Node temp = head;
+        while(temp != null){
+            Node next = temp.getNext();
+            Node node = new Node(temp.getVal());
+            temp.setNext(node);
+            node.setNext(next);
+            temp = next;
+        }
+        //节点复制
+        temp = head;
+        while (temp != null){
+            Node copyNode = temp.getNext();
+            Node next = copyNode.getNext();
+            copyNode.setRand(temp.getRand()==null?null:temp.getRand().getNext());
+            temp = next;
+        }
+        //断链恢复节点
+        Node res = head.getNext();
+        temp = head;
+        while (temp != null){
+            Node copyNode = temp.getNext();
+            Node next = copyNode.getNext();
+            if(next != null){
+                temp.setNext(next);
+                copyNode.setNext(next.getNext());
+            }
+            temp = next;
+        }
+        return res;
+    }
+```
+8.给定两个可能有环也可能无环的单链表，头节点head1和head2.实现一个函数，如果两个链表相交，返回相交的第一个节点，如果不相交，返回null
+两个链表长度之和为N，时间复杂度达到O(N),空间复杂度达到O(1)
+
+```java
+    private static Node findIntersect(Node head1,Node head2){
+        if(head1 == null || head2 == null)return null;
+        Node loop1 = getLoop(head1);
+        Node loop2 = getLoop(head2);
+        if(loop1 == null && loop2 == null){
+            return getUnCircleNode(head1,head2);
+        }else if(loop1 != null && loop2 != null){
+            return getCircleNode(head1,head2,loop1,loop2);
+        }
+        return null;
+    }
+
+    private static Node getUnCircleNode(Node head1,Node head2){
+        int len1 = 0,len2 = 0;
+        Node tail1 = head1;
+        while (tail1.getNext() != null){
+            tail1 = tail1.getNext();
+            len1 ++;
+        }
+        Node tail2 = head2;
+        while (tail2.getNext() != null){
+            tail2 = tail2.getNext();
+            len2 ++;
+        }
+        if(tail1 != tail2)return null;
+        int largest = Math.max(len1,len2);
+        if(len1 > len2){
+            for(int i = 0;i < largest - len2;i ++){
+                head1 = head1.getNext();
+            }
+        }else{
+            for(int i = 0;i < largest - len1;i ++){
+                head2 = head2.getNext();
+            }
+        }
+        while (head1 != head2){
+            head1 = head1.getNext();
+            head2 = head2.getNext();
+        }
+        return head1;
+    }
+
+    private static Node getCircleNode(Node head1,Node head2,Node loop1,Node loop2){
+        if(loop1 == loop2){
+            int len1 = 0,len2 = 0;
+            Node tail1 = head1;
+            while (tail1.getNext() != loop1){
+                tail1 = tail1.getNext();
+                len1 ++;
+            }
+            Node tail2 = head2;
+            while (tail2.getNext() != loop2){
+                tail2 = tail2.getNext();
+                len2 ++;
+            }
+            int largest = Math.max(len1,len2);
+            if(len1 > len2){
+                for(int i = 0;i < largest - len2;i ++){
+                    head1 = head1.getNext();
+                }
+            }else{
+                for(int i = 0;i < largest - len1;i ++){
+                    head2 = head2.getNext();
+                }
+            }
+            while (head1 != head2){
+                head1 = head1.getNext();
+                head2 = head2.getNext();
+            }
+            return head1;
+        }else{
+            Node temp = loop1;
+            loop1 = loop1.getNext();
+            while (loop1 != loop2 && loop1 != temp){
+                loop1 = loop1.getNext();
+            }
+            return loop1==loop2?loop1:null;
+        }
+    }
+
+    private static Node getLoop(Node head){
+        if(head == null)return null;
+        Node slow = head;
+        Node fast = head;
+        while (fast.getNext() != null && fast.getNext().getNext() != null){
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
+            if(slow == fast)break;
+        }
+        if(slow != fast){
+            return null;
+        }
+        fast = head;
+        while (slow != fast){
+            slow = slow.getNext();
+            fast = fast.getNext();
+        }
+        return slow;
+    }
+```
 ## 栈和队列常见题
+
 1.用数组实现队列
 
 思路：循环队列
