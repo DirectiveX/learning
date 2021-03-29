@@ -359,6 +359,23 @@ TIDYING -> TERMINATED：terminated()回调完成
 **processWorkerExit方法**
 清理工作线程，如果线程正常退出，如果异常退出（beforeExecute，afterExecute出错），就减少工作线程数量计数器
 
+**shutdown**
+1.核实shutdown权限
+2.推进到SHUTDOWN状态
+3.打断空闲工作线程
+4.回调shutdown方法
+5.尝试调用terminate
+
+**shutdownNow**
+1.核实shutdown权限
+2.推进到STOP状态
+3.打断工作线程
+4.清空队列并返回
+5.尝试调用terminate
+
+**tryTerminate**
+如果符合线程池关闭条件，就转为TERMINATED状态，如果工作线程不为空，就减少一个工作线程数量并退出
+
 #### 题目
 1.如何获取线程池中线程执行抛出的异常？
 ①继承ThreadPoolExecutor并重写afterExecute方法
@@ -367,7 +384,50 @@ TIDYING -> TERMINATED：terminated()回调完成
 ④线程池中创建线程的时候给线程设置未捕捉异常处理器（uncaughtExceptionHandler）
 
 2.当线程遭遇了用户异常，会新起一个线程吗？
-不一定，但是肯定不是用原来那个，因为遭遇异常时会先将移除当前工作线程，如果线程池中还有正在工作的线程，则用那个线程去执行，否则重新添加一个非核心线程去执行
+会，因为遭遇异常时会先将移除当前工作线程，然后重新添加一个非核心线程
+
+3.ctl是什么？
+用来记录线程池状态和工作线程数的
+
+4.execute干了什么？
+判断当前工作线程数是否小于核心线程数，如果小于就添加核心线程
+如果大于就判断阻塞队列是否满，不满就将任务添加到阻塞队列中，检查工作线程数是否为0，如果为0就添加
+如果阻塞队列满了，看看能否加入临时工作线程进行处理，不能就调用拒绝执行处理器执行
+
+### ScheduledThreadPoolExecutor
+执行延迟任务
+
+**结构**
+使用DelayedWorkQueue（无界Queue，谨慎使用），最大线程数设置为Integer.MAX_VALUE,存活时间为0，默认时间单位为nanotime，由于无界队列，最大线程数，存活时间，默认时间单位不生效
+
+使用自定义任务类型ScheduledFutureTask，是一个小顶堆
+sequenceNumber：序列号
+time：超时时间
+period：周期
+outerTask：
+heapIndex：堆中索引
+
+#### 主方法
+**scheduleAtFixedRate()**
+任务一开始就开始计时
+
+**scheduleWithFixedDelay()**
+当任务执行完才开始计时
+
+**schedule()**
+装饰任务，延迟执行任务
+
+#### 题目
+1.ScheduledThreadPoolExecutor的maximumPoolSize和keepAliveTime和时间单位生效吗？
+不生效，因为ScheduledThreadPoolExecutor使用的是DelayWorkQueue,是一个无界队列（每次增长幅度为原始的1.5倍），所以不生效
+
+2.怎么控制周期的？
+通过DelayedWorkQueue的take方法去控制获取任务的时间
+
+3.核心线程数设置为0时，如何处理？
+添加非核心线程（ensurePrestart）
+
+源码5：56分
 
 ### CAS
 
