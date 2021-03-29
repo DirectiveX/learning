@@ -1402,5 +1402,141 @@ public class Node {
     public Node left;
     public Node right;
 }
+//先序
+    private static void preOrder(TreeNode head){
+        if(head == null)return;
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        stack.push(head);
+        while (!stack.isEmpty()){
+            TreeNode node = stack.poll();
+            System.out.println(node.val);
+            if(node.right != null){
+                stack.push(node.right);
+            }
+            if(node.left != null){
+                stack.push(node.left);
+            }
+        }
+    }
+//后序
+    private static void postOrder(TreeNode head){
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        Deque<TreeNode> helper = new ArrayDeque<>();
+        stack.push(head);
+        while (!stack.isEmpty()){
+            TreeNode node = stack.poll();
+            helper.push(node);
+            if(node.left != null){
+                stack.push(node.left);
+            }
+            if(node.right != null){
+                stack.push(node.right);
+            }
+        }
+        while (!helper.isEmpty()){
+            System.out.println(helper.poll().val);
+        }
+    }
+//中序
+    private static void inOrder(TreeNode head){
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        while (!stack.isEmpty() || head != null){
+            if(head != null){
+                stack.push(head);
+                head = head.left;
+            }else{
+                head = stack.pop();
+                System.out.println(head.val);
+                head = head.right;
+            }
+        }
+    }
+//非翻转后序
+    private static void postOrderNotReverse(TreeNode head){
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        stack.push(head);
+        TreeNode curNode = head;
+        while (!stack.isEmpty()){
+            if(curNode.left != null && curNode.left != head && curNode.right != head){
+                stack.push(curNode.left);
+                curNode = curNode.left;
+            }else if(curNode.right != null && curNode.right != head){
+                stack.push(curNode.right);
+                curNode = curNode.right;
+            }else{
+                curNode = stack.pop();
+                System.out.println(curNode.val);
+                head = curNode;
+                curNode = stack.peek();
+            }
+        }
+    }
+```
 
+### 二叉树题目
+
+1.二叉树的序列化和反序列化
+使用null记录子节点
+```java
+//先序方式
+    private static void serialize(TreeNode head, Queue<String> queue){
+        if(head == null){
+            queue.offer(null);
+            return;
+        }
+        queue.offer(String.valueOf(head.val));
+        serialize(head.left,queue);
+        serialize(head.right,queue);
+    }
+
+    private static TreeNode analysis(Queue<String> queue){
+        String poll = queue.poll();
+        if(poll == null){
+            return null;
+        }
+        TreeNode node = new TreeNode(Integer.valueOf(poll));
+        node.left = analysis(queue);
+        node.right = analysis(queue);
+        return node;
+    }
+//层序方式
+    private static void levelTraversalSerialize(TreeNode head, Queue<String> queue){
+        Queue<TreeNode> helper = new LinkedList<>();
+        helper.offer(head);
+        while (!helper.isEmpty()){
+            TreeNode poll = helper.poll();
+            if(poll != null){
+                queue.offer(String.valueOf(poll.val));
+                helper.offer(poll.left);
+                helper.offer(poll.right);
+            }else{
+                queue.offer(null);
+            }
+        }
+    }
+
+    private static TreeNode levelTraversalAnalysis(Queue<String> queue){
+        if(queue.isEmpty())return null;
+        TreeNode head = new TreeNode(Integer.valueOf(queue.poll()));
+        Queue<TreeNode> helper = new LinkedList<>();
+        helper.offer(head);
+        while (!helper.isEmpty()) {
+            TreeNode poll = helper.poll();
+            String leftVal = queue.poll();
+            String rightVal = queue.poll();
+            TreeNode left = null;
+            TreeNode right = null;
+            if(leftVal != null){
+                left = new TreeNode(Integer.valueOf(leftVal));
+                helper.add(left);
+            }
+            if(rightVal != null){
+                right = new TreeNode(Integer.valueOf(rightVal));
+                helper.add(right);
+            }
+            poll.left = left;
+            poll.right = right;
+        }
+        return head;
+    }
 ```
