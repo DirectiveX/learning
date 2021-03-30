@@ -1472,6 +1472,13 @@ public class Node {
         }
     }
 ```
+### 二叉树递归套路
+1.假设以X为头，假设左右两边树可以给我想要的信息
+2.讨论我需要什么信息
+3.构建信息类
+4.把左树信息和右树信息求全集，就是任何一棵子树都需要返回的信息S
+5.递归函数都返回S，每一棵子树都这么要求
+6.写代码，在代码中考虑如何整合左树右树信息
 
 ### 二叉树题目
 
@@ -1538,5 +1545,106 @@ public class Node {
             poll.right = right;
         }
         return head;
+    }
+```
+
+2.把一段纸条竖着放在桌子上，从纸条的下边向上方对折一次，压出折痕后展开，此时折痕是凹下去的。如果从纸条的下边向上方连续对折两次，压出折痕后展开，此时有三条折痕，从上到下依次是凹折痕，凹折痕，凸折痕。
+给定一个输入参数N，代表纸条都从下边向上方连续对折N次，从上到下打印所有折痕方向
+
+解析：每一次折都会在上边生成一条凹折痕，下边生成一条凸折痕，是一个二叉树的中序遍历
+```java
+    private static void printFold(int n,int layer,boolean isDown){
+        if(layer > n)return;
+        printFold(n,layer + 1,true);
+        System.out.print(isDown?"down ":"up ");
+        printFold(n,layer + 1,false);
+    }
+```
+3.给定一棵二叉树的头节点head，任何两个节点之间都存在距离，返回整棵二叉树的最大距离
+```java
+    static class Info{
+        private int height;
+        private int maxValue;
+
+        public Info(int height, int maxValue) {
+            this.height = height;
+            this.maxValue = maxValue;
+        }
+    }
+
+    private static Info findMaxDistance(Node head){
+        if(head == null)return new Info(0,0);
+        Info left = findMaxDistance(head.left);
+        Info right = findMaxDistance(head.right);
+        int maxValue = Math.max(left.height + right.height + 1,right.maxValue);
+        maxValue = Math.max(maxValue,left.maxValue);
+        int height = Math.max(left.height,right.height) + 1;
+        return new Info(height,maxValue);
+    }
+```
+4.给定一个二叉树头节点，返回这课二叉树最大二叉搜索子树的节点个数
+```java
+    static class Info{
+        private int numbers;
+        private boolean isBinarySearchTree;
+
+        public Info(int numbers, boolean isBinarySearchTree) {
+            this.numbers = numbers;
+            this.isBinarySearchTree = isBinarySearchTree;
+        }
+    }
+
+    private static Info findMaxBinarySearchTree(Node node){
+        if(node == null)return new Info(0,true);
+        Info left = findMaxBinarySearchTree(node.left);
+        Info right = findMaxBinarySearchTree(node.right);
+        int numbers = Math.max(left.numbers,right.numbers);
+        boolean isBinarySearchTree = false;
+        if(((node.left != null && node.val > node.left.val)||(node.left == null)) && ((node.right != null && node.val < node.right.val)||(node.right == null)) && left.isBinarySearchTree && right.isBinarySearchTree){
+            numbers = left.numbers + right.numbers + 1;
+            isBinarySearchTree = true;
+        }
+        return new Info(numbers,isBinarySearchTree);
+    }
+```
+
+
+5.派对最大快乐值,当员工被邀请，他的下属就无法被邀请，求最大值
+员工定义信息如下
+```java
+    static class Employee{
+        public int happy;
+        List<Employee> subordinates;
+    }
+```
+```java
+static class Info{
+        private int happyWithCurNode;
+        private int happyWithOutCurNode;
+
+        public Info(int happyWithCurNode, int happyWithOutCurNode) {
+            this.happyWithCurNode = happyWithCurNode;
+            this.happyWithOutCurNode = happyWithOutCurNode;
+        }
+    }
+
+    private static int maxHappy(Employee node){
+        if(node == null)return 0;
+        return Math.max(findMaxHappy(node).happyWithCurNode,findMaxHappy(node).happyWithOutCurNode);
+    }
+
+    private static Info findMaxHappy(Employee node){
+        if(node.subordinates == null)return new Info(node.happy,0);
+        List<Info> list = new ArrayList<>();
+        for(Employee employee:node.subordinates){
+            list.add(findMaxHappy(employee));
+        }
+        int happyWithCurNode = node.happy;
+        int happyWithOutCurNode = 0;
+        for(Info info:list){
+            happyWithCurNode += info.happyWithOutCurNode;
+            happyWithOutCurNode += Math.max(info.happyWithCurNode,info.happyWithOutCurNode);
+        }
+        return new Info(happyWithCurNode,happyWithOutCurNode);
     }
 ```
