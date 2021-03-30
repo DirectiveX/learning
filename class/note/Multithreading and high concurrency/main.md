@@ -158,6 +158,11 @@ ps：锁的选择：执行时间长用重量级锁，短的并且线程数少用
 #### 锁重入机制
 每个对象都有一个monitor，线程去请求这个对象的锁时，会去看monitor计数器是否为0，如果为0线程就持有该对象，如果不为0就去判断是否为当前线程持有，如果持有就将monitor计数器-1，不然就等待
 
+#### synchronized优化
+1.细化或粗化synchronized
+2.最好将锁引用设置为final，不然如果某些情况下引用转移会导致锁失效
+3.不要用String，Integer，Long做锁
+
 # 并发编程的三大特性
 ## 可见性（visibility）
 保证在线程中运行的变量对所有线程可见
@@ -185,6 +190,21 @@ Disruptor(单机效率最高的MQ)中有用到缓存行对齐
 总线嗅探和缓存一致性协议（Modified,Exclusive,Shared,Invalid）
 （ps：总线嗅探：通过对总线上的数据进行嗅探检查自己缓存数据是否有效，如果无效，就将自己的缓存的数据状态改成Invalid，过多的使用volatile会导致cpu做过多的嗅探和CAS，导致总线带宽达到峰值，造成风暴）
 ②防止指令重排序
+主要是借助了内存屏障
+内存屏障分两类
+load barrier：在读指令前插入读屏障，让高速缓存中数据失效，重新从主内存读取数据
+store barrier：在写指令后插入写屏障，让写入缓存的最新数据写回到内存
+使用分4种
+storestore确保store1保存的数据在store2保存前已经保存完毕
+storeload确保store1保存的数据在load2读取前已经刷新了缓冲区
+loadstore确保load1读入的数据在store2保存前读入
+loadload确保load1读入的数据在load2读入前读入
+
+JMM内存屏障策列
+每个volatile写前插入storestore
+每个volatile写后插入storeload
+每个volatile读后插入loadstore
+每个volatile读后插入loadload
 
 
 ## 有序性（ordering）
@@ -247,6 +267,17 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 在执行对象初始化时进行this对象的调用，由于指令重排序，47重排，可能会找到还未被初始化好的值，这件事情警告我们千万不要在初始化方法中启动线程（调用start方法）
 
 ## 原子性（atomicity）
+
+# 新型锁
+## ReentrantLock
+相比synchronized
+1.ReentrantLock可以实现tryLock等待在一段时间内获取锁
+2.ReentrantLock可以用lockInterruptibly去检测中断
+3.ReentrantLock可以做公平锁
+4.底层CAS，sync使用锁升级机制
+
+### 公平锁
+使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
 
 # 线程池
 ## 常用线程池体系结构
@@ -483,12 +514,20 @@ heapIndex：堆中索引
 
 源码5：56分
 
-### CAS
+### CAS（无锁优化 自旋 乐观锁）
+AtomicXXX底层都是CAS，CAS用Unsafe支持，通过Unsafe.getUnsafe()去获取实例对象
 
 compareAndSwap
-对比某个地址上的值是否与期望值相等，相等就替换
+对比某个地址上的值是否与期望值相等，相等就设置值
 
 实现自旋锁的原理：
 无限制与某块地址进行值比较，如果为初始值，就修改值并退出，如果不为初始值，就代表有其他线程正在使用，轮循访问那块地址，直到其他地方的线程将其改回成初始值
+
+**ABA问题如何解决**
+通过对对象进行版本号的添加（AtomicStampedReference），可以解决ABA问题
+如果基础类型，无所谓，引用类型，可能导致
+
+**synchronized long,AtomicLong,LongAdder**
+高并发情况下，速度依次加快，AtomicLong用了CAS,LongAdder使用了分段锁+CAS
 
 ## AQS
