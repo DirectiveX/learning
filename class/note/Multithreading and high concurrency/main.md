@@ -206,6 +206,36 @@ JMM内存屏障策列
 每个volatile读后插入loadstore
 每个volatile读后插入loadload
 
+2.实现一个容器，提供两个方法，add，size，写两个线程，线程1添加10个元素到容器中，线程2实现监控元素的个数，当个数到5个时，线程2给出提示并结束
+
+分析下面程序，能完成这个功能吗？
+```java
+    private static List<Object> container = new ArrayList<>();
+
+    private static void add(Object o){
+        container.add(o);
+    }
+    private static int size(){
+        return container.size();
+    }
+    public static void main(String[] args) {
+        Thread thread2 = new Thread(()->{
+            LockSupport.park();
+            System.out.println("thread 2 shutdown" + size());
+        });
+
+        Thread thread1 = new Thread(()->{
+            for(int i = 0;i < 10;i ++){
+                add(new Object());
+                if(size() == 5) LockSupport.unpark(thread2);
+            }
+        });
+
+        thread1.start();
+        thread2.start();
+    }
+```
+
 
 ## 有序性（ordering）
 ### 乱序的验证
@@ -275,9 +305,45 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 2.ReentrantLock可以用lockInterruptibly去检测中断
 3.ReentrantLock可以做公平锁
 4.底层CAS，sync使用锁升级机制
+5.ReentrantLock要手动加锁和释放锁，sync不用
 
 ### 公平锁
 使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
+
+## CountDownLatch
+每次调用latch.countDown()时计数器减一，直到计数器变为0，才能够通过latch.await()方法
+
+## CyclicBarrier
+每次调用await方法会将计数器加一，要达到一定线程数量才会继续执行
+
+## Phaser
+维护着一个叫 phase 的成员变量代表当前执行的阶段
+调用arriveAndAwaitAdvance方法或arriveAndDeregister方法推进阶段
+使用时重写onAdvance方法，分阶段拦截，增强版的CyclicBarrier
+
+## ReentrantReadWriteLock（重要）
+构成：共享锁（读锁）+ 排它锁（互斥锁）（写锁）
+共享锁：当大家一起读的时候，允许一起访问
+排它锁：如果正在写，那么不允许其他线程访问
+
+### StampedLock
+由于ReadWriteLock拥有写线程需要等待读线程执行完成才能写入的问题，产生了StampedLock
+**特点**
+是一个不可重入锁，是一个乐观读锁
+通过tryOptimisticRead去判断是否有写锁进行操作，如果有进行特定处理，如果没有就直接执行业务逻辑
+**使用**
+通过tryOptimisticRead判断当前是否有写操作，如果有写操作，就升级为读锁，再重新读取数据，如果没有就执行业务逻辑
+
+## Semaphore
+通过s.acquire()去取信号量，当信号量减少到0时其他线程无法获取，通过s.release()释放信号量，可以做限流
+
+## Exchanger
+线程之间交换数据用，第一次调用exchange方法的时候会写入数据并阻塞，第二次调用的时候会交换数据并运行
+
+## AQS（上述全部是AQS的子类）
+
+## LockSupport
+可以实现指定唤醒，unpack可以先于park调用
 
 # 线程池
 ## 常用线程池体系结构
@@ -529,5 +595,3 @@ compareAndSwap
 
 **synchronized long,AtomicLong,LongAdder**
 高并发情况下，速度依次加快，AtomicLong用了CAS,LongAdder使用了分段锁+CAS
-
-## AQS
