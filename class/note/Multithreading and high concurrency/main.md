@@ -354,10 +354,16 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 是由CAS+volatile实现的，它的核心变量是state是volatile修饰的，修改的时候使用CAS
 是CLH锁的变体
 
+AQS是双向链表+state，可重入锁
+
+用了CAS就不用再给整个链表加锁，增加了效率
+
+jdk1.9之后添加了VarHandle（指向某个变量的引用）来处理节点之间的关系，VarHandle里面提供了一些原子性的操作，比反射速度快（因为直接操作的二进制码）
+
 ### CLH锁
 基于单向链表的高性能公平锁，申请加锁的线程需要在其前驱节点的本地变量上自旋，减少了不必要的处理器缓存同步的次数
 
-实现：通过Node节点存储线程状态，使用lock时将本线程的Node状态转化为node，自旋检测上一个线程的Node状态是否为false，false时执行主方法，
+实现：通过Node节点存储线程状态，使用lock时，将本线程的Node状态转化为true，自旋检测上一个线程的Node状态是否为false，false时执行主方法，解锁时，需要将本地线程Node状态转为false，最后一定要让Node指向一个不会受到影响的Node节点，不然同一线程获得锁再释放锁再获得锁时会产生死锁
 
 ```java
 //代码
@@ -370,6 +376,7 @@ public class CLHLock implements Lock {
         this.node = new ThreadLocal<Node>() {
             protected Node initialValue() {
                 return new Node();
+                
             }
         };
 
