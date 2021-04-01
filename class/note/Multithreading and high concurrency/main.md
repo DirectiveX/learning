@@ -218,21 +218,28 @@ JMM内存屏障策列
     private static int size(){
         return container.size();
     }
+
+	private static Thread thread1;
+	private static Thread thread2;
     public static void main(String[] args) {
-        Thread thread2 = new Thread(()->{
+        thread2 = new Thread(()->{
             LockSupport.park();
             System.out.println("thread 2 shutdown" + size());
+            LockSupport.unpark(thread1);
         });
 
-        Thread thread1 = new Thread(()->{
+        thread1 = new Thread(()->{
             for(int i = 0;i < 10;i ++){
                 add(new Object());
-                if(size() == 5) LockSupport.unpark(thread2);
+                if(size() == 5) {
+                    LockSupport.unpark(thread2);
+            		LockSupport.park();
+                }
             }
         });
 
-        thread1.start();
         thread2.start();
+        thread1.start();
     }
 ```
 
@@ -307,6 +314,9 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 4.底层CAS，sync使用锁升级机制
 5.ReentrantLock要手动加锁和释放锁，sync不用
 
+### condition本质
+不同的等待队列
+
 ### 公平锁
 使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
 
@@ -341,9 +351,199 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 线程之间交换数据用，第一次调用exchange方法的时候会写入数据并阻塞，第二次调用的时候会交换数据并运行
 
 ## AQS（上述全部是AQS的子类）
+是由CAS+volatile实现的，它的核心变量是state是volatile修饰的，修改的时候使用CAS
+是CLH锁的变体
+
+### CLH锁
+基于单向链表的高性能公平锁，申请加锁的线程需要在其前驱节点的本地变量上自旋，减少了不必要的处理器缓存同步的次数
+
+实现：通过Node节点存储线程状态，使用lock时将本线程的Node状态转化为node，自旋检测上一个线程的Node状态是否为false，false时执行主方法，
+
+```java
+//代码
+public class CLHLock implements Lock {
+    private final ThreadLocal<Node> prev;
+    private final ThreadLocal<Node> node;
+    private final AtomicReference<Node> tail = new AtomicReference<Node>(new Node());
+
+    public CLHLock() {
+        this.node = new ThreadLocal<Node>() {
+            protected Node initialValue() {
+                return new Node();
+            }
+        };
+
+        this.prev = new ThreadLocal<Node>() {
+            protected Node initialValue() {
+                return null;
+            }
+        };
+    }
+
+    private class Node {
+        private volatile boolean locked;
+    }
+
+    @Override
+    public void lock() {
+        final Node node = this.node.get();
+        node.locked = true;
+        Node pred = this.tail.getAndSet(node);
+        this.prev.set(pred);
+        // 自旋
+        while (pred.locked);
+    }
+
+    @Override
+    public void unlock() {
+        final Node node = this.node.get();
+        node.locked = false;
+        this.node.set(this.prev.get());
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+
+    }
+
+    @Override
+    public boolean tryLock() {
+        return false;
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return false;
+    }
+
+    @Override
+    public Condition newCondition() {
+        return null;
+    }
+}
+```
 
 ## LockSupport
 可以实现指定唤醒，unpack可以先于park调用
+
+## 题目
+1.两个线程交替输出A1B2C3D4...Z26
+```java
+    public static void main(String[] args) {
+        Exchanger exchanger = new Exchanger();
+        Thread thread2 = new Thread(()->{
+            for(int i = 0;i < 26;i ++){
+                char v = (char) ('A'+ i);
+                System.out.print(v);
+                try {
+                    int exchange = (int)exchanger.exchange(i);
+                    System.out.print(exchange);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println();
+        });
+
+        Thread thread1 = new Thread(()->{
+            for(int i = 1;i <= 26;i ++){
+                try {
+                    exchanger.exchange(i);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        thread1.start();
+        thread2.start();
+    }
+```
+2.写一个固定容量的同步容器，拥有put和get方法，以及getCount方法，能够支持2个生产者线程以及10个消费者线程的阻塞调用
+使用wait和notify/notifyAll来实现
+```java
+    static class ConcurrentContainer<T>{
+        private final LinkedList<T> container = new LinkedList<>();
+        private int max = 10;
+        private int count = 0;
+
+        public synchronized T get(){
+           while (count <= 0){
+               try {
+                   this.wait();
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               }
+           }
+           try {
+               count --;
+               return container.removeFirst();
+           }finally {
+               this.notifyAll();
+           }
+        }
+
+        public void put(T v){
+            synchronized (this) {
+                while (count >= max){
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                count ++;
+                container.add(v);
+                this.notifyAll();
+            }
+        }
+    }
+    // 精准唤醒
+    static class ConcurrentContainer<T>{
+        private final LinkedList<T> container = new LinkedList<>();
+        private int max = 10;
+        private int count = 0;
+        ReentrantLock reentrantLock = new ReentrantLock();
+        Condition consumer = reentrantLock.newCondition();
+        Condition producer = reentrantLock.newCondition();
+
+        public T get(){
+            reentrantLock.lock();
+            while (count <= 0){
+               try {
+                   consumer.await();
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               }
+           }
+           try {
+               count --;
+               return container.removeFirst();
+           }finally {
+               producer.signalAll();
+               reentrantLock.unlock();
+           }
+        }
+
+        public void put(T v){
+            reentrantLock.lock();
+            while (count >= max){
+                try {
+                    producer.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            count ++;
+            container.add(v);
+            consumer.signalAll();
+            reentrantLock.unlock();
+        }
+    }
+```
+
 
 # 线程池
 ## 常用线程池体系结构
