@@ -433,6 +433,19 @@ public class CLHLock implements Lock {
 ## LockSupport
 可以实现指定唤醒，unpack可以先于park调用
 
+## 强软弱虚
+1.强引用
+一般的引用，不会被GC回收
+
+2.软引用
+当内存不够使用的时候会被GC回收
+
+3.弱引用
+当GC检测到弱引用就会被回收，java中的WeakHashMap和ThreadLocalMap中的Entry的key都使用了弱引用，防止内存泄露
+
+4.虚引用
+当GC检测就会被回收，并且和弱引用不同点在于虚引用的对象无法用get方法去访问，只有在垃圾回收后会被放入队列中。虚引用通常用于处理堆外内存也就是直接内存。比如我们通过Unsafe类的allocateMemory方法去申请一块内存，需要用freeMemory去释放。
+
 ## 题目
 1.两个线程交替输出A1B2C3D4...Z26
 ```java
@@ -802,3 +815,41 @@ compareAndSwap
 
 **synchronized long,AtomicLong,LongAdder**
 高并发情况下，速度依次加快，AtomicLong用了CAS,LongAdder使用了分段锁+CAS
+
+# 容器
+## Map
+### HashTable（不使用）
+所有方法都使用Synchronized锁
+ 
+### HashMap
+所有方法都不加锁，通过Collections.synchronizedHashMap可以变成同步版本（在方法外套用synchronized锁，粒度较HashTable快一点）
+ 
+### ConcurrentHashMap
+插入相较于HashTable和Collections.synchronizedHashMap慢，但是读取特别快
+
+### TreeMap
+用的红黑树
+ 
+## List
+
+### ArrayList
+所有方法都不加锁
+
+### Vector（不使用）
+所有方法都使用Synchronized锁
+
+## Queue
+
+### ConcurrentLinkedQueue
+使用CAS去操作
+
+### ConcurrentSkipListMap
+跳表，高并发下排序
+ 
+## 多线程下常用的容器
+ConcurrentHashMap
+ConcurrentSkipListMap
+## 题目
+1.Queue与List的区别？
+Queue主要是处理高并发情况下的存取，而List是普通的存取
+

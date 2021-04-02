@@ -40,3 +40,32 @@ CAS的ABA问题
 
 如何解决ABA问题
 可以通过使用AtomicStempReference类去包装对象，实际上就是用了一个版本号去标记对象是否为原版对象
+
+## AQS
+AQS是一个次级抽象类，它的父类抽象类是AbstractOwnerableSynchronizer, 父类抽象类中有个主要的属性用于记录当前占有锁的线程。
+AQS是CLH锁的一种变体，CLH是一种基于单链表实现的公平自旋不可重入锁，它与CLH锁不同点在于，AQS使用了双向链表并且AQS的Node节点在自旋等待的时候，会调用LockSupport的park方法进行等待，在释放锁时会调用LockSupport的unpark方法对后继节点进行唤醒。
+AQS的结构是双向链表+一个线程间可见的state属性，根据属性去判断当前锁是否被持有，通过CAS去操作state和双向链表的头尾节点
+AQS的子类通过实现tryAcquire方法可以实现公平锁和非公平锁，在JDK1.9之后，AQS优化了指向头尾节点的指针，用VarHandle的CAS来操作对应的地址，直接操作二进制码，速度更加快
+VarHandle就是一个指向地址的指针，提供了原子修改值的方法，并且能直接操作二进制码
+
+## ReentrantLock
+ReentrantLock是一种可重入的独占锁，ReentrantLock内部持有了AQS的锁的实现类，内部的Sync继承了AQS，然后NonFairSync和FairSync继承了Sync抽象类，实现了公平锁和非公平锁
+非公平
+NonFairSync的逻辑：
+先判断当前线程是否能抢占到锁，如果可以抢占到就直接执行，不然就看看当前线程是否持有锁，如果持有就计数+1，如果不是当前线程正在持有就进入等待队列等待
+FairSync的逻辑：
+先判断当前队列中是否为空，如果为空就就抢占锁，如果不为空就看看是否是当前线程正在持有锁，如果是当前线程正在持有锁，就继续执行，不然就进入等待队列
+Sync释放的时候会减少state，如果减到0就释放锁并且将独占锁的线程置为空，并且唤醒后继节点
+
+## ThreadLocal
+每个线程上都有一个threadLocals属性，维护了线程专属的本地变量，当使用set方法时，将ThreadLocal对象存入threadLocals属性中，取的时候从threadLocals中取
+threadLocals是一个ThreadLocalMap对象，里面用数组存储了一组Entry对象，Entry中存储了具体值，get时通过当前对象的hash值去找到Entry的位置，返回对应的值
+Entry是一个继承了弱引用的对象，它的key是一个弱引用，以达到一个防止内存泄露的效果，对于被回收的key而言，在ThreadLocalMap中就是一个老旧对象，在数组空间不足的时候会移除这些key为null的Entry
+
+做事务
+
+## 强软弱虚
+强引用永远不会被垃圾回收器处理
+软引用当内存不够的时候会被垃圾回收器回收，做缓存用
+弱引用是当它被垃圾回收器扫描到的时候被回收，一般用在容器，ThreadLocalMap中的Entry对象的key用的是软引用，弱引用通过get方法能获取对象
+虚引用是随时会被回收，并且回收的时候会将引用放在队列中通知用户,虚引用通过get方法不能获取对象，是用来清理堆外内存（直接内存）（DirectByteBuffer）（用Unsafe去处理堆外内存 freeMemory）
