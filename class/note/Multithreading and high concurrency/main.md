@@ -820,32 +820,39 @@ compareAndSwap
 ## Map
 ### HashTable（不使用）
 所有方法都使用Synchronized锁
- 
+
 ### HashMap
 所有方法都不加锁，通过Collections.synchronizedHashMap可以变成同步版本（在方法外套用synchronized锁，粒度较HashTable快一点）
- 
+
 ### ConcurrentHashMap
 插入相较于HashTable和Collections.synchronizedHashMap慢，但是读取特别快
 
 ### TreeMap
 用的红黑树
- 
-## List
 
-### ArrayList
+## Collection
+
+### List
+
+#### ArrayList
 所有方法都不加锁
 
-### Vector（不使用）
+#### 
+
+#### Vector（不使用）
 所有方法都使用Synchronized锁
 
-## Queue
+### Queue
 
-### ConcurrentLinkedQueue
+#### ConcurrentLinkedQueue
 使用CAS去操作
 
-### ConcurrentSkipListMap
-跳表，高并发下排序
- 
+#### ConcurrentSkipListMap
+跳表(用多层链表的索引增加链表的搜索速度)，高并发下排序
+
+### Set
+
+
 ## 多线程下常用的容器
 ConcurrentHashMap
 ConcurrentSkipListMap
