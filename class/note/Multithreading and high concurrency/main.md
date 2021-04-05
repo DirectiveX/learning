@@ -22,6 +22,8 @@
 ### 线程数量设置多少最为合适？
 具体问题具体分析，根据cpu计算能力来设置，通过压力测试找到合适数。
 
+《Java并发编程实践》中推荐的公式如下
+
 公式为`$N_{threads} = N_{cpu} * U{cpu} * (1 + W / C)$`
 
 即 `$线程数 = cpu核数 * cpu期望利用率[0-1] * （1 + 等待时间 / 计算[cpu使用]时间）$`
@@ -315,7 +317,7 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 5.ReentrantLock要手动加锁和释放锁，sync不用
 
 ### condition本质
-不同的等待队列
+不同的等待队列，底层用的LockSupport.park实现阻塞
 
 ### 公平锁
 使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
@@ -481,6 +483,7 @@ public class CLHLock implements Lock {
 ```
 2.写一个固定容量的同步容器，拥有put和get方法，以及getCount方法，能够支持2个生产者线程以及10个消费者线程的阻塞调用
 使用wait和notify/notifyAll来实现
+
 ```java
     static class ConcurrentContainer<T>{
         private final LinkedList<T> container = new LinkedList<>();
@@ -566,7 +569,13 @@ public class CLHLock implements Lock {
 
 
 # 线程池
+**基础**
+
+并发和并行（concurrent vs parallel）
+并发是看起来同时发生，实际上是一个线程切换执行任务，并行是多个线程同时执行任务
+
 ## 常用线程池体系结构
+
 1.Executor:线程池顶级接口，定义了execute方法
 2.ExecutorService:线程池次级接口，扩展Executor接口，在Executor基础上增加了线程池的服务
 3.ScheduledExecutorService:扩展ExecutorService接口，增加定时任务
@@ -578,6 +587,10 @@ public class CLHLock implements Lock {
 
 ### Future的意义
 主要用来控制线程，控制线程执行，取消，获取线程执行结果
+
+**扩展**
+CompletableFuture
+用于组合任务的结果，是个任务的管理类
 
 ### ExecutorService
 给线程池提供一些基础服务
@@ -636,9 +649,13 @@ public ThreadPoolExecutor(int corePoolSize,
 
 3.ThreadPoolExecutor.DiscardPolicy
 丢弃策略：全给你丢完
+应用场景：当获取的数据只有最后一次有效的时候，比如说位置信息的更新
 
 4.ThreadPoolExecutor.DiscardOldestPolicy
 丢弃老的策略：老的不用了，把最前面没执行的干掉，你去排队
+
+5.自定义（常用）
+实现RejectExecutionHandler接口，存入信息到kafka或者存到db或者重新放入队列执行，主要还是要看具体的业务逻辑
 
 **BlockingQueue（interface）**
 生产者消费者模型（线程安全）,定义了阻塞队列的增删改查
@@ -747,6 +764,9 @@ TIDYING -> TERMINATED：terminated()回调完成
 **tryTerminate**
 如果符合线程池关闭条件，就转为TERMINATED状态，如果工作线程不为空，就减少一个工作线程数量并退出
 
+**Worker类**
+实现了Runnable接口，继承至AQS
+
 #### 题目
 1.如何获取线程池中线程执行抛出的异常？
 ①继承ThreadPoolExecutor并重写afterExecute方法
@@ -798,7 +818,17 @@ heapIndex：堆中索引
 3.核心线程数设置为0时，如何处理？
 添加非核心线程（ensurePrestart）
 
+4.假如提供一个闹钟服务，订阅这个服务的人特别多，有10亿人，怎么优化？
+①负载均衡服务器分发到各个真实服务器上
+②每台服务器用线程池+任务队列
+
 源码5：56分
+
+### ForkJoinPool
+用于分解汇总的任务，用很少的线程可以执行很多的任务，CPU密集型，将大任务切分成小任务
+
+**使用**
+继承RecursiveAction类（无返回值的任务），调用流式处理的parallelStream也会使用到ForkJoinPool
 
 ### CAS（无锁优化 自旋 乐观锁）
 AtomicXXX底层都是CAS，CAS用Unsafe支持，通过Unsafe.getUnsafe()去获取实例对象
@@ -816,6 +846,32 @@ compareAndSwap
 **synchronized long,AtomicLong,LongAdder**
 高并发情况下，速度依次加快，AtomicLong用了CAS,LongAdder使用了分段锁+CAS
 
+### Executors
+1.SingleThreadExecutor
+为什么要有单线程的线程池？
+如果我们自己去new线程的话，需要自己去维护任务队列和线程生命周期的管理
+
+2.CachedThreadPool
+阻塞队列使用SynchronousQueue，这个Queue的大小为0，只能进行阻塞等待任务受理
+
+3.FixedThreadPool
+全是核心线程
+
+4.ScheduledThreadPool
+复制情况下用quartz，cron，简单情况下用Timer
+
+5.WorkStealingPool
+底层使用ForkjoinPool，对于每一个线程都拥有一个自己的阻塞队列，执行任务的时候先去自己的队列中取，如果能执行， 就执行，如果队列为空，就跑去其他线程的队列尾部偷一个过来执行。自己对队列的存取用push，pop方法，对其他队列操作用poll方法
+
+**问题**
+什么时候用Fixed什么时候用Cached
+任务数量比较平稳，用Fixed，任务数量比较不稳定，用Cached
+
+### 相关题目
+1.Executors建立线程的弊端
+使用FixedThreadPool和SingleThreadPool的时候，使用的阻塞队列长度为Integer.MAX_VALUE,可能建立很多请求，会导致OOM
+使用CachedThreadPool时，允许创建的线程数量为Integer.MAX_VALUE,可能建立很多线程导致OOM
+
 # 容器
 ## Map
 ### HashTable（不使用）
@@ -830,6 +886,9 @@ compareAndSwap
 ### TreeMap
 用的红黑树
 
+#### ConcurrentSkipListMap
+跳表(用多层链表的索引增加链表的搜索速度)，高并发下排序，实现了一个类似于TreeMap的并发容器
+
 ## Collection
 
 ### List
@@ -837,26 +896,60 @@ compareAndSwap
 #### ArrayList
 所有方法都不加锁
 
-#### 
+#### CopyOnWriteArrayList
+写时复制，写的时候加锁，读的时候由于读的是复制前的表，不需要加锁，适用于写的不是很频繁，但是读很多的情况
 
 #### Vector（不使用）
 所有方法都使用Synchronized锁
 
 ### Queue
+提供了add，offer，poll，peek方法
+
+#### PriorityQueue
+优先级队列，是个小根堆
 
 #### ConcurrentLinkedQueue
 使用CAS去操作
 
-#### ConcurrentSkipListMap
-跳表(用多层链表的索引增加链表的搜索速度)，高并发下排序
+#### BlockingQueue
+提供了take和put这两个阻塞方法
+
+##### LinkedBlockingQueue
+无界Queue，阈值可以设定，内部是链表
+
+##### ArrayBlockingQueue
+有界Queue，内部是数组
+
+##### DelayQueue
+延时Queue，按照进入队列的等待时间从小到大进行排序，内部是优先级队列PriorityQueue
+
+##### SynchronousQueue
+queue大小永远为0，给另外一个线程传递信息，使用add方法会报错，只有调用put方法进行阻塞传递
+
+##### TransferQueue
+调用transfer方法向queue中装入数据阻塞等待别的线程来取，别人取完才继续执行
+消费者没有东西拿的时候会放空篮子，等待生产者装
 
 ### Set
 
+#### HashSet
+内部使用了HashMap的Key，是唯一的
+
+#### CopyOnWriteArraySet
+写时复制，写的时候加锁，读的时候由于读的是复制前的表，不需要加锁，适用于写的不是很频繁，但是读很多的情况
 
 ## 多线程下常用的容器
 ConcurrentHashMap
 ConcurrentSkipListMap
+ConcurrentSkipListSet
+CopyOnWriteArrayList
+CopyOnWriteArraySet
+ConcurrentLinkedQueue
+LinkedBlockingQueue
+ArrayBlockingQueue
+PriorityBlockingQueue
+
 ## 题目
 1.Queue与List的区别？
-Queue主要是处理高并发情况下的存取，而List是普通的存取
-
+Queue主要方法是add，offer，poll，peek，List的主要方法是remove，add
+Queue的结构是先进先出的结构，向尾部写入，获取的时候获取头部结点的值，而List可以根据下标去获取值

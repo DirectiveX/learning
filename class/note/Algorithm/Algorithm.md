@@ -527,7 +527,7 @@ public class MyHeapSort<T> {
 }
 ```
 
-## 
+
 
 ### 桶排序（不基于比较的排序）
 **方式**
@@ -586,7 +586,7 @@ public class MyHeapSort<T> {
             for(int j = 0;j < bucket.length - 1;j ++){
                 bucket[j + 1] += bucket[j];
             }
-            //插入
+            //插入,为了不打破稳定性，从后向前输入
             int [] res = new int[arr.length];
             for(int j = arr.length - 1;j >= 0;j --){
                 int indexValue = getIndexValue(arr[j], i, radix);
@@ -1648,3 +1648,347 @@ static class Info{
         return new Info(happyWithCurNode,happyWithOutCurNode);
     }
 ```
+6.求一棵树是否为满二叉树（非层序遍历实现）
+定义信息为是否为满二叉树，完全二叉树和高度
+```java
+    public boolean isFullTree(TreeNode node){
+        return isFull(node).isCBT;
+    }
+
+    private FullTreeInfo isFull(TreeNode node){
+        if(node == null)return new FullTreeInfo(0,true,true);
+        FullTreeInfo left = isFull(node.left);
+        FullTreeInfo right = isFull(node.right);
+        int height = Math.max(left.height,right.height) + 1;
+        boolean isFull = false;
+        boolean isCBT = false;
+        if(left.isFull && right.isFull && left.height == right.height){
+            isFull = true;
+            isCBT = true;
+        }else if(left.isCBT && right.isCBT){
+            if(left.isCBT && right.isFull && left.height == right.height + 1){
+                isCBT = true;
+            }else if(left.isFull && right.isFull && left.height == right.height + 1){
+                isCBT = true;
+            }else if(left.isFull && right.isCBT && left.height == right.height){
+                isCBT = true;
+            }
+        }
+        return new FullTreeInfo(height,isFull,isCBT);
+    }
+
+    class FullTreeInfo{
+        private int height;
+        private boolean isFull;
+        private boolean isCBT;
+
+        public FullTreeInfo(int height, boolean isFull, boolean isCBT) {
+            this.height = height;
+            this.isFull = isFull;
+            this.isCBT = isCBT;
+        }
+    }
+```
+7.给定一棵二叉树头结点，和另外两个结点a和b，返回a和b的最低公共祖先
+```java
+    //求二叉树的最低公共祖先
+    public static TreeNode findPublicAncestor(TreeNode head,TreeNode a,TreeNode b){
+        return publicAncestor(head,a,b).ancestor;
+    }
+    private static AncestorInfo publicAncestor(TreeNode node,TreeNode a,TreeNode b){
+        if(node == null)return new AncestorInfo(false,false,null);
+        AncestorInfo left = publicAncestor(node.left,a,b);
+        AncestorInfo right = publicAncestor(node.right,a,b);
+        TreeNode ancestor = null;
+        if(left.ancestor != null || right.ancestor != null){
+            ancestor = left.ancestor != null?left.ancestor:right.ancestor;
+            return new AncestorInfo(true,true,ancestor);
+        }
+        boolean isHasA = (left.isHasA || right.isHasA)?true:false;
+        boolean isHasB = (left.isHasB || right.isHasB)?true:false;
+        if(node == a){
+            isHasA = true;
+        }else if(node == b){
+            isHasB = true;
+        }
+
+        if(isHasA && isHasB){
+            ancestor = node;
+        }
+        return new AncestorInfo(isHasA,isHasB,ancestor);
+    }
+    static class AncestorInfo{
+        boolean isHasA;
+        boolean isHasB;
+        TreeNode ancestor;
+
+        public AncestorInfo(boolean isHasA, boolean isHasB,TreeNode ancestor) {
+            this.isHasA = isHasA;
+            this.isHasB = isHasB;
+            this.ancestor = ancestor;
+        }
+    }
+```
+
+## 贪心算法
+
+**定义**
+每一步都是最优解，并且最终都是最优解
+
+### 经典贪心
+给一个由字符串组成的数组strs，把所有的字符拼接起来，返回所有可能的拼接结果中，字典序最小的结果？
+
+#### 思路
+第一种贪心的思路是直接将字符数组按照字典序排序，并拼接，但是会发现这种策略是错误的，当出现数组中有dcb，d这种情况时，显然ddcb比dcbd字典序要大
+
+由于第一种贪心思路的问题，我们找出了第二种贪心策略，即比较的时候用ddcb和dcbd来比较，这样子就处理了上面产生的问题
+
+#### 证明
+主要要证明A.B <= B.A的传递性，然后证明拼接后是最小值
+
+#### 代码
+```java
+public String concatStr(String [] strs){
+        Arrays.sort(strs,(obj1,obj2)-> (obj1+obj2).compareTo(obj2+obj1));
+        return Arrays.stream(strs).reduce((x1,x2)-> x1 + x2).get();
+    }
+```
+### 解题套路
+1.实现一个不依靠贪心策略的解法
+2.假设一个贪心策略的解法
+3.用对数器去比较，看看是否得出正确答案
+4.不要纠结贪心策略的证明，因为每一个贪心策略的题目的解法都不一样
+
+ps：贪心策略是经验优先的，不要死扣证明
+
+### 题目
+1.一些项目要占用一个会议室宣讲，会议室不能同时容纳两个项目的宣讲。给你每一个项目开始的时间和结束的时间，你来安排宣讲的日程，要求会议室进行的宣讲的场次最多。返回最多的宣讲场次。
+贪心策略：按照结束时间去排序，然后比较开始时间是否符合要求
+
+2.给一个字符数组，'X'表示墙，'.'表示房子，一个房子可以放一个灯，一个灯可以照亮自己房子和旁边的房子，要求求出至少需要多少灯能照亮所有人家
+贪心策略：找到一个结点i，i中为X时跳过，i中为.时去看i+1位置，如果是X就加灯并去i+2执行，如果是.就加灯去i + 3 执行
+```java
+public int calculateLights(String s){
+        char[] chars = s.toCharArray();
+        int len = chars.length;
+        int index = 0;
+        int lights = 0;
+        while (index < len){
+            char ch = chars[index];
+            if(ch == 'X'){
+                index ++;
+            }else{
+                lights ++;
+                if(index + 1 < len){
+                    if(chars[index + 1] == 'X'){
+                        index = index + 2;
+                    }else {
+                        index = index + 3;
+                    }
+                }else{
+                    break;
+                }
+            }
+        }
+        return lights;
+    }
+```
+
+3.一块金条切成两半，是需要花费和长度数值一样的铜板的
+比如长度为20的金条，不管怎么切，都需要花费20个铜板，一群人想要分整块金条，怎么分最省铜板
+例如，给定数组{10，20，30}，代表一共三个人，整块金条长度为60，金条要分成10，20，30三个部分。
+如果先把长度60的金条分成10和50，花费60，再把长度50的分成20和30，花费50，一共花110，但如果先把60分成30和30，再分成10和20，花费90
+输入一个数组，返回分割的最小代价
+贪心策略：先从小到大排序，再相加后拿新的最小两两相加，最后一定花费最小（用小根堆相加）（哈夫曼树）
+
+```java
+    public int calculateCost(int [] splits){
+        PriorityQueue<Integer> priorityQueue = new PriorityQueue<>();
+        Arrays.stream(splits).forEach((x)->priorityQueue.offer(x));
+        int sum = 0;
+        while (priorityQueue.size() != 1){
+            Integer i1 = priorityQueue.poll();
+            Integer i2 = priorityQueue.poll();
+            int cur = i1 + i2;
+            sum += cur;
+            priorityQueue.add(cur);
+        }
+        return sum;
+    }
+```
+4.你有一些项目给定了花费(int [] spend)和利润(int [] salary)，你有初始资金w和最多能做k个项目，求k个项目做完后自己涨到多少了
+贪心策略：找出当前利润最高的并且费用符合的项目进行执行（大根堆存解锁的项目）（小根堆按照花费存储项目）
+```java
+    public int findMaxMoney(int [] spend,int [] salary,int w,int k){
+        PriorityQueue<Program> waitQueue = new PriorityQueue<>((x1,x2)->x1.spend-x2.spend);
+        PriorityQueue<Program> unlockQueue = new PriorityQueue<>((x1,x2)->x2.salary-x1.salary);
+
+        for(int i = 0;i < spend.length;i ++){
+            waitQueue.offer(new Program(spend[i],salary[i]));
+        }
+
+        int res = 0;
+        for(int i = 0;i < k;i ++){
+            while (!waitQueue.isEmpty()){
+                Program peek = waitQueue.peek();
+                if(peek.spend <= w){
+                    unlockQueue.offer(waitQueue.poll());
+                }else{
+                    break;
+                }
+            }
+            if(unlockQueue.isEmpty())break;
+            Program task = unlockQueue.poll();
+            res += task.salary;
+            w += task.salary;
+        }
+
+        return res;
+    }
+```
+
+## 并查集
+
+### 定义
+1.有若干个样本a,b,c,d类型都是V
+2.在并查集中一开始认为每个样本都在独立的集合里
+3.用户可以在任何时候调用如下两个方法
+boolean isSameSet(V x,V y):查询x和y是否处于一个集合
+void union(V x,V y):把x和y各自所在的集合的所有样本合并成一个集合
+4.isSameSet和union方法代价尽可能低
+
+### 复杂度
+调用频繁的情况下单次O(1)
+
+### 结构
+```java
+public class UnionSet<V> {
+    public HashMap<V,Node<V>> nodes = new HashMap<>();
+    public HashMap<Node<V>,Node<V>> parents = new HashMap<>();
+    public HashMap<Node<V>,Integer> sizeMap = new HashMap<>();
+
+    public UnionSet(List<V> values){
+        for(V v:values){
+            Node<V> node = new Node<>(v);
+            nodes.put(v,node);
+            parents.put(node,node);
+            sizeMap.put(node,1);
+        }
+    }
+
+    public Node<V> findParent(Node<V> node){
+        ArrayDeque<Node<V>> stack = new ArrayDeque();
+        while (node != parents.get(node)){
+            stack.push(node);
+            node = parents.get(node);
+        }
+        while (!stack.isEmpty()){
+            parents.put(stack.pop(),node);
+        }
+        return node;
+    }
+
+    public boolean isSameSet(V x,V y){
+        if(!nodes.containsKey(x) || !nodes.containsKey(y))return false;
+        return parents.get(nodes.get(x)) == parents.get(nodes.get(y));
+    }
+
+    public void union(V x,V y){
+        if(!nodes.containsKey(x) || !nodes.containsKey(y))return;
+        Node<V> xNode = nodes.get(x);
+        Node<V> yNode = nodes.get(y);
+
+        Node<V> xParent = findParent(xNode);
+        Node<V> yParent = findParent(yNode);
+        if(xParent != yParent) {
+            Node<V> small = sizeMap.get(xParent) < sizeMap.get(yParent) ? xParent : yParent;
+            Node<V> big = sizeMap.get(xParent) < sizeMap.get(yParent) ? yParent : xParent;
+            parents.put(small, big);
+            sizeMap.put(big,sizeMap.get(small) + sizeMap.get(big));
+            sizeMap.remove(small);
+        }
+    }
+
+    class Node<V>{
+        V value;
+
+        public Node(V value) {
+            this.value = value;
+        }
+    }
+}
+```
+
+##  图
+图的表示方式有很多，不只是邻接表法和邻接矩阵法
+
+### 结构
+Node
+```java
+public class Node{
+	public int value;
+	public int in;
+	public int out;
+	public ArrayList<Node> nexts;
+	public ArrayList<Edge> edges; //从该点出发的所有边
+}
+```
+Edge
+```java
+public class Edge{
+	public int weight;
+	public Node from;
+	public Node to;
+}
+```
+Graph
+```java
+public class Graph{
+	public HashMap<Integer,Node> nodes;
+	public HashSet<Edge> edges;
+}
+```
+### 遍历
+**宽度优先遍历**
+和树一样，不过要加入一个HashSet来防止环形成的无限循环问题
+
+**深度优先遍历**
+维护一个stack来模拟递归过程，加入一个HashSet来防止环形成的无限循环问题
+```java
+    public void dfs(Node node){
+        ArrayDeque<Node> stack = new ArrayDeque();
+        HashSet<Node> set = new HashSet<>();
+        stack.push(node);
+        System.out.println(node.value);
+        while (!stack.isEmpty()){
+            Node curNode = stack.pop();
+            if(curNode.nexts != null){
+                for(int i = 0;i < curNode.nexts.size();i ++){
+                    if(!set.contains(curNode.nexts.get(i))){
+                        stack.push(curNode);
+                        stack.push(curNode.nexts.get(i));
+                        set.add(curNode.nexts.get(i));
+                        System.out.println(node.value);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+```
+
+### 拓扑排序
+一个有向无环图，做一个拓扑排序
+1.先计算各个结点的入度
+2.入度为0的先排序，然后将其对应的子节点入度减一，无限循环步骤2直到没有结点
+
+### 最小生成树
+不破坏连通性的情况下删除权重大的边
+
+**克鲁斯卡尔Kruskal算法**
+流程：
+1.将所有边根据权值由小到大排序
+2.使用并查集依次插入直到并查集sizeMap大小为1
+
+**普里姆Prim算法**
+随便从一个点出发，找出当前解锁的所有边中最小的，选择那条边，如果边的两边点有一个未解锁，就要那个边，如果都解锁了，就不要那个边
