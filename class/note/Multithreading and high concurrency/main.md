@@ -962,4 +962,224 @@ java微基准测试
 由JIT的团队开发，放入OpenJDK
 
 ## 使用流程
-1.
+1.添加Maven依赖
+```xml
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.29</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-generator-annprocess -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.29</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+```
+2.添加plugin插件
+3.将File | Settings | Build, Execution, Deployment | Compiler | Annotation Processors下的Enable annotation processing设置为true
+4.出现错误
+```log
+ERROR: org.openjdk.jmh.runner.RunnerException: ERROR: Unable to create the JMH lock (C:\WINDOWS\/jmh.lock), exiting. Use -Djmh.ignoreLock=true to forcefully continue.
+	at org.openjdk.jmh.runner.Runner.run(Runner.java:200)
+	at org.openjdk.jmh.Main.main(Main.java:71)
+Caused by: java.io.IOException: 拒绝访问。
+	at java.io.WinNTFileSystem.createFileExclusively(Native Method)
+	at java.io.File.createNewFile(File.java:1012)
+	at org.openjdk.jmh.runner.Runner.run(Runner.java:194)
+	... 1 more
+```
+设置环境变量TEMP=C:\Users\28267\AppData\Local\Temp
+5.右键运行
+
+## 注解意义
+@Benchmark
+标注要被测试的方法
+@Warmup(iterations = 1,time = 10)
+预热，让JIT将需要的方法编译成本地方法
+@Measurement(iterations = 3,time = 5)
+需要测试的轮数，一次测多少秒
+@BenchmarkMode(Mode.Throughput)
+当前测试模式：吞吐量测试
+@Threads
+测试使用的线程数
+@Fork
+需要运行的试验(迭代集合)数量，分多少个进程执行
+## log
+ops，表示每秒的操作次数
+```log
+# JMH version: 1.29
+# VM version: JDK 1.8.0_211, Java HotSpot(TM) 64-Bit Server VM, 25.211-b12
+# VM invoker: D:\Java\jre\bin\java.exe
+# VM options: -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint
+# Warmup: 5 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: test.JMH.test
+
+# Run progress: 0.00% complete, ETA 00:08:20
+# Fork: 1 of 5
+# Warmup Iteration   1: 4022069779.205 ops/s
+# Warmup Iteration   2: 4052169944.431 ops/s
+# Warmup Iteration   3: 4020335057.003 ops/s
+# Warmup Iteration   4: 4032180819.221 ops/s
+# Warmup Iteration   5: 3998023319.569 ops/s
+Iteration   1: 4006922904.043 ops/s
+Iteration   2: 3999663436.071 ops/s
+Iteration   3: 4030577543.249 ops/s
+Iteration   4: 4046671572.315 ops/s
+Iteration   5: 4006580377.304 ops/s
+
+# Run progress: 20.00% complete, ETA 00:06:42
+# Fork: 2 of 5
+# Warmup Iteration   1: 3973694327.845 ops/s
+# Warmup Iteration   2: 4036193661.697 ops/s
+# Warmup Iteration   3: 4007856373.444 ops/s
+# Warmup Iteration   4: 3992278426.113 ops/s
+# Warmup Iteration   5: 4059675311.897 ops/s
+Iteration   1: 4068404001.464 ops/s
+Iteration   2: 4049467033.216 ops/s
+Iteration   3: 4060653671.627 ops/s
+Iteration   4: 4004581352.766 ops/s
+Iteration   5: 3982606311.553 ops/s
+
+# Run progress: 40.00% complete, ETA 00:05:01
+# Fork: 3 of 5
+# Warmup Iteration   1: 4052534015.928 ops/s
+# Warmup Iteration   2: 3860177876.897 ops/s
+# Warmup Iteration   3: 3964531103.175 ops/s
+# Warmup Iteration   4: 4022852687.427 ops/s
+# Warmup Iteration   5: 4045816343.924 ops/s
+Iteration   1: 4090732716.473 ops/s
+Iteration   2: 4105444642.694 ops/s
+Iteration   3: 4027625337.248 ops/s
+Iteration   4: 4052014166.050 ops/s
+Iteration   5: 4049610841.318 ops/s
+
+# Run progress: 60.00% complete, ETA 00:03:20
+# Fork: 4 of 5
+# Warmup Iteration   1: 4039414981.026 ops/s
+# Warmup Iteration   2: 4073362755.413 ops/s
+# Warmup Iteration   3: 4111279730.326 ops/s
+# Warmup Iteration   4: 4075994597.765 ops/s
+# Warmup Iteration   5: 4113991929.575 ops/s
+Iteration   1: 4129141470.788 ops/s
+Iteration   2: 4088852560.341 ops/s
+Iteration   3: 4096284251.520 ops/s
+Iteration   4: 4100041300.935 ops/s
+Iteration   5: 4064767530.001 ops/s
+
+# Run progress: 80.00% complete, ETA 00:01:40
+# Fork: 5 of 5
+# Warmup Iteration   1: 4071649758.049 ops/s
+# Warmup Iteration   2: 4110983315.724 ops/s
+# Warmup Iteration   3: 4107791318.276 ops/s
+# Warmup Iteration   4: 4120926052.456 ops/s
+# Warmup Iteration   5: 4106077808.088 ops/s
+Iteration   1: 4034778583.953 ops/s
+Iteration   2: 4118964552.623 ops/s
+Iteration   3: 4094191148.691 ops/s
+Iteration   4: 4044852629.797 ops/s
+Iteration   5: 4102474903.553 ops/s
+
+
+Result "test.JMH.test":
+  4058236193.584 ±(99.9%) 30435662.416 ops/s [Average]
+  (min, avg, max) = (3982606311.553, 4058236193.584, 4129141470.788), stdev = 40630738.554
+  CI (99.9%): [4027800531.167, 4088671856.000] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:08:22
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+Benchmark   Mode  Cnt           Score          Error  Units
+JMH.test   thrpt   25  4058236193.584 ± 30435662.416  ops/s
+```
+# Disrupter
+是单机下速度最快的MQ，使用了无锁的CAS，单机支持高并发
+
+## 特点
+无锁CAS，高并发，使用环形buffer，使用观察者模式实现了生产者消费者模型
+对比ConcurrentLinkedQueue：链表实现，而Disrupter是数组实现，效率更快
+
+## RingBuffer
+是环形队列（Event数组）
+使用sequence指向下一个可用的位置
+采用数组实现，对比ConcurrentLinkedQueue，速度更快，放入位置时只要计算pos=x%h=x&(h - 1)
+
+## 消费者
+
+消费者消费的时候会通过线程工厂去创建一个线程然后去执行EventHandler中的onEvent方法，多个消费者位于不同的线程
+
+## 等待策略（BlockingWaitStrategy）
+当队列中数据满了之后生产者需要对其进行处理，默认使用阻塞策略，即将生产者阻塞，等待队列中元素被消费
+
+1.BlockingWaitStrategy(常用):阻塞线程，等待生产者唤醒，被唤醒后循环检测依赖的sequence是否已经被消费
+2.BusySpinWaitStrategy:自旋等待
+3.LiteBlockingWaitStrategy:与BlockingWaitStrategy相比较，区别在于sinalNeeded.getAndSet, 如果两个线程同时访问一个访问waitfor一个访问signalAll时，减少lock次数
+4.LiteTimeoutBlockingWaitStrategy:与LiteBlockingWaitStrategy相比较，设置了阻塞时间
+5.SleepingWaitStrategy(常用):
+6.PhasedBackoffWaitStrategy:根据时间参数和传入的等待策略来决定使用那种等待策略
+7.TimeoutBlockingWaitStrategy:与BlockingWaitStrategy相比较，设置了阻塞时间
+8.YieldingWaitStrategy(常用):尝试100次，然后让出cpu时间片
+
+## 消费者异常处理
+实现ExceptionHandler处理器
+
+## 开发步骤
+1.定义Event -队列中需要处理的元素
+2.定义Event工厂 -用于填充队列
+>Disrupter会在初始化队列的时候用工厂去创建一组Event数组对环形队列进行空间的提前分配，在赋值的时候直接通过
+
+3.定义EventHandler -用于消费队列中的元素
+
+## Demo
+```xml
+<dependencies>
+	<dependency>
+		<groupId>com.lmax</groupId>
+		<artifactId>disruptor</artifactId>
+        <version>3.4.2</version>
+	</dependency>
+</dependencies>
+```
+```java
+public class DisrupterTest {
+    static class UserEvent{
+        public String action;
+    }
+    public static void main(String[] args) {
+        int ringBufferSize = 4;
+        //给出线程工厂的原因是因为需要创建线程去执行消费者（EventHandler）的消费（onEvent）方法
+        Disruptor<UserEvent> disruptor = new Disruptor<>(UserEvent::new,ringBufferSize, Executors.defaultThreadFactory());
+        disruptor.handleEventsWith(((userEvent, sequence, isLast) -> {
+            Thread.sleep(1000);
+            System.out.println(userEvent.action + " sequence : " + sequence + " islast: " + isLast);
+        }));
+        disruptor.start();
+
+        RingBuffer<UserEvent> ringBuffer = disruptor.getRingBuffer();
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"zhangsan");
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"lisi");
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"wangyu");
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"zhaoliu");
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"xiaoqi");
+        ringBuffer.publishEvent(((userEvent, sequence, s) -> userEvent.action = s),"ssba");
+    }
+}
+```
+## ProducerType
+Producer.SINGLE和Producer.MUTI
+默认生产者是多线程处理，对sequence的访问会加锁，如果真正处理的时候是单线程处理，那么使用Producer.SINGLE会更快，否则使用默认值，不然处理会产生问题
