@@ -953,3 +953,13 @@ PriorityBlockingQueue
 1.Queue与List的区别？
 Queue主要方法是add，offer，poll，peek，List的主要方法是remove，add
 Queue的结构是先进先出的结构，向尾部写入，获取的时候获取头部结点的值，而List可以根据下标去获取值
+
+# 基本测试工具
+## JMH
+Java Microbenchmark Harness
+java微基准测试
+
+由JIT的团队开发，放入OpenJDK
+
+## 使用流程
+1.

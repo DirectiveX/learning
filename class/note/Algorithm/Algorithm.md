@@ -1988,7 +1988,61 @@ public class Graph{
 **克鲁斯卡尔Kruskal算法**
 流程：
 1.将所有边根据权值由小到大排序
-2.使用并查集依次插入直到并查集sizeMap大小为1
+2.使用并查集依次插入
 
 **普里姆Prim算法**
 随便从一个点出发，找出当前解锁的所有边中最小的，选择那条边，如果边的两边点有一个未解锁，就要那个边，如果都解锁了，就不要那个边
+
+### 迪杰特斯拉（dijkstra）算法
+计算从一个点出发到其他点的最短路径
+**要求**
+权值非负
+**结构：**
+一个存放最短路径的Map resultMap
+一个存放已经使用过的点集的Set usedSet
+**流程：**
+1.初始化
+将给定的点放入resultMap并设置值为0，其余点加入设置为无穷
+2.计算
+从Map中取出未使用过的路径最短的点，检查这个点所能到达的点，并查看能否更新resultMap中的内容，循环步骤2直到全部遍历过
+
+**优化：**
+用自己手写的堆支持（取出未使用过的路径最短的点）这个操作，每次更新的时候同时更新堆
+
+## 暴力递归
+
+### 汉诺塔问题
+结论：移动最少次数为$2^N-1$
+
+```java
+
+    public void operate(int n,String from,String to,String other){
+        if(n == 1){
+            System.out.println("move 1 from "+ from + " to " + to);
+            return;
+        }
+        operate(n - 1,from,other,to);
+        System.out.println("move " + n + " from "+ from + " to " + to);
+        operate(n - 1,other,to,from);
+    }
+```
+
+### 不使用额外空间翻转一个栈（递归栈空间不算）
+```java
+    private static void reverse(ArrayDeque<Integer> stack){
+        if(stack.isEmpty())return;
+        Integer lastElement = getLastElement(stack);
+        reverse(stack);
+        stack.push(lastElement);
+    }
+
+    private static Integer getLastElement(ArrayDeque<Integer> stack){
+        Integer pop = stack.pop();
+        if(stack.isEmpty()){
+            return pop;
+        }
+        Integer res = getLastElement(stack);
+        stack.push(pop);
+        return res;
+    }
+```
