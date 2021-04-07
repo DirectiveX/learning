@@ -2046,3 +2046,84 @@ public class Graph{
         return res;
     }
 ```
+### 求一个字符串的全排列
+```java
+    public static List<String> permutation(String str){
+        ArrayList<String> strings = new ArrayList<String>();
+        fullPermutation(str.toCharArray(),0,strings);
+        return strings;
+    }
+
+    private static void fullPermutation(char[] chars,int index,List<String> store){
+        if(index == chars.length - 1){
+            store.add(String.valueOf(chars));
+        }
+        for(int i = index;i < chars.length;i ++){
+            swap(chars,index,i);
+            fullPermutation(chars,index + 1,store);
+            swap(chars,index,i);
+        }
+    }
+
+    private static void swap(char[] chars,int a,int b){
+        char temp = chars[a];
+        chars[a] = chars[b];
+        chars[b] = temp;
+    }
+```
+### 求一个字符串的全排列(无重复)
+```java
+    public static List<String> permutation(String str){
+        ArrayList<String> strings = new ArrayList<String>();
+        fullPermutation(str.toCharArray(),0,strings);
+        return strings;
+    }
+
+    private static void fullPermutation(char[] chars,int index,List<String> store){
+        if(index == chars.length - 1){
+            store.add(String.valueOf(chars));
+            return;
+        }
+        HashSet<Character> set = new HashSet<>();
+        for(int i = index;i < chars.length;i ++){
+            if(set.contains(chars[i]))continue;
+            set.add(chars[i]);
+            swap(chars,index,i);
+            fullPermutation(chars,index + 1,store);
+            swap(chars,index,i);
+        }
+    }
+
+    private static void swap(char[] chars,int a,int b){
+        char temp = chars[a];
+        chars[a] = chars[b];
+        chars[b] = temp;
+    }
+```
+### 规定1->A,2->B...26->Z,给定一个由数字组成的字符串，返回所有可能的转化结果
+```java
+    public static List<String> parseStr(String str){
+        List<String> res = new ArrayList<>();
+        parseStrChar(str.toCharArray(),0,res,new StringBuilder());
+        return res;
+    }
+
+    private static void parseStrChar(char[] array,int index,List<String> res,StringBuilder stringBuilder){
+        if(index == array.length){
+            res.add(stringBuilder.toString());
+            return;
+        }
+        char first = array[index];
+        stringBuilder.append((char) (first + 0x10));
+        parseStrChar(array, index + 1, res, stringBuilder);
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        if (index + 1 < array.length) {
+            char second = array[index + 1];
+            if (second <= '6') {
+                stringBuilder.append((char) ((first - 0x30) * 10 + second - 0x30 + 0x40));
+                parseStrChar(array, index + 2, res, stringBuilder);
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            }
+        }
+    }
+```
