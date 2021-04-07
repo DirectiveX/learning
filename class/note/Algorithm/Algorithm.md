@@ -2100,7 +2100,10 @@ public class Graph{
         chars[b] = temp;
     }
 ```
-### 规定1->A,2->B...26->Z,给定一个由数字组成的字符串，返回所有可能的转化结果
+
+## 各种尝试模型
+### 从左到右尝试模型
+规定1->A,2->B...26->Z,给定一个由数字组成的字符串，返回所有可能的转化结果
 ```java
     public static List<String> parseStr(String str){
         List<String> res = new ArrayList<>();
@@ -2114,6 +2117,9 @@ public class Graph{
             return;
         }
         char first = array[index];
+        if(first == '0'){
+            return;
+        }
         stringBuilder.append((char) (first + 0x10));
         parseStrChar(array, index + 1, res, stringBuilder);
         stringBuilder.deleteCharAt(stringBuilder.length() - 1);
@@ -2125,5 +2131,116 @@ public class Graph{
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
             }
         }
+    }
+```
+### 范围尝试模型
+给定一个整形数组arr，代表数值不同的纸牌排成一条线，玩家A和玩家B依次拿走纸牌，规定玩家A先拿，玩家B后拿，但是每个玩家每次都只能拿走最左或者最右的纸牌，玩家A和玩家B都聪明绝顶。请返回最后获胜者的分数。
+```java    
+public void calculateScore(){
+        int [] arr = new int[]{3,5,7,4};
+        System.out.println(f(arr,0,arr.length - 1));
+        System.out.println(s(arr,0,arr.length - 1));
+    }
+
+    public int f(int [] arr,int i,int j){
+        if(i == j){
+            return arr[i];
+        }
+        return Math.max(arr[i] + s(arr,i + 1,j),arr[j] + s(arr,i,j - 1));
+    }
+
+    public int s(int [] arr,int i,int j){
+        if(i == j){
+            return 0;
+        }
+        return Math.min(f(arr,i + 1,j),f(arr,i,j - 1));
+    }
+```
+### 多样本位置全对应尝试模型
+### 寻找业务限制的尝试模型
+### N皇后问题
+```java
+    public int nQueens(int n){
+        return nQueen(n,new int[n],0);
+    }
+
+    private int nQueen(int n,int [] param,int layer){
+        if(layer == n)return 1;
+        int res = 0;
+        for(int i = 0;i < n;i ++){
+            boolean isNeed = true;
+            for(int j = 0;j < layer;j ++){
+                if(layer - j == Math.abs(i - param[j]) || param[j] == i){
+                    isNeed = false;
+                    break;
+                }
+            }
+            if(isNeed){
+                param[layer] = i;
+                res +=nQueen(n,param,layer +1);
+                param[layer] = 0;
+            }
+        }
+        return res;
+    }
+```
+优化
+位运算优化常数时间，参数为limit，collim，leftlim，riightlim
+
+## 暴力递归到动态规划
+### 题目1
+假设有排成一行的N个位置，记为1~N，N一定大于或等于2
+开始时机器人在其中的M位置上（M一定是1~N中的一个）
+如果机器人来到1位置，那么下一步只能往右来到2位置
+如果机器人来到N位置，那么下一步只能往左来到N-1位置
+如果机器人来到中间位置，那么下一步可以往左或者往右走
+规定机器人必须走K步，最终能来到P位置的方法有多少种
+给定参数N,M,K,P，返回方法数
+```java
+	//未优化
+    public int robotSteps(int N,int M,int K,int P){
+        if(K == 0){
+            if(P == M)return 1;
+            return 0;
+        }
+        int res = 0;
+        if(M == 1){
+            res += robotSteps(N,M + 1,K - 1,P);
+        }else if(M == N){
+            res += robotSteps(N,M + 1,K - 1,P);
+        }else{
+            res += robotSteps(N,M - 1,K - 1,P);
+            res += robotSteps(N,M + 1,K - 1,P);
+        }
+        return res;
+    }
+    //优化后（记忆化搜索，最初级的动态规划）
+    public int robotSteps(int N,int M,int K,int P){
+        int [][] dp = new int[N+1][K+1];
+        for(int i = 0;i < N + 1;i ++){
+            for(int j = 0;j < K + 1;j ++) {
+                dp[i][j] = -1;
+            }
+        }
+        return robotStepsW(N,M,K,P,dp);
+    }
+
+    public int robotStepsW(int N,int M,int K,int P,int [][] dp){
+        if(dp[M][K] != -1)return dp[M][K];
+        if(K == 0){
+            if(P == M)return 1;
+            return 0;
+        }
+        int res = 0;
+        if(M == 1){
+            res += robotStepsW(N,M + 1,K - 1,P,dp);
+        }else if(M == N){
+            res += robotStepsW(N,M + 1,K - 1,P,dp);
+        }else{
+            res += robotStepsW(N,M - 1,K - 1,P,dp);
+            res += robotStepsW(N,M + 1,K - 1,P,dp);
+        }
+        dp[M][K] = res;
+        return res;
     }
 ```
