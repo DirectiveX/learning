@@ -2159,9 +2159,86 @@ public void calculateScore(){
 ### 多样本位置全对应尝试模型
 两个字符串的公共子序列问题
 ```java
+    public int findLongSubString(String str1,String str2){
+        if("".equals(str1) || "".equals(str2) || str1 == null || str2 == null)return 0;
+        int strLen1 = str1.length();
+        int strLen2 = str2.length();
+        char[] str1chars = str1.toCharArray();
+        char[] str2chars = str2.toCharArray();
+        int [][] dp = new int[strLen1][strLen2];
+
+        dp[0][0] = str1chars[0] == str2chars[0]?1:0;
+        for(int i = 1;i < strLen1;i ++){
+            dp[i][0] = Math.max(dp[i - 1][0],str1chars[i] == str2chars[0]?1:0);
+        }
+        for(int i = 1;i < strLen1;i ++){
+            dp[0][i] = Math.max(dp[0][i - 1],str1chars[0] == str2chars[i]?1:0);
+        }
+        for(int i = 1;i < strLen1;i ++){
+            for(int j = 1;j < strLen2;j ++){
+                dp[i][j] = Math.max(dp[i - 1][j],dp[i][j - 1]);
+                if(str1chars[i] == str2chars[j]){
+                    dp[i][j] = Math.max(dp[i - 1][j - 1] + 1,dp[i][j]);
+                }
+            }
+        }
+        return dp[strLen1 - 1][strLen2 - 1];
+    }
 ```
 
 ### 寻找业务限制的尝试模型
+数组arr代表每一个员工喝完的时间
+每个人喝完之后咖啡杯可以选择洗或者自然挥发干净，只有一台洗咖啡杯的机器，只能串行的洗咖啡杯。
+洗杯子的机器洗完一个杯子时间为a，任何一个杯子自然挥发干净的时间为b。
+```java    
+public int minS(int [] arr,int a,int b){
+        return min(arr,a,b,0,0);
+    }
+
+    public int min(int [] arr,int a,int b,int index,int washLine){
+        if(index == arr.length - 1){
+            return Math.min(Math.max(arr[index],washLine) + a,arr[index] + b);
+        }
+        int wash = Math.max(arr[index],washLine) + a;
+        int next = min(arr,a,b,index + 1,wash);
+        int p1 = Math.max(wash,next);
+
+        int dry = arr[index] + b;
+        next = min(arr,a,b,index + 1,washLine);
+        int p2 = Math.max(dry,next);
+
+        return Math.min(p1,p2);
+    }
+    //改动态规划的时候washLine需要根据题目而定
+    public int minS1(int [] arr,int a,int b){
+        if(a >= b)return arr[arr.length - 1] + b;
+        int len = arr.length;
+        int limit = 0;
+        for(int i = 0;i < len;i ++){
+            limit = Math.max(arr[i],limit) + a;
+        }
+        int [][] dp = new int[len][limit + 1];
+        for(int i = 0;i < limit + 1;i ++){
+            dp[len - 1][i] = Math.min(Math.max(arr[len - 1],i) + a,arr[len - 1] + b);
+        }
+        for(int i = len - 2;i >= 0;i --){
+            for(int j = 0;j < limit + 1;j ++){
+                int wash = Math.max(arr[i],j) + a;
+                int p1 = Integer.MAX_VALUE;
+                if(wash <= limit) {
+                    int next = dp[i + 1][wash];
+                    p1 = Math.max(wash, next);
+                }
+
+                int dry = arr[i] + b;
+                int next = dp[i + 1][j];
+                int p2 = Math.max(dry,next);
+                dp[i][j] = Math.min(p1,p2);
+            }
+        }
+        return dp[0][0];
+    }
+```
 ### N皇后问题
 ```java
     public int nQueens(int n){
@@ -2380,7 +2457,7 @@ eg：str="babac",arr={"ba","c","abcd"}
 ```
 
 ## 暴力递归的原则
-1.每个可变参数，不要超过int类型
-2.违反1后必须为线性结构为唯一的可变参数
-3.违反1后，只用记忆化搜索
-4.可变参数能少则少
+1）每一个可变参数的类型，一定不要比int类型更加复杂
+2）原则1）可以违反，让类型突破到一维线性结构，那必须是唯一可变参数
+3）如果发现原则1）被违反，但不违反原则2)，只需要做到记忆化搜索即可
+4）可变参数的个数，能少则少
