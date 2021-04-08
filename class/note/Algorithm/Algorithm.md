@@ -2157,6 +2157,10 @@ public void calculateScore(){
     }
 ```
 ### 多样本位置全对应尝试模型
+两个字符串的公共子序列问题
+```java
+```
+
 ### 寻找业务限制的尝试模型
 ### N皇后问题
 ```java
@@ -2188,6 +2192,7 @@ public void calculateScore(){
 位运算优化常数时间，参数为limit，collim，leftlim，riightlim
 
 ## 暴力递归到动态规划
+如果是枚举，就需要动态规划，否则记忆化递归即可
 ### 题目1
 假设有排成一行的N个位置，记为1~N，N一定大于或等于2
 开始时机器人在其中的M位置上（M一定是1~N中的一个）
@@ -2244,3 +2249,138 @@ public void calculateScore(){
         return res;
     }
 ```
+### 题目2
+给定一个面值数组和一个aim值，求出可以组成aim值的所有结果
+```java
+    private static int composeAimViolent(int [] arr,int index,int aim){
+        //base case
+        if(aim == 0)return 1;
+        if(index == arr.length)return 0;
+        int res = 0;
+        int num = 0;
+        while (aim >= num * arr[index]) {
+            res += composeAimViolent(arr, index + 1, aim - num * arr[index]);
+            num ++;
+        }
+        return res;
+    }
+    //动态规划
+    private static int composeAimViolentDp(int [] arr,int aim){
+        int [][] dp = new int[arr.length + 1][aim + 1];
+        dp[arr.length][0] = 1;
+        for(int i = arr.length - 1;i >= 0;i --){
+            for(int j = 0;j < aim + 1;j ++) {
+                int num = 0;
+                while (j >= num * arr[i]) {
+                    dp[i][j] += dp[i + 1][j - num * arr[i]];
+                    num++;
+                }
+            }
+        }
+
+        return dp[0][aim];
+    }
+    //动态规划优化
+    private static int composeAimViolentDpOptimise(int [] arr,int aim){
+        int [][] dp = new int[arr.length + 1][aim + 1];
+        dp[arr.length][0] = 1;
+        for(int i = arr.length - 1;i >= 0;i --){
+            for(int j = 0;j < aim + 1;j ++) {
+                dp[i][j] += dp[i + 1][j];
+                if(j - arr[i] >= 0){
+                    dp[i][j] += dp[i][j - arr[i]];
+                }
+            }
+        }
+
+        return dp[0][aim];
+    }
+```
+
+### 题目3
+给定一个字符串str，给定一个字符串类型的数组arr。
+arr里的每一个字符串代表一个贴纸，你可以把单个字符剪开使用，目的是拼出str来
+返回需要至少多少张贴纸可以完成这个任务
+eg：str="babac",arr={"ba","c","abcd"}
+至少需要两张贴纸"ba"和"abcd"，因为使用这两张贴纸，把每一个字符单独剪开含有2个a，2个b，1个c。是可以拼出str的所以返回2
+```java
+   public static int findResult(String target,String [] str){
+        if(target == null || target == "")return 0;
+        int[] targets = parseTarget(target);
+        int[][] strs = parsePapers(str);
+        if(!canParse(targets,strs))return -1;
+        Map<String,Integer> map = new HashMap<>();
+        return recursion(target,strs,map);
+    }
+
+    private static int recursion(String targets,int[][] str,Map<String,Integer> cache){
+        if(targets == null || targets.equals(""))return 0;
+        if(cache.containsKey(targets))return cache.get(targets);
+        int res = Integer.MAX_VALUE;
+        int[] target = parseTarget(targets);
+        if(!canParse(target,str))return -1;
+
+        for(int j = 0;j < str.length;j ++) {
+            for(int i = 0;i < target.length;i ++){
+                if (target[i] > 0) {
+                    target[i] = Math.max(target[i] - str[j][i],0);
+                }
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+            for(int i = 0;i < target.length;i ++){
+                while (target[i] -- > 0) {
+                    stringBuilder.append((char) ('a'+i));
+                }
+            }
+            if(stringBuilder.toString().equals(targets))continue;
+            int recursion = recursion(stringBuilder.toString(), str, cache);
+            if(recursion != -1){
+                res = Math.min(recursion + 1,res);
+            }
+        }
+        
+        if(res == Integer.MAX_VALUE)res = -1;
+        cache.put(targets,res);
+        return res;
+    }
+
+    private static boolean canParse(int[] target,int[][] str){
+        int [] cache = new int[26];
+        for(int i = 0;i < str.length;i ++){
+            for(int j = 0;j < str[0].length;j ++) {
+                cache[j] += str[i][j];
+            }
+        }
+
+        for(int i = 0;i < cache.length;i ++){
+            if(target[i] != 0 && cache[i] == 0){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int[][] parsePapers(String [] str){
+        int [][] res = new int[str.length][26];
+        for(int i = 0;i < str.length;i ++){
+            res[i] = parseTarget(str[i]);
+        }
+        return res;
+    }
+
+    private static int[] parseTarget(String str){
+        char[] chars = str.toCharArray();
+        int [] res = new int[26];
+        for(int i = 0;i < chars.length;i ++){
+            res[chars[i] - 'a']++;
+        }
+        return res;
+    }
+```
+
+## 暴力递归的原则
+1.每个可变参数，不要超过int类型
+2.违反1后必须为线性结构为唯一的可变参数
+3.违反1后，只用记忆化搜索
+4.可变参数能少则少
