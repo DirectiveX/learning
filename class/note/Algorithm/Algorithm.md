@@ -2456,8 +2456,71 @@ eg：str="babac",arr={"ba","c","abcd"}
     }
 ```
 
-## 暴力递归的原则
+### 暴力递归的原则
 1）每一个可变参数的类型，一定不要比int类型更加复杂
 2）原则1）可以违反，让类型突破到一维线性结构，那必须是唯一可变参数
 3）如果发现原则1）被违反，但不违反原则2)，只需要做到记忆化搜索即可
 4）可变参数的个数，能少则少
+
+## 滑动窗口
+### 题目1
+假设一个固定大小为W的窗口依次划过arr，返回每一次划出状况的最大值
+```java
+    public static List<Integer> getMax(int[] arr, int size) {
+        List<Integer> res = new ArrayList<>();
+        if (arr == null || arr.length == 0) return res;
+        LinkedList<Integer> maxQueue = new LinkedList<>();
+        for (int i = 0; i < arr.length; i++) {
+            while (!maxQueue.isEmpty() && arr[maxQueue.peekLast()] <= arr[i]) {
+                maxQueue.pollLast();
+            }
+            maxQueue.offerLast(i);
+            if (i - size == maxQueue.peekFirst()) {
+                maxQueue.pollFirst();
+            }
+            if (i >= size - 1) {
+                res.add(arr[maxQueue.peekFirst()]);
+            }
+        }
+        return res;
+    }
+```
+### 题目2
+给定一个整形数组arr，和一个整数num，某个arr中的子数组sub，如果想达标，必须满足$max（sub）- min（sub） <= num$,返回达标子数组的个数
+```java
+    public static int getMax(int[] arr, int num) {
+        int res = 0;
+        if (arr == null || arr.length == 0) return res;
+        LinkedList<Integer> maxQueue = new LinkedList<>();
+        LinkedList<Integer> minQueue = new LinkedList<>();
+        int left = 0;
+        int right = 0;
+        while(left < arr.length) {
+            while(right < arr.length) {
+                while (!maxQueue.isEmpty() && arr[maxQueue.peekLast()] <= arr[right]) {
+                    maxQueue.pollLast();
+                }
+                maxQueue.offerLast(right);
+                while (!minQueue.isEmpty() && arr[minQueue.peekLast()] >= arr[right]) {
+                    minQueue.pollLast();
+                }
+                minQueue.offerLast(right);
+                if(arr[maxQueue.peekFirst()] - arr[minQueue.peekFirst()] > num) {
+                    break;
+                }
+                right ++;
+            }
+
+            res += right - left - 1;
+            if(maxQueue.peekFirst() == left){
+                maxQueue.pollFirst();
+            }
+            if(minQueue.peekFirst() == left){
+                minQueue.pollFirst();
+            }
+            left ++;
+
+        }
+        return res;
+    }
+```
