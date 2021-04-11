@@ -307,6 +307,8 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 
 ## 原子性（atomicity）
 
+原子性是指**一个操作是不可中断的，要么全部执行成功要么全部执行失败**
+
 # 新型锁
 ## ReentrantLock
 相比synchronized
@@ -1108,7 +1110,7 @@ Benchmark   Mode  Cnt           Score          Error  Units
 JMH.test   thrpt   25  4058236193.584 ± 30435662.416  ops/s
 ```
 # Disrupter
-是单机下速度最快的MQ，使用了无锁的CAS，单机支持高并发
+是单机下速度最快的队列，使用了无锁的CAS，单机支持高并发
 
 ## 特点
 无锁CAS，高并发，使用环形buffer，使用观察者模式实现了生产者消费者模型
