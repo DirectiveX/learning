@@ -528,7 +528,7 @@ YGC期间survivor区空间不够了，就会把空间不够的那部分对象直
 Serial的老年代版本，使用标记整理算法
 5.Parallel old
 Parallel Scanvage的老年代版本，使用标记整理算法
-6.CMS（Concurrent Mark Sweep）
+6.CMS（Concurrent Mark Sweep）（JDK14删除）
 回收的时候能同时产生新垃圾，使用标记清除算法，响应时间优先
 并发标记算法：三色标记 + Incremental Update
 7.G1(10ms)
@@ -670,6 +670,7 @@ TPS（Transaction）:每秒多少事务（百万并发聊的是这个）
 3.选定CPU（越高越好，CPU强的回收快）
 4.设定年代大小，晋升阈值
 5.设定日志参数
+
 > -Xloggc:/opt/xxx/logs/xxx-xxx-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=20M -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCCause
 > 或者每天产生一个日志文件
 
@@ -761,7 +762,10 @@ public class FullGC_Problem01 {
     }
 }
 ```
+答案：
+由于每隔0.1秒向线程池扔进100个任务，线程池每隔三秒执行一个任务，而且ScheduledThreadPool并没有设置阻塞队列大小，导致任务量激增，垃圾回收器无法回收那些还没有被处理的任务，拒绝策略无法生效，导致OOM
 
+#### 具体步骤
 1.首先通过top找到cpu较高的进程PID
 2.然后通过top -hp xxxx 找到进程中使用最高的线程（因为肯定是这条线程在执行导致过高）
 3.然后用jstack指令dump出线程堆栈，根据线程名称去找到对应线程（这也就是为什么要设置线程ID，方便查找问题）
@@ -771,6 +775,34 @@ jps指令，查看当前java进程
 jinfo指令，查看当前java进程信息
 jstat -gc [pid]  [time]指令，查看gc状态的指令
 jconsole指令，调出java控制台（图形界面）
+
+#### 如何定位OOM问题？
+不能回答用jvisualvm和jconsole，因为图形界面会影响服务器性能，只能说在压测的时候用过
+要回答通过cmd指令或者arthas（最好不要回答用arthas，会有背调问题）
+
+**相关指令**
+1.jmap -histo [pid] | head 20
+显示堆histogram（直方图），查找有多少对象产生
+
+2.jmap -dump:format=b,file=xxx pid
+jmap 对内存大的系统来说，会造成影响
+①设置参数HeapDump，OOM自动转储，然后使用jvisualvm,jhat对导出的堆信息(hprof)进行分析
+②线上使用jmap -histo检查对象情况，实现了高可用可以用dump
+③在线定位arthas
+
+ps:千万别直接用dump指令,会招致服务器无响应，除非实现了高可用，停掉服务器对其他服务器不影响
+
+3.java -Xms20M -Xmx20M -XX:UseParallelGC -XX:+HeapDumpOnOutOfMemoryError xxx
+
+
+
+**MAT(Memory Analyzer tool)/jhat/jvisualvm对导出的堆信息(hprof)进行分析**
+jhat xxx.hprof
+会开启一个服务器端口（7000），通过对那个端口访问可以获得信息
+访问对应端口，来到最后
+Other Queries->Show instance counts for all classes (including platform) （显示实例对象）
+Other Queries->Heap Histogram（堆直方图）
+Other Queries->Object Query Language (OQL) query（OQL查询语句）
 
 #### jconsole远程连接
 1.程序中加入启动参数打开JMX（Java Management Extensions）协议
@@ -783,3 +815,55 @@ java -Djava.rmi.server.hostname=xxx.xxx.xx.xx -Dcom.sun.management.jmxremote
 
 ps：关闭linux的防火墙（实战打开对应端口）
 如果遭遇Local host name unknown : XXX，设置hosts文件
+
+#### arthas在线排查工具
+
+[Arthas](https://github.com/alibaba/arthas)
+
+下载+开启
+
+```
+curl -O https://arthas.aliyun.com/arthas-boot.jar
+java -jar arthas-boot.jar
+```
+
+**常用命令**
+help：帮助文档
+jvm：类似于jinfo，显示JVM信息
+thread：类似于jstack，显示线程信息，thread [id]
+dashboard：类似于top
+heapdump：类似于jmap -dump
+
+##### arthas特点
+jad反编译
+> jad + 类名
+> 动态代理生成类的问题定位 和 第三方的类 和 版本问题
+
+redefine热替换
+> 只能改方法实现，不能改方法名，不能改属性
+```java
+arthas可以热部署已经被虚拟机加载的类，这其实是借助Instrumentation的redefineClasses能力实现的，Instrumentation可以借助preMain和agentMain的方式分别在程序启动前和运行中获取jvm的信息，进行类的更改和替换，而arthas很明显，是通过agentMain的方式做到在程序运行时做的redefine。
+```
+
+sc - search class
+watch - watch method
+未包含jmap -histo
+
+##### instrument类简介
+　　利用 Java 代码，即 java.lang.instrument 做动态 Instrumentation 是 Java SE 5 的新特性，它把 Java 的 instrument 功能从本地代码中解放出来，使之可以用 Java 代码的方式解决问题。使用 Instrumentation，开发者可以构建一个独立于应用程序的代理程序（Agent），用来监测和协助运行在 JVM 上的程序，甚至能够替换和修改某些类的定义。有了这样的功能，开发者就可以实现更为灵活的运行时虚拟机监控和 Java 类操作了，这样的特性实际上提供了一种虚拟机级别支持的 AOP 实现方式，使得开发者无需对 JDK 做任何升级和改动，就可以实现某些 AOP 的功能了。
+　　
+　　在 Java SE 6 里面，instrumentation 包被赋予了更强大的功能：启动后的 instrument、本地代码（native code）instrument，以及动态改变 classpath 等等。这些改变，意味着 Java 具有了更强的动态控制、解释能力，它使得 Java 语言变得更加灵活多变。
+　　
+
+### 案例总汇
+
+OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC（CPU飙高但是内存回收特别少）
+1.线程池不当运用产生OOM（见上）
+2.硬件升级反而卡顿（见上）
+3.jira问题
+系统不断重启，疯狂FGC，解决方法：加内存换GC，把PS+PO换到G1处理器，但是真正问题不知道
+4.tomcat http-header-size设置过大
+请求过多，导致OOM
+5.lambda表达式导致方法区溢出问题
+6.disrupter有个可以设置链的长度，如果过大，对象大，消费完不主动释放，会溢出
+
