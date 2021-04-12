@@ -865,5 +865,6 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC（CPU�
 4.tomcat http-header-size设置过大
 请求过多，导致OOM
 5.lambda表达式导致方法区溢出问题
+产生OOM:Compress class space
 6.disrupter有个可以设置链的长度，如果过大，对象大，消费完不主动释放，会溢出
 
