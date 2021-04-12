@@ -711,3 +711,75 @@ CPU100%，那么一定有线程在占用系统资源
 4.如何监控JVM
 jstat jvisualvm jprofiler athas top ...
 
+#### 风控案例
+```java
+public class FullGC_Problem01 {
+    private static class CardInfo {
+        BigDecimal price = new BigDecimal(0.0);
+        String name = "张三";
+        int age = 5;
+        Date birthdate = new Date();
+
+        public void m() {
+
+        }
+    }
+
+    private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(50,
+            new ThreadPoolExecutor.DiscardOldestPolicy());
+
+    public static void main(String[] args) throws Exception {
+        executor.setMaximumPoolSize(50);
+
+        for (;;){
+            modelFit();
+            Thread.sleep(100);
+        }
+    }
+
+    private static void modelFit(){
+        List<CardInfo> taskList = getAllCardInfo();
+        taskList.forEach(info -> {
+            // do something
+            executor.scheduleWithFixedDelay(() -> {
+                //do sth with info
+                info.m();
+
+            }, 2, 3, TimeUnit.SECONDS);
+        });
+    }
+
+    private static List<CardInfo> getAllCardInfo(){
+        List<CardInfo> taskList = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            CardInfo ci = new CardInfo();
+            taskList.add(ci);
+        }
+
+        return taskList;
+    }
+}
+```
+
+1.首先通过top找到cpu较高的进程PID
+2.然后通过top -hp xxxx 找到进程中使用最高的线程（因为肯定是这条线程在执行导致过高）
+3.然后用jstack指令dump出线程堆栈，根据线程名称去找到对应线程（这也就是为什么要设置线程ID，方便查找问题）
+
+ps:
+jps指令，查看当前java进程
+jinfo指令，查看当前java进程信息
+jstat -gc [pid]  [time]指令，查看gc状态的指令
+jconsole指令，调出java控制台（图形界面）
+
+#### jconsole远程连接
+1.程序中加入启动参数打开JMX（Java Management Extensions）协议
+java -Djava.rmi.server.hostname=xxx.xxx.xx.xx -Dcom.sun.management.jmxremote
+-Dcom.sun.management.jmxremote.port=xxxxx
+-Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false
+
+2.通过jconsole调出控制台，进行远程连接
+
+ps：关闭linux的防火墙（实战打开对应端口）
+如果遭遇Local host name unknown : XXX，设置hosts文件
