@@ -506,7 +506,12 @@ MajorGC/FullGC：老年代（tenured/old）空间耗尽，新生代老年代同�
 - s1+eden  - > s2 超过 s2的50%时，hotspot会从小到大累加计算刚好超出50%时的年龄的阈值，然后将那个年龄阈值和参数阈值比较取最小，年龄大于等于那个阈值的将进入老年代
 > -XX:TargetSurvivorRatio:默认为50% 
 
+3.大对象直接进入
+
+比-XX:PretenureSizeThreshold大
+
 #### 空间分配担保
+
 YGC期间survivor区空间不够了，就会把空间不够的那部分对象直接扔到老年代
 
 #### java GC命令行相关参数
@@ -543,7 +548,7 @@ debug用的
 #### 垃圾收集器跟内存大小的关系
 1.serial 几十兆
 2.PS 上百兆-几个G
-3.CMS 20G
+3.CMS 3-8G
 4.G1 上百G
 5.ZGC - 4T - 16T
 
@@ -562,6 +567,10 @@ debug用的
 3.重新标记：多线程并行标记在并发标记过程中新产生的垃圾，或者原本是垃圾的重新被拾起来，STW
 4.并发清理：这个阶段产生的垃圾叫浮动垃圾，只能等下一次CMS处理
 
+
+
+ps:CMS GC不等于Full GC它只清理老年代
+
 ##### CMS的问题
 1.Promotion Failed
 > 指发生Minor GC后，Survivor放不下，对象放入老年代，老年代也放不下，就会让Serial Old工作，对内存进行压缩，会产生产生长时间的STW，多由于空间未压缩（内存碎片话）产生
@@ -575,11 +584,61 @@ debug用的
 > CMS的垃圾清理和引用线程是并行进行的，如果在并行清理的过程中老年代的空间不足以容纳应用产生的垃圾
 
 如何解决 ：
-①-XX:CMSInitiatingOccupancyFraction 默认68/92%（1.5/1.6），表示到达多少空间才会进行FGC，降低这个阈值保持老年代足够的空间
+①-XX:CMSInitiatingOccupacyFraction 默认68/92%（1.5/1.6），表示到达多少空间才会进行FGC，降低这个阈值保持老年代足够的空间
 ②-XX:UseCMSCompactAtFullCollection
 -XX:CMSFullGCsBeforeCompaction
 指每隔多少次FullGC进行压缩，减少碎片化空间
 ③晋升阈值过小，survivor和eden过小
+
+#### G1(Garbage First) 
+
+##### card table（卡表）
+https://segmentfault.com/a/1190000004682407
+**思考一下，如果老的垃圾收集器在进行标记的时候，一个新生代的对象指向了老年代的对象，而老年代的对象又指向了新生代的对象，会发生什么情况？**
+如果这样，会导致我在进行minor GC的时候对老年代进行了一轮扫描，在hotspot中，使用卡表来标记并加快对GC Root的扫描（主要是处理老年代引用新生代的问题），使用写屏障维护卡表
+整个老年代被认为是一张卡表，基于卡表产生了卡页的概念，HotSpot每个卡页为512字节，每一个卡表项对应一个卡页。当一个对象引用进行写操作（对象引用改变），写屏障逻辑会将标记对象所在卡页设置为dirty
+加入了卡表之后，对老年代对象的访问就变成了先去查卡表是否为dirty，如果为dirty，就去找对应的卡页中，看看哪些对象有新生代引用
+如果高并发情况下，无条件写屏障会产生伪共享的问题，导致性能拉低，所以在JDK7中引入了新参数-XX:UseCondCardMark,在进行写的时候先判断一下是否已经被标识过dirty了，如果已经被标识过，就不用再标识了
+卡表是一张位图
+
+##### 基本概念
+**CSet = Collection Set**
+一组需要被回收的分区的集合（用来实现Garbage first的）
+
+**RSet = RememberedSet**
+记录了其他region中的对象到本region的引用（本质是个Map），不用再去扫描其他region了，所以加速了扫描速度
+
+**新老年代比例**
+5%-60%（动态调整），一般不用手工指定，这是G1预测停顿时间的基准
+如果停顿时间过长，那么G1就会在下一次自动调整
+
+##### 逻辑分区
+eden：伊甸区
+survivor：幸存者区
+Old（tenured）：老年代
+humongous：大对象（超过单个region的50%）
+
+##### GC什么时候触发
+YGC
+> eden空间不足（多线程并行执行清理）
+
+FGC
+> tenured空间不足，System.gc()
+
+##### GC类型
+YGC
+MixedGC（和CMS那个阈值一样，只不过）
+> -XX:InitiatingHeapOccupacyPercent
+
+##### 题目
+1.G1是否分代？G1会产生FGC吗？
+G1是逻辑分代，物理不分带，逻辑分为Eden，Survivor，Humongous，Old
+会产生FGC，对象过多，垃圾回收不过来
+
+2.如果产生FGC要怎么办？
+①加内存
+②提高CPU性能
+③降低MixedGC触发的阈值，让MixedGC提早发生(默认是45%)
 
 #### 并发标记（Concurrent Mark）阶段的算法
 CMS：三色标记 + Incremental Update
@@ -850,12 +909,12 @@ watch - watch method
 未包含jmap -histo
 
 ##### instrument类简介
-　　利用 Java 代码，即 java.lang.instrument 做动态 Instrumentation 是 Java SE 5 的新特性，它把 Java 的 instrument 功能从本地代码中解放出来，使之可以用 Java 代码的方式解决问题。使用 Instrumentation，开发者可以构建一个独立于应用程序的代理程序（Agent），用来监测和协助运行在 JVM 上的程序，甚至能够替换和修改某些类的定义。有了这样的功能，开发者就可以实现更为灵活的运行时虚拟机监控和 Java 类操作了，这样的特性实际上提供了一种虚拟机级别支持的 AOP 实现方式，使得开发者无需对 JDK 做任何升级和改动，就可以实现某些 AOP 的功能了。
+利用 Java 代码，即 java.lang.instrument 做动态 Instrumentation 是 Java SE 5 的新特性，它把 Java 的 instrument 功能从本地代码中解放出来，使之可以用 Java 代码的方式解决问题。使用 Instrumentation，开发者可以构建一个独立于应用程序的代理程序（Agent），用来监测和协助运行在 JVM 上的程序，甚至能够替换和修改某些类的定义。有了这样的功能，开发者就可以实现更为灵活的运行时虚拟机监控和 Java 类操作了，这样的特性实际上提供了一种虚拟机级别支持的 AOP 实现方式，使得开发者无需对 JDK 做任何升级和改动，就可以实现某些 AOP 的功能了。
 　　
-　　在 Java SE 6 里面，instrumentation 包被赋予了更强大的功能：启动后的 instrument、本地代码（native code）instrument，以及动态改变 classpath 等等。这些改变，意味着 Java 具有了更强的动态控制、解释能力，它使得 Java 语言变得更加灵活多变。
+在 Java SE 6 里面，instrumentation 包被赋予了更强大的功能：启动后的 instrument、本地代码（native code）instrument，以及动态改变 classpath 等等。这些改变，意味着 Java 具有了更强的动态控制、解释能力，它使得 Java 语言变得更加灵活多变。
 　　
 
-### 案例总汇
+#### 案例总汇
 
 OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC（CPU飙高但是内存回收特别少）
 1.线程池不当运用产生OOM（见上）
@@ -867,4 +926,25 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC（CPU�
 5.lambda表达式导致方法区溢出问题
 产生OOM:Compress class space
 6.disrupter有个可以设置链的长度，如果过大，对象大，消费完不主动释放，会溢出
+7.重写finalize导致频繁GC
+8.比较以下这两段程序的一同，分析哪一个是更优的写法：
+```java
+Object o = null;
+for(int i = 0;i < 100;i ++){
+	o = new Object();
+}
+
+for(int i = 0;i < 100;i ++){
+	Object o = new Object();
+}
+```
+
+9.栈溢出问题
+xss设置过小
+10.直接内存溢出
+使用Unsafe分配直接内存，或者NIO
+
+### 杂项
+
+1.Full GC的次数是按照老年代GC产生的STW次数而定的，所以一次CMS GC会让Full GC次数+2
 
