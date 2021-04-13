@@ -564,16 +564,17 @@ debug用的
 **执行过程-四个阶段**
 1.初始标记：单线程标记根对象,STW
 2.并发标记：标记可达对象
+> preclean:把card标记为dirty
+
 3.重新标记：多线程并行标记在并发标记过程中新产生的垃圾，或者原本是垃圾的重新被拾起来，STW
 4.并发清理：这个阶段产生的垃圾叫浮动垃圾，只能等下一次CMS处理
-
-
+> reset：重置内部结构，为下次GC做准备
 
 ps:CMS GC不等于Full GC它只清理老年代
 
 ##### CMS的问题
 1.Promotion Failed
-> 指发生Minor GC后，Survivor放不下，对象放入老年代，老年代也放不下，就会让Serial Old工作，对内存进行压缩，会产生产生长时间的STW，多由于空间未压缩（内存碎片话）产生
+> 指发生Minor GC后，Survivor放不下，对象放入老年代（空间分配担保机制），老年代也放不下，就会让Serial Old工作，对内存进行压缩，会产生产生长时间的STW，多由于空间未压缩（内存碎片话）产生
 
 如何解决 ：
 -XX:UseCMSCompactAtFullCollection
@@ -581,10 +582,10 @@ ps:CMS GC不等于Full GC它只清理老年代
 指每隔多少次FullGC进行压缩，减少碎片化空间
 
 2.Concurrent Mode Failure
-> CMS的垃圾清理和引用线程是并行进行的，如果在并行清理的过程中老年代的空间不足以容纳应用产生的垃圾
+> 如果在并发的过程中老年代的空间不足以容纳应用产生的垃圾，就会产生这个问题
 
 如何解决 ：
-①-XX:CMSInitiatingOccupacyFraction 默认68/92%（1.5/1.6），表示到达多少空间才会进行FGC，降低这个阈值保持老年代足够的空间
+①-XX:CMSInitiatingOccupancyFraction 默认68/92%（1.5/1.6），表示到达多少空间才会进行CMS GC，降低这个阈值保持老年代足够的空间
 ②-XX:UseCMSCompactAtFullCollection
 -XX:CMSFullGCsBeforeCompaction
 指每隔多少次FullGC进行压缩，减少碎片化空间
@@ -592,21 +593,29 @@ ps:CMS GC不等于Full GC它只清理老年代
 
 #### G1(Garbage First) 
 
-##### card table（卡表）
+##### card table（卡表）（跨代引用问题）
 https://segmentfault.com/a/1190000004682407
-**思考一下，如果老的垃圾收集器在进行标记的时候，一个新生代的对象指向了老年代的对象，而老年代的对象又指向了新生代的对象，会发生什么情况？**
+https://tech.meituan.com/2016/09/23/g1.html
+**思考一下，如果老的垃圾收集器在进行标记的时候，一个新生代的对象指向了老年代的对象，而老年代的对象又指向了新生代的对象，会发生什么情况？（跨代问题）**
 如果这样，会导致我在进行minor GC的时候对老年代进行了一轮扫描，在hotspot中，使用卡表来标记并加快对GC Root的扫描（主要是处理老年代引用新生代的问题），使用写屏障维护卡表
 整个老年代被认为是一张卡表，基于卡表产生了卡页的概念，HotSpot每个卡页为512字节，每一个卡表项对应一个卡页。当一个对象引用进行写操作（对象引用改变），写屏障逻辑会将标记对象所在卡页设置为dirty
 加入了卡表之后，对老年代对象的访问就变成了先去查卡表是否为dirty，如果为dirty，就去找对应的卡页中，看看哪些对象有新生代引用
 如果高并发情况下，无条件写屏障会产生伪共享的问题，导致性能拉低，所以在JDK7中引入了新参数-XX:UseCondCardMark,在进行写的时候先判断一下是否已经被标识过dirty了，如果已经被标识过，就不用再标识了
 卡表是一张位图
 
+ps:GC写屏障：某个对象被引用指向时会做一些事情
+
 ##### 基本概念
 **CSet = Collection Set**
 一组需要被回收的分区的集合（用来实现Garbage first的）
 
-**RSet = RememberedSet**
-记录了其他region中的对象到本region的引用（本质是个Map），不用再去扫描其他region了，所以加速了扫描速度
+**RSet = RememberedSet（跨代引用问题）**
+记录了其他region中的对象到本region的引用（本质是个HashTable，Key是Region的起始地址，Value是Card Table的Index），不用再去扫描其他region了，所以加速了扫描速度
+
+##### RSet和card table和region的关系
+![rs_region_cardTable](picture/rs_region_cardTable.png)
+
+每个region拥有一个RSet，RSet是个HashTable，RSet中存储了别的region的指针（内存地址）（卡表）作为key，value是个集合，存储了对应的dirty卡页
 
 **新老年代比例**
 5%-60%（动态调整），一般不用手工指定，这是G1预测停顿时间的基准
@@ -624,13 +633,32 @@ YGC
 
 FGC
 > tenured空间不足，System.gc()
+> ps: java 10 以前是串行full gc，10以后是并行full gc
 
 ##### GC类型
 YGC
-MixedGC（和CMS那个阈值一样，只不过）
-> -XX:InitiatingHeapOccupacyPercent
+MixedGC（回收部分老年代（收益高,根据global concurrent marking去收集）和年轻代）
+> -XX:InitiatingHeapOccupacyPercent（和CMS那个阈值一样，老年代+大对象占总堆大小的比例）
+如果回收不了，会出现Full GC，让serial ol去回收，jdk10以上会用并行回收器
+
+##### 过程
+初始标记
+> stw，标记根节点 
+
+并发标记
+> root trace，三色标记算法 + SATB
+> 标记存活对象
+
+最终标记
+> stw
+
+清除垃圾
+> 将对象复制到其他region，清除空region
+
+##### GC日志
 
 ##### 题目
+
 1.G1是否分代？G1会产生FGC吗？
 G1是逻辑分代，物理不分带，逻辑分为Eden，Survivor，Humongous，Old
 会产生FGC，对象过多，垃圾回收不过来
@@ -640,15 +668,40 @@ G1是逻辑分代，物理不分带，逻辑分为Eden，Survivor，Humongous，
 ②提高CPU性能
 ③降低MixedGC触发的阈值，让MixedGC提早发生(默认是45%)
 
+3.G1与CMS相比有什么好处？
+G1不会产生碎片，并且可以预测停顿时间，用户可以指定停顿时间
+
+4.RSet究竟是怎么辅助GC的呢？
+在做YGC的时候，只需要选定young generation region的RSet作为根集，这些RSet记录了old->young的跨代引用，避免了扫描整个old generation。 而mixed gc的时候，old generation中记录了old->old的RSet，young->old的引用由扫描全部young generation region得到，这样也不用扫描全部old generation region。所以RSet的引入大大减少了GC的工作量
+
 #### 并发标记（Concurrent Mark）阶段的算法
 CMS：三色标记 + Incremental Update
 G1：三色标记 + SATB（Snapshot at the begining）
 ZGC：ColoredPointer
 
+##### 三色标记算法
+白色：未被标记的对象
+灰色：自身被标记，引用对象未被标记
+黑色：自身被标记，引用对象（指直接引用对象）也被标记
+
+**漏标**
+并发标记时，当灰色对象的引用到白色对象的引用被切断，并且白色对象被黑色对象重新引用，导致漏标，此时白色对象被回收
+
+**漏标处理**
+1.incremental update -- 增量更新 关注引用的增加
+把黑色重新标记为灰色，下次重新标记
+
+2.SATB snapshot at the begining 关注引用的删除
+灰色对象指向白色对象的引用被删除时，将改引用放入GC的堆栈
+本质是与RememberSet相配合，如果灰色对象指向白色对象引用删除但是没有黑色对象重新指向，此时依然会放入GC堆栈，所以在弹出时会与RSet去比较，看看是否有引用指向我，如果没有就立即删除
+
 #### 问题
 1.ParNew和Parallel的区别？
 ParNew能配合CMS使用，响应时间优先，减少STW的次数
 Parallel Scanvage吞吐量优先，可以设置停顿时间和时间占比来提高吞吐量
+2.为什么G1用SATB而不用incremental update？
+因为把黑色结点变成灰色，下面部分已经是灰色甚至黑色的结点，造成了重复扫描，而灰色结点下面只可能是白色结点，扫描数量较少
+
 
 ### JVM调优
 **HotSpot参数分类**
