@@ -879,6 +879,8 @@ Parallel Scanvage吞吐量优先，可以设置停顿时间和时间占比来提
 > ConcGCThreads:线程数量
 > InitiatingHeapOccupacyPercent:启动G1 GC的堆空间占比
 
+
+
 ### JVM调优
 **HotSpot参数分类**
 > 标准： -开头，所有HotSpot都支持
@@ -1066,6 +1068,13 @@ jps指令，查看当前java进程
 jinfo指令，查看当前java进程信息
 jstat -gc [pid]  [time]指令，查看gc状态的指令
 jconsole指令，调出java控制台（图形界面）
+
+#### JVM的OOM种类
+堆溢出（Java heap space）
+方法区溢出（PermGen/Metaspace）
+本地线程溢出（unable to create new native thread）
+GC溢出（GC overhead limit exceeded）
+直接内存溢出
 
 #### 如何定位OOM问题？
 不能回答用jvisualvm和jconsole，因为图形界面会影响服务器性能，只能说在压测的时候用过
