@@ -385,7 +385,7 @@ ps：就是指引用类型直接访问的堆中对象，如果需要取到对象
 **JVM stack（java虚拟机栈）**
 > 每个线程都有它自己的栈，栈中存放的是栈帧（frames），每个方法都是一个栈帧 
 
-栈帧（Frame）
+**栈帧（Frame）**
 > 存储数据和中间结果，也表现为动态链接，返回值和分发异常
 > 局部变量表
 > 操作数栈
@@ -591,8 +591,83 @@ ps:CMS GC不等于Full GC它只清理老年代
 指每隔多少次FullGC进行压缩，减少碎片化空间
 ③晋升阈值过小，survivor和eden过小
 
-#### G1(Garbage First) 
+##### GC日志
+```java
+[0.268s][info   ][gc,start     ] GC(0) Pause Young (Allocation Failure)
+//stw 的 YGC
+[0.269s][info   ][gc,task      ] GC(0) Using 10 workers of 10 for evacuation
+[0.270s][info   ][gc,heap      ] GC(0) ParNew: 10944K->1343K(12288K)
+//ParNew 清理前 -> 清理后（总新生代大小）
+[0.270s][info   ][gc,heap      ] GC(0) CMS: 0K->6K(27328K)
+[0.270s][info   ][gc,metaspace ] GC(0) Metaspace: 7106K->7106K(1056768K)
+[0.270s][info   ][gc           ] GC(0) Pause Young (Allocation Failure) 10M->1M(38M) 1.449ms
+[0.270s][info   ][gc,cpu       ] GC(0) User=0.00s Sys=0.00s Real=0.00s
+[6.870s][info   ][gc,start     ] GC(1) Pause Young (Allocation Failure)
+[6.870s][info   ][gc,task      ] GC(1) Using 10 workers of 10 for evacuation
+//用十个工作线程去清理
+[6.885s][info   ][gc,heap      ] GC(1) ParNew: 12287K->1344K(12288K)
+[6.885s][info   ][gc,heap      ] GC(1) CMS: 6K->6617K(27328K)
+[6.885s][info   ][gc,metaspace ] GC(1) Metaspace: 7254K->7254K(1056768K)
+[6.885s][info   ][gc           ] GC(1) Pause Young (Allocation Failure) 12M->7M(38M) 15.012ms
+[6.885s][info   ][gc,cpu       ] GC(1) User=0.03s Sys=0.02s Real=0.01s
+[14.978s][info   ][gc,start     ] GC(2) Pause Young (Allocation Failure)
+[14.978s][info   ][gc,task      ] GC(2) Using 10 workers of 10 for evacuation
+[14.985s][info   ][gc,heap      ] GC(2) ParNew: 12288K->1343K(12288K)
+[14.985s][info   ][gc,heap      ] GC(2) CMS: 6617K->14553K(27328K)
+[14.985s][info   ][gc,metaspace ] GC(2) Metaspace: 7257K->7257K(1056768K)
+[14.985s][info   ][gc           ] GC(2) Pause Young (Allocation Failure) 18M->15M(38M) 6.350ms
+[14.985s][info   ][gc,cpu       ] GC(2) User=0.00s Sys=0.00s Real=0.01s
+[14.985s][info   ][gc,start     ] GC(3) Pause Initial Mark
+//初始标记
+[14.985s][info   ][gc           ] GC(3) Pause Initial Mark 15M->15M(38M) 0.355ms
+[14.985s][info   ][gc,cpu       ] GC(3) User=0.00s Sys=0.00s Real=0.00s
+[14.985s][info   ][gc           ] GC(3) Concurrent Mark
+//并发标记
+[14.985s][info   ][gc,task      ] GC(3) Using 3 workers of 3 for marking
+[14.990s][info   ][gc           ] GC(3) Concurrent Mark 4.739ms
+[14.990s][info   ][gc,cpu       ] GC(3) User=0.00s Sys=0.00s Real=0.00s
+[14.990s][info   ][gc           ] GC(3) Concurrent Preclean
+[14.990s][info   ][gc           ] GC(3) Concurrent Preclean 0.083ms
+//预清理，标记dirty card page
+[14.990s][info   ][gc,cpu       ] GC(3) User=0.00s Sys=0.00s Real=0.00s
+[14.990s][info   ][gc,start     ] GC(3) Pause Remark
+//最终标记（重新标记）
+[14.991s][info   ][gc           ] GC(3) Pause Remark 15M->15M(38M) 0.834ms
+[14.991s][info   ][gc,cpu       ] GC(3) User=0.00s Sys=0.00s Real=0.00s
+[14.991s][info   ][gc           ] GC(3) Concurrent Sweep
+//并发清除
+[14.994s][info   ][gc           ] GC(3) Concurrent Sweep 2.796ms
+[14.994s][info   ][gc,cpu       ] GC(3) User=0.02s Sys=0.00s Real=0.00s
+[14.994s][info   ][gc           ] GC(3) Concurrent Reset
+[14.994s][info   ][gc           ] GC(3) Concurrent Reset 0.079ms
+[14.994s][info   ][gc,cpu       ] GC(3) User=0.00s Sys=0.00s Real=0.00s
+[14.994s][info   ][gc,heap      ] GC(3) Old: 14553K->14511K(27328K)
+[17.007s][info   ][gc,start     ] GC(4) Pause Initial Mark
+[17.008s][info   ][gc           ] GC(4) Pause Initial Mark 19M->19M(38M) 0.531ms
+[17.008s][info   ][gc,cpu       ] GC(4) User=0.00s Sys=0.00s Real=0.00s
+[17.008s][info   ][gc           ] GC(4) Concurrent Mark
+[17.008s][info   ][gc,task      ] GC(4) Using 3 workers of 3 for marking
+[17.012s][info   ][gc           ] GC(4) Concurrent Mark 4.700ms
+[17.012s][info   ][gc,cpu       ] GC(4) User=0.05s Sys=0.00s Real=0.01s
+[17.012s][info   ][gc           ] GC(4) Concurrent Preclean
+[17.013s][info   ][gc           ] GC(4) Concurrent Preclean 1.023ms
+[17.013s][info   ][gc,cpu       ] GC(4) User=0.00s Sys=0.00s Real=0.00s
+[17.013s][info   ][gc           ] GC(4) Concurrent Abortable Preclean
+[22.021s][info   ][gc           ] GC(4) Concurrent Abortable Preclean 5007.972ms
+[22.021s][info   ][gc,cpu       ] GC(4) User=0.42s Sys=0.03s Real=5.01s
+[22.022s][info   ][gc,start     ] GC(4) Pause Remark
+[22.023s][info   ][gc           ] GC(4) Pause Remark 25M->25M(38M) 1.287ms
+[22.023s][info   ][gc,cpu       ] GC(4) User=0.00s Sys=0.00s Real=0.00s
+[22.023s][info   ][gc           ] GC(4) Concurrent Sweep
+[22.026s][info   ][gc           ] GC(4) Concurrent Sweep 3.544ms
+[22.026s][info   ][gc,cpu       ] GC(4) User=0.02s Sys=0.00s Real=0.00s
+[22.027s][info   ][gc           ] GC(4) Concurrent Reset
+[22.027s][info   ][gc           ] GC(4) Concurrent Reset 0.015ms
+[22.027s][info   ][gc,cpu       ] GC(4) User=0.00s Sys=0.00s Real=0.00s
+[22.027s][info   ][gc,heap      ] GC(4) Old: 14511K->14511K(27328K)
+```
 
+#### G1(Garbage First) 
 ##### card table（卡表）（跨代引用问题）
 https://segmentfault.com/a/1190000004682407
 https://tech.meituan.com/2016/09/23/g1.html
@@ -624,7 +699,7 @@ ps:GC写屏障：某个对象被引用指向时会做一些事情
 ##### 逻辑分区
 eden：伊甸区
 survivor：幸存者区
-Old（tenured）：老年代
+old（tenured）：老年代
 humongous：大对象（超过单个region的50%）
 
 ##### GC什么时候触发
@@ -637,6 +712,8 @@ FGC
 
 ##### GC类型
 YGC
+> STW
+
 MixedGC（回收部分老年代（收益高,根据global concurrent marking去收集）和年轻代）
 > -XX:InitiatingHeapOccupacyPercent（和CMS那个阈值一样，老年代+大对象占总堆大小的比例）
 如果回收不了，会出现Full GC，让serial ol去回收，jdk10以上会用并行回收器
@@ -646,16 +723,86 @@ MixedGC（回收部分老年代（收益高,根据global concurrent marking去�
 > stw，标记根节点 
 
 并发标记
-> root trace，三色标记算法 + SATB
+> root tracing，三色标记算法 + SATB
 > 标记存活对象
 
 最终标记
 > stw
 
 清除垃圾
-> 将对象复制到其他region，清除空region
+> stw,将对象复制到其他region，清除空region,正是因为这边进行了stw，所以不会产生浮动垃圾问题
 
 ##### GC日志
+
+```java
+
+[27.169s][info   ][gc,task        ] GC(573) Using 10 workers of 10 for evacuation
+[27.169s][info   ][gc,phases      ] GC(573)   Pre Evacuate Collection Set: 0.0ms
+[27.169s][info   ][gc,phases      ] GC(573)   Evacuate Collection Set: 0.2ms
+[27.169s][info   ][gc,phases      ] GC(573)   Post Evacuate Collection Set: 0.2ms
+[27.169s][info   ][gc,phases      ] GC(573)   Other: 0.1ms
+[27.169s][info   ][gc,heap        ] GC(573) Eden regions: 0->0(1)
+//E区region 数量 0->0,总数1
+[27.169s][info   ][gc,heap        ] GC(573) Survivor regions: 0->0(1)
+//S区region 数量 0->0,总数1
+[27.169s][info   ][gc,heap        ] GC(573) Old regions: 20->20
+//O区region 数量 20->20,未被回收
+[27.169s][info   ][gc,heap        ] GC(573) Humongous regions: 0->0
+//H区region 数量 0->0
+[27.169s][info   ][gc,metaspace   ] GC(573) Metaspace: 7268K->7268K(1056768K)
+[27.169s][info   ][gc             ] GC(573) Pause Young (Concurrent Start) (G1 Evacuation Pause) 19M->19M(20M) 0.465ms
+//Pause Young (Concurrent Start) 表示 Mixed GC开始
+//Pause Young (Normal) 表示 YGC 开始
+[27.169s][info   ][gc,cpu         ] GC(573) User=0.00s Sys=0.00s Real=0.00s
+[27.169s][info   ][gc             ] GC(575) Concurrent Cycle
+[27.169s][info   ][gc,task        ] GC(574) Using 2 workers of 10 for full compaction
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Clear Claimed Marks
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Clear Claimed Marks 0.006ms
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Scan Root Regions
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Scan Root Regions 0.006ms
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Mark (27.169s)
+[27.169s][info   ][gc,marking     ] GC(575) Concurrent Mark From Roots
+[27.169s][info   ][gc,task        ] GC(575) Using 3 workers of 3 for marking
+[27.169s][info   ][gc,start       ] GC(574) Pause Full (G1 Evacuation Pause)
+[27.170s][info   ][gc,phases,start] GC(574) Phase 1: Mark live objects
+//标记存活对象
+[27.180s][info   ][gc,stringtable ] GC(574) Cleaned string and symbol table, strings: 3164 processed, 0 removed, symbols: 28545 processed, 0 removed
+[27.180s][info   ][gc,phases      ] GC(574) Phase 1: Mark live objects 10.229ms
+[27.180s][info   ][gc,phases,start] GC(574) Phase 2: Prepare for compaction
+[27.183s][info   ][gc,phases      ] GC(574) Phase 2: Prepare for compaction 3.010ms
+[27.183s][info   ][gc,phases,start] GC(574) Phase 3: Adjust pointers
+[27.188s][info   ][gc,phases      ] GC(574) Phase 3: Adjust pointers 4.683ms
+[27.188s][info   ][gc,phases,start] GC(574) Phase 4: Compact heap
+[27.190s][info   ][gc,phases      ] GC(574) Phase 4: Compact heap 2.191ms
+[27.190s][info   ][gc,heap        ] GC(574) Eden regions: 0->0(1)
+[27.190s][info   ][gc,heap        ] GC(574) Survivor regions: 0->0(1)
+[27.190s][info   ][gc,heap        ] GC(574) Old regions: 20->20
+[27.190s][info   ][gc,heap        ] GC(574) Humongous regions: 0->0
+[27.190s][info   ][gc,metaspace   ] GC(574) Metaspace: 7268K->7268K(1056768K)
+[27.190s][info   ][gc             ] GC(574) Pause Full (G1 Evacuation Pause) 19M->19M(20M) 21.088ms
+[27.191s][info   ][gc,cpu         ] GC(574) User=0.03s Sys=0.00s Real=0.02s
+[27.191s][info   ][gc,task        ] GC(576) Using 2 workers of 10 for full compaction
+[27.191s][info   ][gc,start       ] GC(576) Pause Full (G1 Evacuation Pause)
+[27.191s][info   ][gc,phases,start] GC(576) Phase 1: Mark live objects
+[27.203s][info   ][gc,stringtable ] GC(576) Cleaned string and symbol table, strings: 3164 processed, 0 removed, symbols: 28545 processed, 0 removed
+[27.203s][info   ][gc,phases      ] GC(576) Phase 1: Mark live objects 11.766ms
+[27.203s][info   ][gc,phases,start] GC(576) Phase 2: Prepare for compaction
+[27.205s][info   ][gc,phases      ] GC(576) Phase 2: Prepare for compaction 2.466ms
+[27.205s][info   ][gc,phases,start] GC(576) Phase 3: Adjust pointers
+[27.209s][info   ][gc,phases      ] GC(576) Phase 3: Adjust pointers 4.093ms
+[27.209s][info   ][gc,phases,start] GC(576) Phase 4: Compact heap
+[27.211s][info   ][gc,phases      ] GC(576) Phase 4: Compact heap 1.786ms
+[27.212s][info   ][gc,heap        ] GC(576) Eden regions: 0->0(1)
+[27.212s][info   ][gc,heap        ] GC(576) Survivor regions: 0->0(1)
+[27.212s][info   ][gc,heap        ] GC(576) Old regions: 20->20
+[27.212s][info   ][gc,heap        ] GC(576) Humongous regions: 0->0
+[27.212s][info   ][gc,metaspace   ] GC(576) Metaspace: 7268K->7268K(1056768K)
+[27.212s][info   ][gc             ] GC(576) Pause Full (G1 Evacuation Pause) 19M->19M(20M) 21.118ms
+[27.212s][info   ][gc,cpu         ] GC(576) User=0.06s Sys=0.00s Real=0.02s
+[27.212s][info   ][gc,marking     ] GC(575) Concurrent Mark From Roots 42.509ms
+[27.212s][info   ][gc,marking     ] GC(575) Concurrent Mark Abort
+[27.212s][info   ][gc             ] GC(575) Concurrent Cycle 42.574ms
+```
 
 ##### 题目
 
@@ -702,6 +849,35 @@ Parallel Scanvage吞吐量优先，可以设置停顿时间和时间占比来提
 2.为什么G1用SATB而不用incremental update？
 因为把黑色结点变成灰色，下面部分已经是灰色甚至黑色的结点，造成了重复扫描，而灰色结点下面只可能是白色结点，扫描数量较少
 
+### JVM 参数
+#### Parallel 常用参数
+> -XX:+SurvivorRatio:设置eden和survivor比例
+> -XX:+PreTenureSizeThreshold:设置大对象阈值
+> -XX:+MaxTernuringThreshold:设置晋升阈值
+> -XX:+ParallelGCThreads:并行GC线程数
+> -XX:+UseAdaptiveSizePolicy:使用自适应策略
+> -XX:+GCTimeRatio:设置吞吐量大小
+> -XX:MaxGCPauseMillis:最大GC停顿时间
+
+#### CMS 常用参数
+> -XX:UseConcMarkSweepGC:使用CMS+ Serial + ParNew组合
+> -XX:+ParallelCMSThreads:并行CMS线程数量
+> -XX:+CMSInitiatingOccupancyFraction:老年代占用多少比例时，进行CMS GC，1.5以前默认68%，1.6后默认92%
+> -XX:+UseCMSCompactAtFullCollection:CMS在Full GC时进行压缩（默认true）
+> -XX:+CMSFullGCsBeforeCompaction:进行几次Full GC就进行压缩
+> -XX:+CMSClassUnloadingEnabled:允许对类元数据进行回收
+> -XX:+CMSInitiatingPermOccupancyFraction:永久代的使用率达到阈值就回收,默认92%,前提是开启CMSClassUnloadingEnabled
+
+#### G1 常用参数
+> -XX:+UseG1GC:使用G1垃圾处理器
+> -XX:+MaxGCPauseMillis:设置GC最大停顿时间，G1会通过上一次的ygc时间去增加或者减少新老年代比例
+> -XX:+GCPauseIntervalMillis:设置停顿间隔时间 
+> -XX:+G1HeapRegionSize:分区大小，建议逐渐增大改值，1 2 4 8 16 32，size增加，对象生存时间越长，GC次数越少，但每次GC时间长（ZGC改进，动态区块大小）
+> -XX:+G1NewSizePercent:新生代最小比例，默认为5%
+> -XX:+G1MaxNewSizePercent:新生代最大比例，默认为60%
+> GCTimeRatio:GC时间建议比例，G1会根据这个值调整堆空间
+> ConcGCThreads:线程数量
+> InitiatingHeapOccupacyPercent:启动G1 GC的堆空间占比
 
 ### JVM调优
 **HotSpot参数分类**
@@ -823,6 +999,9 @@ CPU100%，那么一定有线程在占用系统资源
 
 4.如何监控JVM
 jstat jvisualvm jprofiler athas top ...
+
+5.如果不断Full GC但是内存占用率很低？为什么？
+有地方在手动调用System.gc()方法，使用-XX:+DisableExplicitGC禁用
 
 #### 风控案例
 ```java
