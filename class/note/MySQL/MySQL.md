@@ -315,6 +315,23 @@ union的时候会显示null
 #### select_type
 查询的类型：普通查询，联合查询，子查询
 
+| select_type **Value** | 意义                            |
+| --------------------- | ------------------------------- |
+| SIMPLE                | 简单查询（不使用union和子查询） |
+| PRIMARY               | 包含复杂子查询，主查询          |
+| UNION                 |                                 |
+| DEPENDENT UNION       |                                 |
+| UNION RESULT          |                                 |
+| SUBQUERY              |                                 |
+| DEPENDENT SUBQUERY    |                                 |
+| DERIVED               |                                 |
+| DEPENDENT DERIVED     |                                 |
+| MATERIALIZED          |                                 |
+| UNCACHEABLE SUBQUERY  |                                 |
+| UNCACHEABLE UNION     |                                 |
+
+
+
 
 #### table
 
