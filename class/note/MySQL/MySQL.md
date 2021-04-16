@@ -186,8 +186,155 @@ ps ：单独设置utf8如果中文网站可能会出现乱码，常使用utf8mb4
 | 支持全文索引 | 是         | 是 after5.6            |
 | 适合操作类型 | select     | update，delete，insert |
 
+### 数据冗余
+1.被频繁引用且只能通过join 2张（或者更多）大表的方式才能得到的独立小字段
+2.这样的场景由于每次join仅仅只是为了取到某个小字段的值，Join到的记录大，造成不必要的IO，用空间去换时间
+
+### 适当拆分
+当大部分访问某张表时访问不到一个数据很大的大字段时，需要将表分离
+
+### training table
+```sql
+create table dept(
+    -- 部门编号
+    deptno      int unsigned auto_increment primary key,
+    -- 部门名称
+    dname       varchar(15)     ,
+    -- 部门所在位置
+    loc         varchar(50)    
+)engine = InnoDB;
 
 
+创建 scott 数据库中的 emp 表
+ create table emp(
+    -- 雇员编号
+    empno           int unsigned auto_increment primary key,
+    -- 雇员姓名
+    ename           varchar(15)     ,
+    -- 雇员职位
+    job             varchar(10)     ,
+    -- 雇员对应的领导的编号
+    mgr             int unsigned    ,
+    -- 雇员的雇佣日期
+    hiredate        date            ,
+    -- 雇员的基本工资
+    sal             decimal(7,2)    ,
+    -- 奖金
+    comm            decimal(7,2)    ,
+    -- 所在部门
+    deptno          int unsigned    ,
+    foreign key(deptno) references dept(deptno)
+)engine = innodb;
+
+
+创建数据库 scott 中的 salgrade 表，工资等级表
+create table salgrade(
+    -- 工资等级
+    grade       int unsigned    ,
+    -- 此等级的最低工资
+    losal       int unsigned    ,
+    -- 此等级的最高工资
+    hisal       int unsigned   
+)engine=innodb;
+
+
+创建数据库 scott 的 bonus 表，工资表
+create table bonus(
+    -- 雇员姓名
+    ename       varchar(10),
+    -- 雇员职位
+    job         varchar(9),
+    -- 雇员工资
+    sal         decimal(7,2),
+    -- 雇员资金
+    comm        decimal(7,2)
+)engine=innodb;
+
+ 
+
+
+dept表中的数据
+INSERT INTO dept VALUES (10,'ACCOUNTING','NEW YORK'); 
+INSERT INTO dept VALUES (20,'RESEARCH','DALLAS'); 
+INSERT INTO dept VALUES (30,'SALES','CHICAGO'); 
+INSERT INTO dept VALUES (40,'OPERATIONS','BOSTON'); 
+
+
+salgrade表中的数据
+INSERT INTO salgrade VALUES (1,700,1200); 
+INSERT INTO salgrade VALUES (2,1201,1400); 
+INSERT INTO salgrade VALUES (3,1401,2000); 
+INSERT INTO salgrade VALUES (4,2001,3000); 
+INSERT INTO salgrade VALUES (5,3001,9999);
+
+
+emp表中的数据
+INSERT INTO emp VALUES  (7369,'SMITH','CLERK',7902,'1980-12-17',800,NULL,20);
+INSERT INTO emp VALUES  (7499,'ALLEN','SALESMAN',7698,'1981-2-20',1600,300,30);
+INSERT INTO emp VALUES  (7521,'WARD','SALESMAN',7698,'1981-2-22',1250,500,30);
+INSERT INTO emp VALUES  (7566,'JONES','MANAGER',7839,'1981-4-2',2975,NULL,20);
+INSERT INTO emp VALUES  (7654,'MARTIN','SALESMAN',7698,'1981-9-28',1250,1400,30);
+INSERT INTO emp VALUES  (7698,'BLAKE','MANAGER',7839,'1981-5-1',2850,NULL,30);
+INSERT INTO emp VALUES  (7782,'CLARK','MANAGER',7839,'1981-6-9',2450,NULL,10);
+INSERT INTO emp VALUES  (7788,'SCOTT','ANALYST',7566,'87-7-13',3000,NULL,20);
+INSERT INTO emp VALUES  (7839,'KING','PRESIDENT',NULL,'1981-11-17',5000,NULL,10);
+INSERT INTO emp VALUES  (7844,'TURNER','SALESMAN',7698,'1981-9-8',1500,0,30);
+INSERT INTO emp VALUES  (7876,'ADAMS','CLERK',7788,'1987-7-13',1100,NULL,20);
+INSERT INTO emp VALUES  (7900,'JAMES','CLERK',7698,'1981-12-3',950,NULL,30);
+INSERT INTO emp VALUES  (7902,'FORD','ANALYST',7566,'1981-12-3',3000,NULL,20);
+INSERT INTO emp VALUES  (7934,'MILLER','CLERK',7782,'1982-1-23',1300,NULL,10);
+```
+
+### explain table
+
+|    Column     |                    Meaning                     |
+| :-----------: | :--------------------------------------------: |
+|      id       |            The `SELECT` identifier             |
+|  select_type  |               The `SELECT` type                |
+|     table     |          The table for the output row          |
+|  partitions   |            The matching partitions             |
+|     type      |                 The join type                  |
+| possible_keys |         The possible indexes to choose         |
+|      key      |           The index actually chosen            |
+|    key_len    |          The length of the chosen key          |
+|      ref      |       The columns compared to the index        |
+|     rows      |        Estimate of rows to be examined         |
+|   filtered    | Percentage of rows filtered by table condition |
+|     extra     |             Additional information             |
+#### id
+id表示运行顺序，同id从上到下，不同id从大到小
+
+eg：
+explain select * from emp t1 join dept t2 on t1.deptno = t2.deptno;
+![id#1](picture/执行计划/id#1.png)
+
+explain select * from emp e union select * from emp e2;
+![id#2](picture/执行计划/id#2.png)
+union的时候会显示null
+
+#### select_type
+查询的类型：普通查询，联合查询，子查询
+
+
+#### table
+
+#### partitions
+
+#### type
+
+#### possible_keys
+
+#### key
+
+#### key_len
+
+#### ref
+
+#### rows
+
+#### filtered
+
+#### Extra
 
 ## 名词
 **索引下推**
