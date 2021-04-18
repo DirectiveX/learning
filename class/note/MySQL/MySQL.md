@@ -17,6 +17,9 @@ Redo log的存在保证了持久化这一事务特性
 3.redo log buffer size空间小于$\frac12$（innodb_log_buffer_size参数），将redo log buffer刷新到磁盘
 4.redo log file大小达到阈值
 
+## 导入官方数据库
+source /xxx/xxx/xxx-schema.sql
+
 ## 优化器优化方式
 基于规则的优化(RBO)regular based optimise
 基于成本的优化(CBO)cost based optimise
@@ -172,21 +175,34 @@ IP地址，本质是32位无符号整数
 ps ：单独设置utf8如果中文网站可能会出现乱码，常使用utf8mb4解决（most byte），主要处理四字节的内容，保证不产生乱码
 
 ## 存储引擎(数据文件的组织形式)的选择
-默认innodb，可以在建表时候选择
+默认innodb，可以在建表时候选择 memory（数据结构hash table）,innodb（数据结构B+树）, myisam（数据结构B+树）
+
+非常用有archive，merge，CSV，BlackHole，BDB，Federated，Cluster（高冗余）
 
 ### MyISAM VS InnoDB
 
-|              | MyISAM     | Innodb                 |
-| ------------ | ---------- | ---------------------- |
-| 索引类型     | 非聚簇索引 | 聚簇索引               |
-| 支持事务     | 否         | 是                     |
-| 支持表锁     | 是         | 是                     |
-| 支持行锁     | 否         | 是                     |
-| 支持外键     | 否         | 是                     |
-| 支持全文索引 | 是         | 是 after5.6            |
-| 适合操作类型 | select     | update，delete，insert |
+|              | MyISAM       | Innodb                 |
+| ------------ | ------------ | ---------------------- |
+| 索引类型     | 非聚簇索引   | 聚簇索引               |
+| 支持事务     | 否           | 是                     |
+| 支持表锁     | 是           | 是                     |
+| 支持行锁     | 否           | 是                     |
+| 支持外键     | 否           | 是                     |
+| 支持全文索引 | 是           | 是 after5.6            |
+| 适合操作类型 | select       | update，delete，insert |
+| 数据存放方式 | 数据索引分开 | 数据索引存在一块       |
+
+老版本（8.0之前）用.frm存储表结构，MyISAM用.MYD（数据）,.MYI（索引）存储数据，Innodb用.ibd存储数据
+8.0之后，删除.frm，表结构存储在元数据信息中，默认ibdata1文件，对于非Innodb表，冗余存储一份SDI（Serialized Dictionary Information）数据在.sdi中，对于Innodb表，直接存储与.idb中
+
+不同点：
+虽然都使用了B+树，但是Innodb由于存储的数据在同一份文件（.idb）中，所以叶子结点存放的是具体的数据，但是MyISAM由于存储的时候是分开存储的，所以放的是数据行的地址，然后去.MYD中读取
+
+**Innodb**
+innodb创建的时候会按照主键生成树，如果没有主键，找唯一键进行排序存储，如果没有唯一键，自己生成一个6位的row_id作为主键
 
 ### 数据冗余
+
 1.被频繁引用且只能通过join 2张（或者更多）大表的方式才能得到的独立小字段
 2.这样的场景由于每次join仅仅只是为了取到某个小字段的值，Join到的记录大，造成不必要的IO，用空间去换时间
 
@@ -205,7 +221,7 @@ create table dept(
 )engine = InnoDB;
 
 
-创建 scott 数据库中的 emp 表
+--创建 scott 数据库中的 emp 表
  create table emp(
     -- 雇员编号
     empno           int unsigned auto_increment primary key,
@@ -227,7 +243,7 @@ create table dept(
 )engine = innodb;
 
 
-创建数据库 scott 中的 salgrade 表，工资等级表
+--创建数据库 scott 中的 salgrade 表，工资等级表
 create table salgrade(
     -- 工资等级
     grade       int unsigned    ,
@@ -238,7 +254,7 @@ create table salgrade(
 )engine=innodb;
 
 
-创建数据库 scott 的 bonus 表，工资表
+--创建数据库 scott 的 bonus 表，工资表
 create table bonus(
     -- 雇员姓名
     ename       varchar(10),
@@ -250,17 +266,14 @@ create table bonus(
     comm        decimal(7,2)
 )engine=innodb;
 
- 
-
-
-dept表中的数据
+--dept表中的数据
 INSERT INTO dept VALUES (10,'ACCOUNTING','NEW YORK'); 
 INSERT INTO dept VALUES (20,'RESEARCH','DALLAS'); 
 INSERT INTO dept VALUES (30,'SALES','CHICAGO'); 
 INSERT INTO dept VALUES (40,'OPERATIONS','BOSTON'); 
 
 
-salgrade表中的数据
+--salgrade表中的数据
 INSERT INTO salgrade VALUES (1,700,1200); 
 INSERT INTO salgrade VALUES (2,1201,1400); 
 INSERT INTO salgrade VALUES (3,1401,2000); 
@@ -268,7 +281,7 @@ INSERT INTO salgrade VALUES (4,2001,3000); 
 INSERT INTO salgrade VALUES (5,3001,9999);
 
 
-emp表中的数据
+--emp表中的数据
 INSERT INTO emp VALUES  (7369,'SMITH','CLERK',7902,'1980-12-17',800,NULL,20);
 INSERT INTO emp VALUES  (7499,'ALLEN','SALESMAN',7698,'1981-2-20',1600,300,30);
 INSERT INTO emp VALUES  (7521,'WARD','SALESMAN',7698,'1981-2-22',1250,500,30);
@@ -306,53 +319,358 @@ id表示运行顺序，同id从上到下，不同id从大到小
 
 eg：
 explain select * from emp t1 join dept t2 on t1.deptno = t2.deptno;
-![id#1](picture/执行计划/id#1.png)
+![id1](picture\execute\id1.png)
 
 explain select * from emp e union select * from emp e2;
-![id#2](picture/执行计划/id#2.png)
+![id2](picture\execute\id2.png)
 union的时候会显示null
 
 #### select_type
 查询的类型：普通查询，联合查询，子查询
 
-| select_type **Value** | 意义                            |
-| --------------------- | ------------------------------- |
-| SIMPLE                | 简单查询（不使用union和子查询） |
-| PRIMARY               | 包含复杂子查询，主查询          |
-| UNION                 |                                 |
-| DEPENDENT UNION       |                                 |
-| UNION RESULT          |                                 |
-| SUBQUERY              |                                 |
-| DEPENDENT SUBQUERY    |                                 |
-| DERIVED               |                                 |
-| DEPENDENT DERIVED     |                                 |
-| MATERIALIZED          |                                 |
-| UNCACHEABLE SUBQUERY  |                                 |
-| UNCACHEABLE UNION     |                                 |
+| select_type **Value** | 意义                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| SIMPLE                | 简单查询（不使用union和子查询，或者只使用简单的子查询）      |
+| PRIMARY               | 包含复杂子查询，外层查询为Primary                            |
+| UNION                 | 如果select出现在union后，就被标记为union                     |
+| DEPENDENT UNION       | 如果select出现在union后，依赖于外层查询                      |
+| UNION RESULT          | union表的结果                                                |
+| SUBQUERY              | 在select或者where列表(不使用函数可能被优化器优化)中包含子查询 |
+| DEPENDENT SUBQUERY    | 子查询要依赖于主查询的查询结果                               |
+| DERIVED（派生表）     | from语句后，where语句前，类似于视图                          |
+| DEPENDENT DERIVED     | 派生表依赖于其他表                                           |
+| MATERIALIZED          | 实体化子查询（物化表），子查询优化策略                       |
+| UNCACHEABLE SUBQUERY  | 无法缓存结果的子查询，必须为每一行重新计算值                 |
+| UNCACHEABLE UNION     | 无法缓存结果的联合查询，必须为每一行重新计算值               |
 
+explain select * from emp e where e.deptno in (select d.deptno from dept d where d.dname = 'SALES');
 
+![SIMPLE](picture\execute\select_type1.png)
 
+explain select * from emp e where e.deptno in (select d.deptno from dept d where d.dname = (select d.deptno from dept d where d.dname ='SALES'));
+![PRIMARY](picture\execute\select_type2.png)
+
+explain select * from emp e1 where deptno = 10 union select * from emp e2 where sal >2000;
+![UNION](picture\execute\select_type3.png)
+
+explain select * from emp e where e.empno  in ( select empno from emp where deptno = 10 union select empno from emp where sal >2000);
+
+![DEPENDENT UNION](picture/execute/DEPENDENT UNION.png)
+
+explain select * from emp e1 where deptno = 10 union select * from emp e2 where sal >2000 and deptno in (select deptno from dept);
+
+![UNION RESULT](picture/execute/UNION RESULT.png)
+
+explain select * from emp where deptno > (select avg(deptno) from dept) ;
+
+![SUBQUERY](picture/execute/SUBQUERY.png)
+
+explain select *,(select dname from dept where deptno = e.deptno) from emp e;
+
+![DEPENDENT SUBQUERY](picture/execute/DEPENDENT SUBQUERY.png)
+
+explain select * from (select dname,deptno from dept group by deptno) a where deptno > 5;
+
+![DERIVED](picture/execute/DERIVED.png)
+
+explain select *,(select dname from dept d union select dname from dept e where deptno = emp.deptno) from emp;
+
+![UNCACHEABLE SUBQUERY](picture/execute/UNCACHEABLE SUBQUERY.png)
+
+explain select deptno,(select @rownum:=@rownum+10 from emp union select @rownum from emp  limit 1) from (select @rownum:=0)r,emp;
+
+![UNCACHEABLE UNION](picture/execute/UNCACHEABLE UNION.png)
 
 #### table
 
+表示对应的表名，可能是别名，代号
+
 #### partitions
+
+显示查询的字段是表中的哪个分区
+
+
+
+ps：partition的功能是将真正存储的磁盘文件按照要求进行分割存储，但是查询时仍然是一张表，防止文件过大查询过慢
 
 #### type
 
+type显示的是访问类型，访问类型表示我是以何种方式去访问我们的数据，最容易想的是全表扫描，直接暴力的遍历一张表去寻找需要的数据，效率非常低下，访问的类型有很多，效率从最好到最坏依次是：
+
+system > const > eq_ref > ref > fulltext > ref_or_null > index_merge > unique_subquery > index_subquery > range > index > ALL 
+
+一般情况下，得保证查询至少达到range级别，最好能达到ref
+
+```sql
+--all:全表扫描，一般情况下出现这样的sql语句而且数据量比较大的话那么就需要进行优化。
+explain select * from emp;
+
+--index：全索引扫描这个比all的效率要好，主要有两种情况，一种是当前的查询时覆盖索引，即我们需要的数据在索引中就可以索取，或者是使用了索引进行排序，这样就避免数据的重排序
+explain  select empno from emp;
+
+--range：表示利用索引查询的时候限制了范围，在指定范围内进行查询，这样避免了index的全索引扫描，适用的操作符： =, <>, >, >=, <, <=, IS NULL, BETWEEN, LIKE, or IN() 
+explain select * from emp where empno between 7000 and 7500;
+
+--index_subquery：利用索引来关联子查询，不再扫描全表
+explain select * from emp where emp.job in (select job from t_job);
+
+--unique_subquery:该连接类型类似与index_subquery,使用的是唯一索引
+ explain select * from emp e where e.deptno in (select distinct deptno from dept);
+ 
+--index_merge：在查询过程中需要多个索引组合使用，没有模拟出来
+
+--ref_or_null：对于某个非主键字段既需要关联条件，也需要null值的情况下，查询优化器会选择这种访问方式
+explain select * from emp e where e.deptno is null or e.deptno = 10;
+
+--ref：使用了非唯一性索引进行数据的查找
+ create index idx_3 on emp(deptno);
+ explain select * from emp e,dept d where e.deptno =d.deptno;
+
+--eq_ref ：使用唯一性索引进行数据查找
+explain select * from emp,emp2 where emp.empno = emp2.empno;
+
+--const：这个表至多有一个匹配行，
+explain select * from emp where empno = 7369;
+ 
+--system：表只有一行记录（等于系统表），这是const类型的特例，平时不会出现
+```
+
 #### possible_keys
+
+显示可能用到的所有索引
 
 #### key
 
+显示真正用到的索引
+
 #### key_len
+
+显示索引使用的字节数，越少越好
 
 #### ref
 
+索引的具体匹配表中的字段
+
 #### rows
+
+大致估计找出所需记录需要读取的长度，越少越好
 
 #### filtered
 
+大致估计按条件被过滤的行的百分比，rows*filtered计算出下一轮计算要读取的大小
+
 #### Extra
 
+包含额外的信息。
+
+```sql
+--using filesort:说明mysql无法利用索引进行排序，只能利用排序算法进行排序，会消耗额外的位置
+explain select * from emp order by sal;
+
+--using temporary:建立临时表来保存中间结果，查询完成之后把临时表删除
+explain select ename,count(*) from emp where deptno = 10 group by ename;
+
+--using index:这个表示当前的查询时覆盖索引的，直接从索引中读取数据，而不用访问数据表。如果同时出现using where 表名索引被用来执行索引键值的查找，如果没有，表面索引被用来读取数据，而不是真的查找
+explain select deptno,count(*) from emp group by deptno limit 10;
+
+--using where:使用where进行条件过滤
+explain select * from t_user where id = 1;
+
+--using join buffer:使用连接缓存
+explain select * from emp e left join (select * from dept where deptno > 10) d on e.deptno = d.deptno;
+
+--no matching row in const table语句的结果总是false
+explain select * from emp where empno = 7469;
+```
+
+## 通过索引进行优化
+
+### 树的演化
+二叉树
+二叉搜索树：右孩子比根大，左孩子比根小
+AVL（平衡二叉树）：基于二叉搜索树，由于二叉搜索树可能产生严重倾斜问题，产生了平衡二叉树，规定任何结点左右孩子高度差不能大于1
+红黑树：由于平衡二叉树的插入效率太慢，需要做大量的旋转，所以产生了红黑树，其特性为树高不超过最低树高的2倍（损失了部分查询性能，找到插入查找的平衡），树上不存在连续的两个红色结点，从一个结点出发到叶子结点途径的结点中，黑色结点个数相同
+
+二叉树由于每个结点最多只有两个分支，产生了一个深度的瓶颈，深度导致IO过多，所以数据库不会用二叉树，从而产生了B树和B+树
+
+B树特点：
+1.所有键值分布在整棵树中
+2.搜索有可能在非叶子结点结束
+3.每个结点最多拥有m个子树
+4.根节点至少有两个子树
+5.分支结点至少有m/2棵子树
+6.所有叶子结点都在同一层，每个结点最多可以有m-1个key，并且以升序排列
+
+ps：innodb默认读16KB，也就是1页
+
+B+树：
+基于B树的优化，将数据移到叶子结点，大大增加了一次IO读取的索引数量，增加了查询效率，为了支撑范围查询，叶子结点之间增加指针
+
+B\*树：
+在B+树基础之上，在非叶子结点之间增加了指针
+
+### 索引的优点
+1.大大减少了服务器需要扫描的数据量
+2.帮助服务器避免排序和临时表
+3.将随机io变成顺序io
+
+ps：
+随机IO：读写操作时间连续但是地址不连续
+顺序IO：读写操作的访问地址连续
+
+### 索引用处
+1.快速查找匹配where子句的行
+2.如果可以在多个索引之间进行选择，通常会选择使用最少行的索引（row数值越小越好）
+3.如果表中有多列索引，优化器可以使用索引的任何最左前缀来查找行
+4.当表连接的时候，从其他表检索行数据
+5.查找特定索引列的min或者max
+6.如果排序或者分组是在可用索引的最左前缀上完成的，则对表进行排序和分组
+7.在某些情况下，可以优化查询以检索值而无需查询数据行
+
+### 索引分类
+主键索引
+> ALTER  TABLE  `table_name`  ADD  PRIMARY  KEY (  `column`  ) 
+
+唯一索引
+> ALTER  TABLE  `table_name`  ADD  UNIQUE (`column` ) 
+
+普通索引
+> ALTER  TABLE  `table_name`  ADD  INDEX index_name (  `column`  )
+
+全文索引（一般给varchar，text这种）
+>ALTER  TABLE  `table_name`  ADD  FULLTEXT ( `column` )
+>alter table `table_name` add key(`column`(`len`))
+
+组合索引
+> ALTER  TABLE  `table_name`  ADD  INDEX index_name (  `column1`,  `column2`,  `column3`  )
+
+### 索引匹配方式（组合索引）
+样例表
+> create table staffs(
+    id int primary key auto_increment,
+    name varchar(24) not null default '' comment '姓名' ,
+    age int not null default 0 comment '年龄',
+    pos varchar(20) not null default '' comment '职位',
+    add_time timestamp not null default current_timestamp comment '入职时间'
+    )charset utf8mb4 comment '员工记录表';
+>
+> alter table staffs add index idx_nap(name,age,pos);
+
+#### 全值匹配
+explain select * from staffs where name = 'July' and age='23' and pos='dev';
+
+#### 匹配最左前缀
+非全匹配，只匹配前面几列
+explain select * from staffs where name = 'July' and age='23' 
+
+#### 匹配列前缀
+只匹配某一列的开头部分
+explain select * from staffs where name like 'Ju%';
+
+#### 匹配范围值
+explain select * from staffs where name >  'July';
+如果联合索引某个点开始使用了范围查询，后面的索引均不生效
+
+#### 精确匹配某一列并范围匹配另外一列
+explain select * from staffs where name = 'July' and age > 23
+
+#### 只访问索引的查询
+覆盖索引（Extra中出现using index）
+
+**注意**
+千万不要用like并且条件以%开头，无法使用索引
+
+### hash索引
+特点：
+基于哈希表的实现，只有精确匹配才能查询
+哈希索引速度快
+在mysql中，只有memory支持
+限制：
+1.索引只包含hash值和行指针，不能使用索引去判断对应行是否有效
+2.不按照索引顺序存储，无法排序
+3.不支持部分列匹配查找，因为hash值是根据全部列进行计算的
+4.支持等值比较查找不支持范围查找
+5.访问速度很快，除非有很多哈希冲突，实际mysql用的链地址法
+6.哈希冲突比较多，维护代价会提高
+
+可以当缓存使用
+
+ps：
+如何避免hash冲突问题？
+1.链地址法
+2.开放地址法
+3.最重要的是要编写优秀的hash函数
+
+CRC32是什么？
+循环冗余校验，保证数据准确性
+用途：如果要存很多url，可以用CRC32将url变成整数值，再进行比较
+
+### 聚簇索引
+数据行和相邻的键值紧凑的存储在一起
+优点：
+可以将相关数据保存在一起
+数据访问更快
+可以使用覆盖索引
+缺点：
+1.聚簇数据提高IO密集型应用的性能，如果数据全部存放在内存，就没有优势
+2.插入速度严重依赖于插入顺序，按照主键插入是最快的方式
+3.更新聚簇索引列的代价很高，因为会强制将每个被更新的行移动到新的位置
+4.基于聚簇索引的表在插入新行，或者主键被更新导致需要移动行的时候，可能面临页分裂的问题
+5.聚簇索引可能导致全表扫描变慢，尤其是行比较稀疏，或者由于页分裂导致数据存储不连续的时候
+
+ps：数据移动的时候可以通过关闭索引防止索引频繁更新，然后最后打开索引进行一个更新，这样移动的速度更快
+
+### 非聚簇索引
+索引存放顺序与实际存放的顺序不同，体现在文件中就是数据文件和索引文件分开存放
+
+### 覆盖索引
+优势：
+减少IO，提高IO密集型的性能
+
+### 优化细节
+1.使用索引列进行查询的时候不要使用表达式，把计算放到业务层（索引废了）
+2.尽量使用主键查询，因为主键查询不会触发回表
+3.使用前缀索引（索引BLOB,TEXT,VARCHAR的列，选择合适的过滤条件类似abc%，可以查看重复的部分，用某一个部分去创建索引）
+alter table citydemo add key(city(7))
+show index from citydemo
+有个Cardinality字段，显示了当前根据索引产生的数据基数有多少，HyperLogLog算法用来计算基数（Distinct Value），基数越小越好
+4.使用索引扫描来排序（创建组合索引的时候默认是升序排列，所以如果是升序排列，请不要一个升序一个降序）（组成最左前缀）
+5.union all,in,or 都能够使用索引，推荐使用in（如果in和exist要选择的话，推荐exist）
+6.范围列可以使用索引，但是后续列无法用于索引（范围条件是!=,>,<;>=;<=;between）
+7.强转会产生全表扫描
+8.更新十分频繁，数据区分度不高的字段不建议建立索引(维护成本比较高，要产生页合并和页分裂，区分度太低（小于80%）不建议)
+9.创建索引的列，不允许为null，可能会得到不符合预期的结果
+10.当需要进行表连接的时候，不要超过三张表
+11.如果明确知道只有一条结果返回，limit能提高效率
+12.单表索引建议控制在5个以内
+13.创建索引的时候应该避免以下错误概念
+(1) 过早优化
+(2)索引越多越好
+
 ## 名词
-**索引下推**
-减少回表次数
+**回表**
+通过其他索引找到主键，然后通过主键索引查询对应的数据叫回表
+**覆盖索引**
+MyISAM和Innodb支持，select中的值使用到了索引，不用再回表了，Extra中使用using index
+**最左匹配（前缀）**
+联合索引的时候，按照第一个where条件去联合索引中找，如果联合索引的第一个不是当前条件，那么就无法使用该索引，只有一一匹配才能使用（先有最左边才能查右边）
+**索引下推（5.6之后）**
+联合索引的时候，如果where中的值是我所使用的索引，会根据索引先匹配完毕，然后再向服务器查询数据，IO较少（充分利用索引数据）
+**谓词下推(优化器)**
+SQL中的谓词主要有 LKIE、BETWEEN、IS NULL、IS NOT NULL、IN、EXISTS
+数据表进行join的时候，将过滤表达式尽可能移动至靠近数据源的位置，以使真正执行时能直接跳过无关的数据
+eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
+**页分裂**
+在进行插入的时候，如果到达100%，正常应该把数据存放到下一页，如果下一个也没有足够空间存放，那就创建一个新页，然后从可以分裂的点开始分裂成两页，并调整相应页面的头尾指针（所以会产生页错位，逻辑上仍然有序，但是物理上无序）
+
+如果要处理页错位问题，那么就要进行页合并，或者用optimize重新整理表
+**页合并**
+在进行删除的时候，如果当前区域到达一个阈值，默认是页的50%以下，就会去找相邻的页，查看是否可以合并成一个新页
+**IO密集型**
+消耗资源比较多
+**CPU密集型**
+消耗cpu（计算）比较多
+**OLAP(On-Line Analytical Processing)**
+联机分析处理
+**OLTP(On-Line  Transaction Processing)**
+联机事务处理
