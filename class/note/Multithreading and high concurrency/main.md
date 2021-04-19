@@ -324,37 +324,37 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 ### 公平锁
 使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
 
-## CountDownLatch
+## CountDownLatch（Sync ext AQS）
 每次调用latch.countDown()时计数器减一，直到计数器变为0，才能够通过latch.await()方法
 
-## CyclicBarrier
+## CyclicBarrier（ReentrantLock）
 每次调用await方法会将计数器加一，要达到一定线程数量才会继续执行
 
-## Phaser
+## Phaser（CAS）
 维护着一个叫 phase 的成员变量代表当前执行的阶段
 调用arriveAndAwaitAdvance方法或arriveAndDeregister方法推进阶段
 使用时重写onAdvance方法，分阶段拦截，增强版的CyclicBarrier
 
-## ReentrantReadWriteLock（重要）
+## ReentrantReadWriteLock（重要）（Sync ext AQS）
 构成：共享锁（读锁）+ 排它锁（互斥锁）（写锁）
 共享锁：当大家一起读的时候，允许一起访问
 排它锁：如果正在写，那么不允许其他线程访问
 
-### StampedLock
+### StampedLock（CLH）
 由于ReadWriteLock拥有写线程需要等待读线程执行完成才能写入的问题，产生了StampedLock
 **特点**
-是一个不可重入锁，是一个乐观读锁
+是一个不可重入锁（因为是CLH），是一个乐观读锁
 通过tryOptimisticRead去判断是否有写锁进行操作，如果有进行特定处理，如果没有就直接执行业务逻辑
 **使用**
 通过tryOptimisticRead判断当前是否有写操作，如果有写操作，就升级为读锁，再重新读取数据，如果没有就执行业务逻辑
 
-## Semaphore
+## Semaphore（Sync ext AQS）
 通过s.acquire()去取信号量，当信号量减少到0时其他线程无法获取，通过s.release()释放信号量，可以做限流
 
-## Exchanger
+## Exchanger(CAS)
 线程之间交换数据用，第一次调用exchange方法的时候会写入数据并阻塞，第二次调用的时候会交换数据并运行
 
-## AQS（上述全部是AQS的子类）
+## AQS
 是由CAS+volatile实现的，它的核心变量是state是volatile修饰的，修改的时候使用CAS
 是CLH锁的变体
 

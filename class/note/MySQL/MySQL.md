@@ -191,6 +191,7 @@ ps ：单独设置utf8如果中文网站可能会出现乱码，常使用utf8mb4
 | 支持全文索引 | 是           | 是 after5.6            |
 | 适合操作类型 | select       | update，delete，insert |
 | 数据存放方式 | 数据索引分开 | 数据索引存在一块       |
+|锁|共享读锁，独占写锁 |共享锁，排他锁|
 
 老版本（8.0之前）用.frm存储表结构，MyISAM用.MYD（数据）,.MYI（索引）存储数据，Innodb用.ibd存储数据
 8.0之后，删除.frm，表结构存储在元数据信息中，默认ibdata1文件，对于非Innodb表，冗余存储一份SDI（Serialized Dictionary Information）数据在.sdi中，对于Innodb表，直接存储与.idb中
@@ -457,7 +458,7 @@ explain select * from emp where empno = 7369;
 
 #### filtered
 
-大致估计按条件被过滤的行的百分比，rows*filtered计算出下一轮计算要读取的大小
+大致估计按条件被过滤的行的百分比，rows\*filtered计算出下一轮计算要读取的大小
 
 #### Extra
 
@@ -643,13 +644,27 @@ show index from citydemo
 10.当需要进行表连接的时候，不要超过三张表
 11.如果明确知道只有一条结果返回，limit能提高效率
 12.单表索引建议控制在5个以内
-13.创建索引的时候应该避免以下错误概念
+13.组合索引不宜建超过5个
+14.创建索引的时候应该避免以下错误概念
 (1) 过早优化
 (2)索引越多越好
 
+## 索引监控
+show status like 'Handler_read%'
+
+| Variable_name                          | Value | use                            |
+| -------------------------------------- | ----- | ------------------------------ |
+| Handler_read_first                     | 11    | 读取索引第一个条目的次数       |
+| **Handler_read_key（Attention）**      | 36    | 通过index获取数据的次数        |
+| Handler_read_last                      | 0     | 读取索引最后一个条目的次数     |
+| Handler_read_next                      | 53    | 通过索引读取下一条数据的次数   |
+| Handler_read_prev                      | 0     | 通过索引读取上一条数据的次数   |
+| Handler_read_rnd                       | 3     | 从固定位置读取数据的次数       |
+| **Handler_read_rnd_next（Attention）** | 89    | 从数据结点读取下一条数据的次数 |
+
 ## 关于join
 Simple nested loop join
-简单嵌套join
+简单嵌套连接
 A表驱动B表，从A中取出记录匹配B表中的列，然后在合并结果
 
 Index nested loop join
@@ -657,12 +672,109 @@ Index nested loop join
 只有当索引匹配才会进行回表查询
 
 Block nested loop join
-加入一个缓存（默认值为join_buffer_size = 256K），将驱动表数据全部加载到内存，然后批量与非驱动表进行匹配
+加入一个缓存（默认值为join_buffer_size = 256K，最大4G），将驱动表数据全部加载到内存，然后批量与非驱动表进行匹配，默认情况下开启，在optimizer_switch下的block_nested_loop=on
+
+show variables like '%join_buffer%';
+show variables like '%optimizer_switch%'
+set optimizer_switch='block_nested_loop=off'
+
+ps：
+如果两表进行inner join，那么后面过滤条件写在on中和写在where中没有区别
+如果两表进行left join，那么后面过滤条件只对右表生效，左表永远为全部值
+如果两表进行right join，那么后面过滤条件只对左表生效，右表永远为全部值
 
 ps:
 如果大表join大表，最好的方式是做分区预算（分区表）
 
+## 查询优化
+### 查询慢的原因
+网络
+CPU
+IO
+上下文切换
+系统调用
+生成统计信息
+锁等待
+
+### 优化数据访问
+**查询性能低下主要原因是访问数据太多，某些查询不可避免的需要筛选大量的数据，我们可以通过减少访问数据量的方式进行优化**
+确认应用程序是否检索大量不需要的数据
+确认mysql服务器是否在分析大量超过需要的数据行
+
+**是否向数据库请求了不需要的数据**
+查询不需要的记录：优化方式时尽量使用limit，不然可能查完还会继续向下查，造成不必要的开支
+多表关联时返回全部列：不要返回不要的字段
+总是取出全部列
+重复查询相同的数据
+
+## 执行过程的优化
+### 查询缓存（8以前）
+查询一个语句的时候先检查缓存，如果命中直接返回
+
+### 查询优化处理
+**语法解析器和预处理**
+mysql通过语法解析器会将SQL转成AST树，预处理器会验证树是否合法，例如表名列名是否存在，是否有歧义，并且验证权限
+
+如果要自己写，可以借助Apache Calcite库
+
+**查询优化器**
+优化器会选择成本最小的一个执行方式
+
+查看成本（越高越差）：show status = 'last_query_cost'
+通过一系列计算得出：根据表或索引的页面个数，索引基数，索引和数据行的长度，索引分部来计算
+
+在很多情况下mysql会选择错误的执行计划，原因如下
+优化器的优化策略
+> 静态优化（只执行一次）：直接对解析树进行分析，完成优化
+> 动态优化（每次都要执行）：与查询上下文有关，可能跟取值，索引对应的行数有关
+
+优化器的优化类型
+> 重新定义关联表的顺序
+> 将外连接转化成内连接，内连接效率比外连接快
+> 使用等价变换规则
+> 优化count(),min(),max()
+> 预估并转换为常数表达式，类似于select * from A where x_col = 1,会将1转成常量值
+> 索引覆盖
+> 子查询优化，将子查询放入缓存
+> 等值传播（就是能用一个值判断的不用两个值）：类似于select * from A join B on A.col=B.col where A.col = 1 and B.col = 1会被优化成select * from A join B on A.col=B.col where A.col = 1
+
+关联查询
+
+> simple nested loop join
+> index nested loop join
+> block nested loop join
+>
+> 
+>
+> ps:加入straight_join强制指定表连接的顺序
+> 类似于select straight_join xxxxxx;
+
+排序优化
+
+> 两次传输排序：第一次先读出需要排序的字段排好序，再去查找对应的数据行。缺点：随机IO，读取成本高。优点：排序的时候存储少的数据，充分利用缓冲区
+>
+> 单次传输排序：先读取查询需要的所有列，再根据对应列进行排序。优点：没有随机IO，速度快。缺点：占用存储空间，可能缓冲区放不下
+>
+> 选择：当需要排序的列的总大小+orderby的列的大小超过max_length_for_sort_data（8.0以上为4096）定义的字节，就会选用两次排序，否则使用单次
+
+## 优化对应
+### 优化count()查询
+注意，在计算全部列数量的时候，在MySQL中，不管是count(\*),count(1),count(列)（可能出现不统计null的情况），效果是一样的
+
+1.MyISAM中有一个变量记录整体插入数据的行数，所以MyISAM进行不带任何条件的count(\*)时比较快，不然其实和其他速度一样
+2.使用近似值，如果不是需要一个精确值，可以记录一个近似值替代
+3.更复杂的优化（实际操作的时候，可以在外部维护一个缓存）
+
+### 优化关联查询
+确保on或者using子句中的列上有索引，在创建索引的时候就要考虑到关联顺序
+尽量在order by和group by中用到索引
+
+### 优化子查询
+
+### 优化group by和distinct
+
 ## 名词
+
 **回表**
 通过其他索引找到主键，然后通过主键索引查询对应的数据叫回表
 **覆盖索引**
@@ -689,3 +801,6 @@ eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
 联机分析处理
 **OLTP(On-Line  Transaction Processing)**
 联机事务处理
+**等值传播**
+就是能用一个值判断的不用两个值
+类似于select * from A join B on A.col=B.col where A.col = 1 and B.col = 1会被优化成select * from A join B on A.col=B.col where A.col = 1
