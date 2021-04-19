@@ -647,6 +647,21 @@ show index from citydemo
 (1) 过早优化
 (2)索引越多越好
 
+## 关于join
+Simple nested loop join
+简单嵌套join
+A表驱动B表，从A中取出记录匹配B表中的列，然后在合并结果
+
+Index nested loop join
+非驱动表（匹配）上加索引
+只有当索引匹配才会进行回表查询
+
+Block nested loop join
+加入一个缓存（默认值为join_buffer_size = 256K），将驱动表数据全部加载到内存，然后批量与非驱动表进行匹配
+
+ps:
+如果大表join大表，最好的方式是做分区预算（分区表）
+
 ## 名词
 **回表**
 通过其他索引找到主键，然后通过主键索引查询对应的数据叫回表
