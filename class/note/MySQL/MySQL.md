@@ -374,6 +374,11 @@ explain select * from (select dname,deptno from dept group by deptno) a where de
 
 ![DERIVED](picture/execute/DERIVED.png)
 
+explain select st.* from student st where exists(select c_id from score sc join course cs using(c_id) join teacher th using(t_id) where t_name = '张三' and st.s_id = sc.s_id);
+
+![MATERIALIZED](picture/execute/MATERIALIZED.png)
+
+
 explain select *,(select dname from dept d union select dname from dept e where deptno = emp.deptno) from emp;
 
 ![UNCACHEABLE SUBQUERY](picture/execute/UNCACHEABLE SUBQUERY.png)
@@ -805,7 +810,7 @@ update emp set deptno = 40 where empno = 7369 and @row_num=deptno;
 减少了插入后的查询
 update emp set hiredate = now() where empno=7369 and @row_num:=now();
 
-3.在赋值和读取变量的时候可能是在查询的不同阶段
+3.在赋值和读取变量的时候可能是在查询的不同阶段（谨慎使用）
 select \*,(@row_num := @row_num + 1) from emp where @row_num <=1;
 ![更新完之后想记录原数据可以用变量去记录](picture/更新完之后想记录原数据可以用变量去记录.png)
 解决方式：
@@ -813,6 +818,209 @@ select \*,@row_num from emp where (@row_num:=@row_num + 1)  <=1;
 
 select \*,(@row_num := @row_num + 1) from emp where @row_num <=1 order by ename;
 ![自定义变量打破原始执行顺序](picture/自定义变量打破原始执行顺序.png)
+
+## 分区表
+### 应用场景
+1.表非常大，无法全部放在内存中
+2.分区表数据更容易维护
+3.分区表的数据可以分部在不同的物理设备上，从而高效的利用多个硬件设备
+4.可以使用分区表来避免某些特殊的瓶颈
+> innodb的单个索引的互斥访问；ext3文件系统的innode锁竞争
+
+5.可以备份和恢复独立的分区
+
+### 限制
+1.一个表最多只有1024个分区，8196
+2.在早期mysql中，分区表达式必须是整数或者返回整数的表达式，在5.5之后，可以直接用列进行分区
+**3.如果分区字段中有主键或者唯一索引的列，那么所有主键列和唯一索引列都必须包含进来**
+4.分区表无法用外键约束
+
+### 原理
+底层原理：分区表由一个个底层表实现，可以直接访问各个分区。分区表的索引只是在各个底层表上各自加了一个完全相同的索引。存储引擎的角度来看，底层表和普通表没有啥区别，存储引擎无需知道这是分区表的部分还是普通表。
+
+**select**
+查询的时候，分区层先打开并锁住所有底层表，优化器判断过滤分区，再进行访问
+**insert**
+插入的时候，分区层先打开并锁住所有底层表，优化器判断分区，再进行写入
+**delete**
+删除的时候，分区层先打开并锁住所有底层表，优化器判断分区，再进行删除
+**update**
+更新的时候，分区层先打开并锁住所有底层表，优化器判断分区，取出数据并更新，判断更新后的数据在哪个分区，如果分区列被更新，就到新分区写入，然后在旧分区删除
+
+### 分区表的类型
+#### 范围分区
+https://dev.mysql.com/doc/refman/8.0/en/partitioning-management-range-list.html
+```SQL
+CREATE TABLE tr (id INT, name VARCHAR(50), purchased DATE)
+        PARTITION BY RANGE( YEAR(purchased) ) (
+           PARTITION p0 VALUES LESS THAN (1990),
+           PARTITION p1 VALUES LESS THAN (1995),
+           PARTITION p2 VALUES LESS THAN (2000),
+           PARTITION p3 VALUES LESS THAN (2005),
+           PARTITION p4 VALUES LESS THAN (2010),
+           PARTITION p5 VALUES LESS THAN (2015)
+        );
+INSERT INTO tr VALUES
+        (1, 'desk organiser', '2003-10-15'),
+        (2, 'alarm clock', '1997-11-05'),
+        (3, 'chair', '2009-03-10'),
+       (4, 'bookcase', '1989-01-10'),
+        (5, 'exercise bike', '2014-05-09'),
+        (6, 'sofa', '1987-06-05'),
+         (7, 'espresso maker', '2011-11-22'),
+        (8, 'aquarium', '1992-08-04'),
+         (9, 'study desk', '2006-09-16'),
+        (10, 'lava lamp', '1998-12-25');
+```
+#### 列表分区
+```SQL
+CREATE TABLE tt (
+    id INT,
+    data INT
+)
+PARTITION BY LIST(data) (
+    PARTITION p0 VALUES IN (5, 10, 15),
+    PARTITION p1 VALUES IN (6, 12, 18)
+);
+```
+
+#### 列分区
+就是列表分区和范围分区的整合，是一个变种，它支持分区键中使用多个列
+```SQL
+CREATE TABLE td (
+    id INT,
+    data INT
+)
+PARTITION BY LIST COLUMNS(data,id) (
+    PARTITION p0 VALUES IN ((5,1), (10,3), (15,5)),
+    PARTITION p1 VALUES IN ((6, 2),(12,4), (18,6))
+);
+---------------------------------------------
+CREATE TABLE tr (id INT, name VARCHAR(50), purchased DATE)
+        PARTITION BY RANGE COLUMNS( YEAR(purchased) ) (
+           PARTITION p0 VALUES LESS THAN (1990),
+           PARTITION p1 VALUES LESS THAN (1995),
+           PARTITION p2 VALUES LESS THAN (2000),
+           PARTITION p3 VALUES LESS THAN (2005),
+           PARTITION p4 VALUES LESS THAN (2010),
+           PARTITION p5 VALUES LESS THAN (2015)
+        );
+INSERT INTO tr VALUES
+        (1, 'desk organiser', '2003-10-15'),
+        (2, 'alarm clock', '1997-11-05'),
+        (3, 'chair', '2009-03-10'),
+       (4, 'bookcase', '1989-01-10'),
+        (5, 'exercise bike', '2014-05-09'),
+        (6, 'sofa', '1987-06-05'),
+         (7, 'espresso maker', '2011-11-22'),
+        (8, 'aquarium', '1992-08-04'),
+         (9, 'study desk', '2006-09-16'),
+        (10, 'lava lamp', '1998-12-25');
+```
+
+#### hash分区(不能drop删除partition)
+https://dev.mysql.com/doc/refman/8.0/en/partitioning-management-hash-key.html
+```SQL
+CREATE TABLE clients (
+    id INT,
+    fname VARCHAR(30),
+    lname VARCHAR(30),
+    signed DATE
+)
+PARTITION BY HASH( MONTH(signed) ) --对某个值进行hash分区
+PARTITIONS 12; --指定创建的分区表
+```
+#### key分区(不能drop删除partition)
+主键和唯一键的分区，要注意的是，如果一个表既包含主键又包含带索引的唯一键，那么分区的时候要全部包含进来
+```SQL
+--默认主键
+CREATE TABLE k1 (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(20)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+--没有主键默认唯一键（但是必须不为空，如果设置为空，则创建失败）
+CREATE TABLE k1 (
+    id INT NOT NULL,
+    name VARCHAR(20),
+    UNIQUE KEY (id)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+--或者如果自己指定就没限制
+CREATE TABLE tm2 (
+    s1 CHAR(32) PRIMARY KEY
+)
+PARTITION BY KEY(s1)
+PARTITIONS 10;
+```
+直接哈希取模存储
+
+#### 子分区（SUBPARTITION）（复合分区）
+https://dev.mysql.com/doc/refman/8.0/en/partitioning-management-exchange.html
+在分区的基础上继续分区,注意子分区只能用key或者hash的形式，主分区只支持range和list
+```SQL
+CREATE TABLE ts (id INT, purchased DATE)
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY HASH( TO_DAYS(purchased) )
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES LESS THAN (1990),
+        PARTITION p1 VALUES LESS THAN (2000),
+        PARTITION p2 VALUES LESS THAN MAXVALUE
+    );
+    
+--对于 SUBPARTITIONS语法，不支持key的一个默认写法，即SUBPARTITION BY KEY()，暂时只支持手动指定
+CREATE TABLE ts (id INT, purchased DATE)
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY HASH( TO_DAYS(purchased) ) (
+        PARTITION p0 VALUES LESS THAN (1990) (
+            SUBPARTITION s0,
+            SUBPARTITION s1
+        ),
+        PARTITION p1 VALUES LESS THAN (2000) (
+            SUBPARTITION s2,
+            SUBPARTITION s3
+        ),
+        PARTITION p2 VALUES LESS THAN MAXVALUE (
+            SUBPARTITION s4,
+            SUBPARTITION s5
+        )
+    );
+```
+#### 分区公用语句
+**移除分区**
+ALTER TABLE TR REMOVE PARTITIONING
+这个不会删除数据，会删除所有的分区表并且将分区文件进行一个合并
+**删除分区**
+ALTER TABLE tr DROP PARTITION p2;
+注意，拿掉分区了之后，分区中的数据全部消失
+**添加分区**
+ALTER TABLE members ADD PARTITION (PARTITION p3 VALUES LESS THAN (2010));
+注意，只能添加相对大的分区，如果小的会报错，如果一定要分小的，可以使用reorgnize
+ALTER TABLE members
+    REORGANIZE PARTITION p0 INTO (
+        PARTITION n0 VALUES LESS THAN (1970),
+        PARTITION n1 VALUES LESS THAN (1980)
+);
+**组合分区**
+ALTER TABLE members
+    REORGANIZE PARTITION p01,p02 INTO (
+        PARTITION p0 VALUES LESS THAN (1990)
+);
+
+### 如何使用分区
+1.全是扫描数据，不要任何索引（写查询的时候尽量用分区字段）
+2.索引数据，分离热点（如果数据有明显热点：经常查询的数据，那么可以将这部分数据单独放在一个分区中）
+
+场景：从非常大的表中查询一段段时间的记录，可以进行分区表的划分
+
+### 使用分区表要注意的问题
+1.null使分区过滤无效
+2.分区列和索引列不匹配，导致无法进行分区过滤
+3.选择分区的成本可能很高
+4.打开并锁住所有底层表的成本可能很高
+5.维护分区的成本可能很高
 
 ## sql执行顺序
 1.from
@@ -858,3 +1066,7 @@ eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
 **等值传播**
 就是能用一个值判断的不用两个值
 类似于select * from A join B on A.col=B.col where A.col = 1 and B.col = 1会被优化成select * from A join B on A.col=B.col where A.col = 1
+**垂直分区**
+就是按照业务分区
+**水平分区**
+不按业务，按照一个与业务无关的条件分区
