@@ -703,6 +703,7 @@ IO
 
 **是否向数据库请求了不需要的数据**
 查询不需要的记录：优化方式时尽量使用limit，不然可能查完还会继续向下查，造成不必要的开支
+
 多表关联时返回全部列：不要返回不要的字段
 总是取出全部列
 重复查询相同的数据
@@ -720,7 +721,7 @@ mysql通过语法解析器会将SQL转成AST树，预处理器会验证树是否
 **查询优化器**
 优化器会选择成本最小的一个执行方式
 
-查看成本（越高越差）：show status = 'last_query_cost'
+查看成本（越高越差）：show status like 'last_query_cost'
 通过一系列计算得出：根据表或索引的页面个数，索引基数，索引和数据行的长度，索引分部来计算
 
 在很多情况下mysql会选择错误的执行计划，原因如下
@@ -771,7 +772,60 @@ mysql通过语法解析器会将SQL转成AST树，预处理器会验证树是否
 
 ### 优化子查询
 
+尽量能使用join的就用join
+因为子查询会产生临时表，并且那个临时表是个中间表，会增加IO
+join虽然也会产生临时表但是join的临时表其实是结果表，IO次数较少
+
 ### 优化group by和distinct
+不重要，在非严格情况下可以使用id做group by
+
+### 优化limit的写法
+如果类似于 select * from A limit 1000000,5 的写法，可以优化，让其先通过索引过滤，再进行查询，而不是直接过滤，优化后的SQL为select * from A join (select id from A limit 1000000,5) B on A.id = B.id
+
+### 推荐使用用户自定义变量
+#### 自定义变量的限制
+1.无法使用查询缓存
+2.不能在使用常量或者标识符的地方使用
+3.自定义变量只在一次会话中生效
+4.不能显示声明自定义变量的类型
+5.mysql优化器可能对变量进行优化
+6.在使用赋值表达的时候明确使用括号
+7.使用未定义变量不会产生语法错误
+
+#### 使用样例
+**优化排名语句**
+1.在给一个变量赋值的时候同时使用这个变量
+set @row_num=0;
+select \*,(@row_num := @row_num + 1) from emp;
+
+2.更新完之后想记录原数据可以用变量去记录
+update emp set deptno = 40 where empno = 7369 and @row_num=deptno;
+> 相当于先赋值再查询
+
+减少了插入后的查询
+update emp set hiredate = now() where empno=7369 and @row_num:=now();
+
+3.在赋值和读取变量的时候可能是在查询的不同阶段
+select \*,(@row_num := @row_num + 1) from emp where @row_num <=1;
+![更新完之后想记录原数据可以用变量去记录](picture/更新完之后想记录原数据可以用变量去记录.png)
+解决方式：
+select \*,@row_num from emp where (@row_num:=@row_num + 1)  <=1;
+
+select \*,(@row_num := @row_num + 1) from emp where @row_num <=1 order by ename;
+![自定义变量打破原始执行顺序](picture/自定义变量打破原始执行顺序.png)
+
+## sql执行顺序
+1.from
+2.join
+3.on
+4.where
+5.group by
+6.函数
+7.having
+8.select
+9.distinct
+10.order by
+11.limit
 
 ## 名词
 
