@@ -202,6 +202,13 @@ ps ：单独设置utf8如果中文网站可能会出现乱码，常使用utf8mb4
 **Innodb**
 innodb创建的时候会按照主键生成树，如果没有主键，找唯一键进行排序存储，如果没有唯一键，自己生成一个6位的row_id作为主键
 
+innodb对mvcc的支持：
+通过对每一行记录添加两个额外的隐藏值来实现MVCC，一个记录这条数据何时被创建，一个记录何时过期。注意，mysql并没有存储实际发生的时间，而是存储了一个版本号，版本号随着事务的创建而增长，当一个事务开始时会记录版本号，进行查询时比较版本号是否相同。
+
+在repeatable read时，必须做两件事情：
+1.找到一个行版本，至少要和事务的版本一样老（即他的版本<=事务版本）。这一点保证开始读取的时候，数据存在。
+2.这行数据的删除版本必须未定义或者比当前版本大。保证开始读取的时候，数据还未被删除。
+
 ### 数据冗余
 
 1.被频繁引用且只能通过join 2张（或者更多）大表的方式才能得到的独立小字段
@@ -394,8 +401,6 @@ explain select deptno,(select @rownum:=@rownum+10 from emp union select @rownum 
 #### partitions
 
 显示查询的字段是表中的哪个分区
-
-
 
 ps：partition的功能是将真正存储的磁盘文件按照要求进行分割存储，但是查询时仍然是一张表，防止文件过大查询过慢
 
@@ -750,8 +755,6 @@ mysql通过语法解析器会将SQL转成AST树，预处理器会验证树是否
 > index nested loop join
 > block nested loop join
 >
-> 
->
 > ps:加入straight_join强制指定表连接的顺序
 > 类似于select straight_join xxxxxx;
 
@@ -1022,6 +1025,144 @@ ALTER TABLE members
 4.打开并锁住所有底层表的成本可能很高
 5.维护分区的成本可能很高
 
+## MySQL参数设置
+### general
+**basedir=/var/lib/mysql**
+mysql 安装目录
+**datadir=/var/lib/mysql**
+数据文件存放的目录
+**socket=/var/lib/mysql/mysql.sock**
+使用localhost连接时用到的
+**pid_file=/var/lib/mysql/mysql.pid**
+存储mysql的pid（pid用来杀死进程）
+**port=3306**
+mysql服务器的端口号
+**default_storage_engine=InnoDB**
+默认存储引擎
+**skip-grant-tables**
+忘记密码的时候，可以配置这个参数，跳过权限验证，不需要密码进行登陆
+
+### character
+**character_set_client**
+客户端数据的字符集
+**character_set_connection**
+mysql处理消息的时候将数据转成连接的字符集格式
+**character_set_results**
+mysql发送给客户端的结果集所用的字符集
+**character_set_database**
+数据库默认的字符集
+**character_set_server**
+服务器默认的字符集
+
+### connection
+**max_connections**
+mysql的最大连接数，如果并发请求较多，应该调大
+set global max_connection = 1024;
+**max_used_connections**
+限制每个用户的连接个数，默认0表示无上限
+**back_log**
+mysql能够暂存的连接数量，当mysql的线程在一个很短时间内获得到非常多的连接请求时，如果连接数到达max_connections时，会将请求缓存在堆栈中，如果数量超过back_log，就不再接受连接资源
+**wait_timeout**
+mysql 关闭一个非交互式连接前要等待的时间
+**interactive_timeout**
+mysql关闭一个交互式连接要等待的时间
+
+### log
+**log_error**
+指定错误日志文件名称，用于记录当mysqld启动和停止时，以及服务器在运行中发生严重错误时的相关信息
+**bin_log（5.7默认不开启，8.0之后默认开启）(重要)**
+指定二进制日志文件名称，用于记录对数据造成更改的所有查询语句
+log-bin=master-bin
+主要用于主从复制和数据恢复
+
+8.0之后默认开启
+> Binary logging is enabled by default (the log_bin system variable is set to ON) --出自8.0文档
+
+可以通过`binlog-format=xxx`指定binlog的存储形式，默认为ROW
+```SQL
+SET GLOBAL binlog_format = 'STATEMENT'; --记录每一条修改数据的SQL语句(批量修改时，记录的不是单条SQL语句，而是批量修改的SQL语句事件，所以大大减少了binlog日志量)，但是要记录执行时的状态，并且用了某些动态生成的函数的，无法完全复制，如UUID(),LOAD_FILE(),USER()等，不推荐使用，会导致数据不一致
+SET GLOBAL binlog_format = 'ROW'; --记录每行记录修改的记录，默认方式，保证数据准确，不过在记录批量修改时，会产生大量SQL
+SET GLOBAL binlog_format = 'MIXED'; --混合的，一般语句使用STATEMENT，如果STATEMENT会产生一致性问题的语句，用'ROW'
+```
+
+**binlog_do_db**
+指定将更新记录到二进制日志的数据库，其他所有没有显式指定的数据库将忽略，不记录在日志中
+**binlog_ignore_db**
+指定不将记录更新到二进制日志的数据库
+**sync_binlog**
+指定多少次写日志后同步磁盘
+**general_log**
+是否开启查询日志记录
+**general_log_file**
+指定查询日志文件名，记录所有的查询语句
+**show_query_log**
+是否开启慢查询日志记录
+**show_query_log_file**
+指定慢查询日志文件名，记录耗时较长的查询语句
+**long_query_time**
+设置慢查询的时间，超过时间才会被记录
+**log_slow_admin_statements**
+是否将管理语句写入慢查询日志
+
+
+## 日志
+关系，redo log和undo log是Innodb中的，binlog是mysql中的
+
+事务隔离级别
+Atomic：由undo log实现
+Consistent：由AID实现
+Isolation：由锁实现
+Duration：由redo log实现
+
+正常的一个写入redo log或者undo log数据的操作：
+在用户空间进行一个写入，写入到用户态的redo log buffer中，然后再写入到内核态的OS buffer，通过调用一个fsync()的异步写入方法，对磁盘进行一个输出，写入到redo log或者undo log文件中
+### Redo log
+当发生数据修改时，innodb先将记录记录到redo log，此时更新操作完成。innodb会再找个合适的时间进行一个写入，将数据持久化到磁盘。
+
+特点：redo log是固定大小的，是循环写的过程
+有redo log之后，如果数据库发生异常，记录不会丢失，叫做crash-safe
+记录的是某些行修改后的一个状态，只记录最后一次，恢复的时候只能恢复到最后一次
+
+**write pos**
+可以从write pos向后进行一个写入
+
+**check point**
+要删除数据的位置，如果write pos = check point 那么就要将一部分记录擦除并同步到具体数据文件
+
+**redo log的二阶段提交**
+prepare阶段和commit阶段
+
+为什么会有二阶段提交？
+保证数据一致性
+如果先写redo log 后写 bin log，bin log未写入时服务器宕机，那么redo log中存放了修改后的值，但是通过bin log进行数据恢复的时候不能恢复数据
+如果先写bin log再写redo log，redo log未写入时服务器宕机，那么bin log恢复的时候多了一条数据，依然不正确
+二阶段提交保证了bin log与redo log中的数据一致性
+
+### undo log
+保证原子性
+
+逻辑日志，只是将数据库逻辑地恢复到原来的样子，所有修改都被逻辑地取消，内部结构可能产生变化
+
+具体执行过程：进行操作数据之前，首先将数据进行备份，可以认为是备份一条相反的sql到undo log，然后修改数据，如果出现了错误或者执行了回滚，系统可以利用undo log中的备份将数据恢复到事务开始之前。同时，undo log也会产生redo log，业务undo log也要被持久化保护
+
+用处：提供回滚和MVCC
+
+### bin log
+server层日志
+
+| Bin Log                                              | Redo Log                         |
+| ---------------------------------------------------- | -------------------------------- |
+| 存储的逻辑日志（记录的原始逻辑）                     | 存储的物理日志（记录的最终状态） |
+| 当数据超出文件大小时，会新建文件进行存储，是追加写的 | 当数据超出文件大小时，会循环写   |
+| 速度快，因为是顺序写                                 | 速度慢，因为要进行擦除操作       |
+| server共享                                           | innodb独享                       |
+
+**innodb_flush_log_at_trx_commit**
+能够控制日志的刷新行为
+0：事务完成时，先放到用户态的log buffer中，然后每秒从log buffer中读取到os buffer并且直接调用fsync()异写操作放入log表
+1：事务完成时，直接丢进磁盘
+2：事务完成时，先丢进OS buffer然后每秒进行异写到磁盘
+
 ## sql执行顺序
 1.from
 2.join
@@ -1070,3 +1211,7 @@ eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
 就是按照业务分区
 **水平分区**
 不按业务，按照一个与业务无关的条件分区
+**交互连接**
+长连接，命令行，连接池
+**非交互连接**
+短连接，JDBC
