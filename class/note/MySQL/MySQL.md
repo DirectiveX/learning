@@ -191,7 +191,6 @@ ps ：单独设置utf8如果中文网站可能会出现乱码，常使用utf8mb4
 | 支持全文索引 | 是           | 是 after5.6            |
 | 适合操作类型 | select       | update，delete，insert |
 | 数据存放方式 | 数据索引分开 | 数据索引存在一块       |
-|锁|共享读锁，独占写锁 |共享锁，排他锁|
 
 老版本（8.0之前）用.frm存储表结构，MyISAM用.MYD（数据）,.MYI（索引）存储数据，Innodb用.ibd存储数据
 8.0之后，删除.frm，表结构存储在元数据信息中，默认ibdata1文件，对于非Innodb表，冗余存储一份SDI（Serialized Dictionary Information）数据在.sdi中，对于Innodb表，直接存储与.idb中
@@ -1095,15 +1094,63 @@ SET GLOBAL binlog_format = 'MIXED'; --混合的，一般语句使用STATEMENT，
 是否开启查询日志记录
 **general_log_file**
 指定查询日志文件名，记录所有的查询语句
-**show_query_log**
+**slow_query_log**
 是否开启慢查询日志记录
-**show_query_log_file**
+**slow_query_log_file**
 指定慢查询日志文件名，记录耗时较长的查询语句
 **long_query_time**
 设置慢查询的时间，超过时间才会被记录
 **log_slow_admin_statements**
 是否将管理语句写入慢查询日志
 
+### cache
+**key_buffer_size**
+索引缓存区的大小（只对MyISAM有效）
+**query_cache(5.7之后删除)**
+查询缓存的系列参数
+query_cache_size:查询缓存的大小，未来被删除
+query_cache_limit:超出此大小的查询不被缓存
+query_cache_min_res_unit:缓存块的最小大小
+query_cache_type:缓存类型，0表示禁用，1表示标记sql_no_cache的语句不缓存，2表示只有标记了sql_cache的语句才缓存
+**sort_buffer_size**
+为每个排序线程分配的缓冲区
+**max_allowed_packet=32M**
+mysql server能够接受的数据包的大小
+**join_buffer_size=2M**
+关联缓存的大小
+**thread_cache_size**
+类似于线程池
+
+### innodb
+**innodb_buffer_pool_size**
+该参数指定大小的内存来缓冲数据和索引，最大可以设置为物理内存的80%
+
+**innodb_flush_log_at_trx_commit**
+能够控制日志的刷新行为
+0：事务完成时，先放到用户态的log buffer中，然后每秒从log buffer中读取到os buffer并且直接调用fsync()异写操作放入log表
+1：事务完成时，直接丢进磁盘
+2：事务完成时，先丢进OS buffer然后每秒进行异写到磁盘
+
+**innodb_thread_concurrency**
+设置并发线程数，默认0表示不受限制，如果要设置，建议为CPU核心数的2倍或者一样
+
+**innodb_log_buffer_size**
+日志缓冲区大小，以M为单位
+
+**innodb_log_file_size**
+日志文件大小，以M为单位
+
+**innodb_log_files_in_group**
+以循环方式将日志文件写到多个文件中
+
+**read_buffer_size**
+mysql读入缓冲区大小，顺序扫描的请求会分配到这个buffer中
+
+**read_rnd_buffer_size**
+mysql随机读入缓冲区大小
+
+**innodb_file_per_table**
+为每张表分配一个新文件
 
 ## 日志
 关系，redo log和undo log是Innodb中的，binlog是mysql中的
@@ -1116,6 +1163,7 @@ Duration：由redo log实现
 
 正常的一个写入redo log或者undo log数据的操作：
 在用户空间进行一个写入，写入到用户态的redo log buffer中，然后再写入到内核态的OS buffer，通过调用一个fsync()的异步写入方法，对磁盘进行一个输出，写入到redo log或者undo log文件中
+
 ### Redo log
 当发生数据修改时，innodb先将记录记录到redo log，此时更新操作完成。innodb会再找个合适的时间进行一个写入，将数据持久化到磁盘。
 
@@ -1157,12 +1205,6 @@ server层日志
 | 速度快，因为是顺序写                                 | 速度慢，因为要进行擦除操作       |
 | server共享                                           | innodb独享                       |
 
-**innodb_flush_log_at_trx_commit**
-能够控制日志的刷新行为
-0：事务完成时，先放到用户态的log buffer中，然后每秒从log buffer中读取到os buffer并且直接调用fsync()异写操作放入log表
-1：事务完成时，直接丢进磁盘
-2：事务完成时，先丢进OS buffer然后每秒进行异写到磁盘
-
 ## sql执行顺序
 1.from
 2.join
@@ -1176,8 +1218,68 @@ server层日志
 10.order by
 11.limit
 
-## 名词
+## 锁
+锁根据存储引擎的不同，采用的锁方式也不同
+如Innodb支持表级锁和行级锁，而memory和MyISAM只支持表级锁
 
+### 行级锁 vs 表级锁
+
+| 行级锁       | 表级锁       |
+| ------------ | ------------ |
+| 加锁速度慢   | 加锁速度快   |
+| 粒度小       | 粒度大       |
+| 产生冲突小   | 产生冲突多   |
+| 并发度高     | 并发度低     |
+| 开销大       | 开销小       |
+| 可能产生死锁 | 不会产生死锁 |
+
+### MyISAM锁
+#### MyISAM锁操作
+给表加写/读锁
+lock table xxx write/read
+释放表写/读锁
+unlock tables
+
+#### MyISAM锁表现
+为某一张表加入了读锁之后，其他会话可以读取db中的所有表，可以插入db中的未锁表，但是当前会话除了加锁的表之外，无法读取和插入其他的表。
+
+为某一张表加入写锁之后，其他会话可以读取db中所有未锁表，可以插入db中的未锁表，无法对已锁表进行一个插入，当前会话可以对锁表进行crud
+
+**Attention**
+MyISAM在执行查询语句时会自动加读锁，在执行更新语句时，会自动加写锁，不用手动去加
+
+#### MyISAM的锁调度
+写锁会插队，插入到读锁的前面
+调节参数：
+low-priority-updates：读请求优先
+max_write_lock_count：到达这个值的写锁请求后，暂时转化为读锁优先
+
+### MyISAM的并发插入问题
+lock table xxx read local
+通过这种方式加入的读锁，其他会话可以对那张表进行更新和读取，但是在当前会话中看不到修改后的值，也不能进行一个修改
+show status like 'table_locks_waited'
+可以查看表锁竞争的情况，越大越快
+
+### Innodb锁
+#### 事务的属性
+Atomic（原子性）：指一组操作要么全部完成要么全部失败
+Consistent（一致性）：指事务开始时和完成时，数据状态必须一致
+Isolation（隔离性）：指事务的执行不被其他事务所干扰
+Duration（持久化）：指事务一旦提交就被持久化到硬盘，即使出现异常也能够保持
+
+#### 并发事务带来的问题
+##### 脏读
+指读到了其他人未提交的记录，然后其他人将改动rollback了，读到的记录就是脏数据，产生脏读
+
+##### 不可重复读
+指读到记录后，别人修改了对应记录并提交，再读的时候读到了别人新提交的记录，两次读取不一样，产生不可重复读的问题
+
+##### 幻读
+指查询数据集的时候，第一遍查询数据的数量和第二遍查询数据的数量由于其他人提交的新的数据或者删除的新的数据而产生的不一致的情况
+
+## 名词
+**主从复制**
+备用服务器从主服务器获取binlog数据，然后通过执行binlog中的语句进行一个主从复制保证数据的一致性
 **回表**
 通过其他索引找到主键，然后通过主键索引查询对应的数据叫回表
 **覆盖索引**
@@ -1195,7 +1297,7 @@ eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
 
 如果要处理页错位问题，那么就要进行页合并，或者用optimize重新整理表
 **页合并**
-在进行删除的时候，如果当前区域到达一个阈值，默认是页的50%以下，就会去找相邻的页，查看是否可以合并成一个新页
+在进行删除或添加的时候，如果当前区域到达一个阈值，默认是页的50%以下，就会去找相邻的页，查看是否可以合并成一个新页
 **IO密集型**
 消耗资源比较多
 **CPU密集型**
@@ -1215,3 +1317,5 @@ eg:select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b < 100;
 长连接，命令行，连接池
 **非交互连接**
 短连接，JDBC
+**即席查询**
+立即执行的查询语句

@@ -315,22 +315,20 @@ x86：lock compxchg xxx
 2.对象在内存中的存储布局(64位机器)
 对象在内存中的存储布局分两种，一种是普通对象，一种是数组对象
 对于普通对象，它在内存中的分布为
-①对象头markword 8字节
-②klass pointer 指向类对象的指针 4字节（如果-XX: +UseCompressClassPointers 开启，为4字节，不开为8字节）
-③实例数据
+①对象头（markword 8字节，klass pointer 指向类对象的指针 4字节（如果-XX: +UseCompressClassPointers 开启，为4字节，不开为8字节））
+②实例数据
   对于基础类型，byte 1 字节，boolean （不一定，《Java虚拟机规范》中说，按照规范是4字节，数组1字节，但是具体还是要看虚拟机实现），short 2字节，int 4字节，float 4字节，long 8字节，double 8字节，char 2字节，如果是引用类型，要看-XX:UseCompressOops是否开启，默认开启时引用类型为4字节，正常为8字节
 ④padding对齐 为8字节的倍数
 
 对于数组对象，它在内存中的分布为
-①对象头markword 8字节
-②klass pointer 指向类对象的指针 4字节
-③数组大小 4字节
-④数组实例数据
-⑤padding对齐 为8字节的倍数
+①对象头（markword 8字节，klass pointer 指向类对象的指针 4字节，数组大小 4字节）
+②数组实例数据
+③padding对齐 为8字节的倍数
 
 ps：Oops：Ordinary Object Pointers
 3.对象头具体包括些什么？
-一共64位，里面有GC标记，分代年龄，锁状态，hashcode不调用不存储，如果hashcode方法被重写了就用重写的值，如果未被重写，就根据内存布局去计算（System.identityHashCode）
+MarkWord+Klass Pointer+[数组长度]
+MarkWord:一共64位，里面有GC标记，分代年龄，锁状态，hashcode不调用不存储，如果hashcode方法被重写了就用重写的值，如果未被重写，就根据内存布局去计算（System.identityHashCode）
 当一个对象已经计算过identityHashCode，就无法进入偏向锁状态
 
 32位图
