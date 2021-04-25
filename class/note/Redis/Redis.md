@@ -56,9 +56,9 @@ Redis具有内置的复制、Lua脚本、LRU缓存、事务和不同级别的磁
 ### BIO到NIO的发展
 很久很久以前，用户向内核态发送读取文件请求的时候，会先通过内核的socket方法去查询fd，然后调用内核的read方法去根据fd（文件描述符）进行一个文件的读取，这时候由于socket是一个阻塞的查询，需要打开多个线程进行一个单独的查询和读取，这时候就是BIO的时代
 
-然后后来发现socket出现了阻塞查询的问题，内核发生了改变，增加了socket的type，提供了一种非阻塞的socket调用，提供了非阻塞调用后，此时我们可以使用单线程轮循去请求fd文件（可能成功也可能失败，因为非阻塞socket有可能不返回fd），此时是一个同步非阻塞时期（NIO的时代降临了）
+然后后来发现socket出现了阻塞查询（底层调用accept方法，阻塞等待用户连接）的问题，内核发生了改变，增加了socket的type，提供了一种非阻塞的socket调用，提供了非阻塞调用后，此时我们可以使用单线程轮循去请求fd文件（可能成功也可能失败，因为非阻塞socket有可能不返回fd），此时是一个同步非阻塞时期（NIO的时代降临了）
 
-然后发现了轮循请求数量多的时候，每一次socket都会切换进内核态，产生内核态和用户态的切换，成本过高。此时内核进行了升级，内核开始提供select方法，select方法接收一组文件描述符，在内核态进行一个批量监控，返回一批的fds，再去循环调用read，此时依然在NIO时代，这项技术叫多路复用（用一个线程去监控多个I/O流的状态）的NIO
+然后发现了轮循请求数量多的时候，每一次socket都会切换进内核态，产生内核态和用户态的切换，成本过高。此时内核进行了升级，内核开始提供select方法，select方法接收一组文件描述符（单线程监听很多socket请求），在内核态进行一个批量监控（可以同时管理监听套接字和连接套接字），返回一批的fds，再去循环调用read，此时依然在NIO时代，这项技术叫多路复用（用一个线程去监控多个I/O流的状态）的NIO
 
 然后发现用户态和内核态的fds数据交互会产生速度上的瓶颈，内核态再次升级，就产生了mmap方法（内存映射，将文件或者设备跟内存地址进行一个映射），提供一个共享空间，用epoll去控制I/O流，用户态和内核态共同访问一份内核中的数据，此时依然在NIO时代，但是速度更快了。在共享空间中，I/O请求注册在红黑树中，文件描述符返回放入链表中
 
@@ -260,7 +260,273 @@ key上带的头尾指针 + 双向链表
 索引操作可以描述 数组
 阻塞命令可以描述 阻塞队列（单播队列FIFO）
 
+### hash
+#### 数据结构
+k-v中的v是hash，每个hash中又有键值对
+
+#### 使用
+删除key中的属性
+> HDEL key field [field ...]
+        summary: Delete one or more hash fields
+
+查看属性是否存在
+>         HEXISTS key field
+        summary: Determine if a hash field exists
+
+获取key中的属性对应的值
+>         HGET key field
+        summary: Get the value of a hash field
+
+获取key中的所有属性以及属性对应的值
+>         HGETALL key
+        summary: Get all the fields and values in a hash
+
+对数值类型进行一个整形加运算
+>         HINCRBY key field increment
+        summary: Increment the integer value of a hash field by the given number
+
+对数值类型进行一个浮点加运算
+>         HINCRBYFLOAT key field increment
+        summary: Increment the float value of a hash field by the given amount
+
+获取key中所有属性
+>         HKEYS key
+        summary: Get all the fields in a hash
+
+查看key中有多少属性
+>         HLEN key
+        summary: Get the number of fields in a hash
+
+批量根据field获取值
+>         HMGET key field [field ...]
+        summary: Get the values of all the given hash fields
+
+批量根据field设置值
+>         HMSET key field value [field value ...]
+        summary: Set multiple hash fields to multiple values
+
+随机获取一个或多个属性
+>         HRANDFIELD key [count [WITHVALUES]]
+        summary: Get one or multiple random fields from a hash
+
+fw（redis 6.2.2有问题）
+>         HSCAN key cursor [MATCH pattern] [COUNT count]
+        summary: Incrementally iterate hash fields and associated values
+
+设置key 和 field
+>         HSET key field value [field value ...]
+        summary: Set the string value of a hash field
+
+当field不存在时，设置key 和 field
+>         HSETNX key field value
+        summary: Set the value of a hash field, only if the field does not exist
+
+获取属性长度
+>         HSTRLEN key field
+        summary: Get the length of the value of a hash field
+        HVALS key
+        summary: Get all the values in a hash
+
+key中所有属性的所有值
+>    HVALS key
+  summary: Get all the values in a hash
+
+#### 应用场景
+对一组数据对象的存取，比如页面详情页，可以做数值计算
+
+### set
+#### 使用
+添加元素
+>SADD key member [member ...]
+summary: Add one or more members to a set
+
+获取集合大小
+>SCARD key
+summary: Get the number of members in a set
+
+求差集
+>SDIFF key [key ...]
+summary: Subtract multiple sets
+
+求差集并放入目标集合
+>SDIFFSTORE destination key [key ...]
+summary: Subtract multiple sets and store the resulting set in a key
+
+求交集
+>SINTER key [key ...]
+summary: Intersect multiple sets
+
+求交集并放入目标集合
+>SINTERSTORE destination key [key ...]
+summary: Intersect multiple sets and store the resulting set in a key
+
+判断集合中是否包含某值
+>SISMEMBER key member
+summary: Determine if a given value is a member of a set
+
+获取集合中所有值
+>SMEMBERS key
+summary: Get all the members in a set
+
+判断集合中是否包含某些值
+>SMISMEMBER key member [member ...]
+summary: Returns the membership associated with the given elements for a set
+
+从某个集合中移动一个值到另一个集合中
+>SMOVE source destination member
+summary: Move a member from one set to another
+
+移除返回一/多个随机值
+>SPOP key [count]
+summary: Remove and return one or multiple random members from a set
+>应用场景：一个个抽奖
+
+获取一个随机值，如果正数，尽量满足要求，最多为集合大小，如果负数，可能出现重复值，一定满足要求
+>SRANDMEMBER key [count]
+>summary: Get one or multiple random members from a set
+>应用场景：一起抽奖
+
+移除一个或多个值
+>SREM key member [member ...]
+summary: Remove one or more members from a set
+
+迭代遍历
+>SSCAN key cursor [MATCH pattern] [COUNT count]
+summary: Incrementally iterate Set elements
+
+求并集
+>SUNION key [key ...]
+summary: Add multiple sets
+
+求并集并放入目标集合
+>SUNIONSTORE destination key [key ...]
+summary: Add multiple sets and store the resulting set in a key
+
+### sorted set
+#### 数据结构
+跳表实现排序（跳表是随机造层的，元素较多时，平均值相对较优）
+链表
+物理内存左小右大
+存放的value是分值+元素
+
+ps：随机造层：可是到底要不要插入上一层呢？跳表的思路是抛硬币，听天由命，产生一个随机数，50%概率再向上扩展，否则就结束。这样子，每一个元素能够有X层的概率为0.5^(X-1)次方
+#### 使用
+
+>BZPOPMAX key [key ...] timeout
+>summary: Remove and return the member with the highest score from one or more sorted sets, or block until one is available
+
+>BZPOPMIN key [key ...] timeout
+>summary: Remove and return the member with the lowest score from one or more sorted sets, or block until one is available
+
+添加元素，附带分值，类型
+>ZADD key [NX|XX] [GT|LT] [CH] [INCR] score member [score member ...]
+>summary: Add one or more members to a sorted set, or update its score if it already exists
+
+查询有多少元素
+>ZCARD key
+>summary: Get the number of members in a sorted set
+
+计算分值在最大最小值之间的值
+>ZCOUNT key min max
+>summary: Count the members in a sorted set with scores within the given values
+
+>ZDIFF numkeys key [key ...] [WITHSCORES]
+>summary: Subtract multiple sorted sets
+
+>ZDIFFSTORE destination numkeys key [key ...]
+>summary: Subtract multiple sorted sets and store the resulting sorted set in a new key
+
+增加分值，可以为浮点数
+>ZINCRBY key increment member
+>summary: Increment the score of a member in a sorted set
+>场景：排行榜
+
+>ZINTER numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX] [WITHSCORES]
+>summary: Intersect multiple sorted sets
+
+>ZINTERSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
+>summary: Intersect multiple sorted sets and store the resulting sorted set in a new key
+
+>ZLEXCOUNT key min max
+>summary: Count the number of members in a sorted set between a given lexicographical range
+
+>ZMSCORE key member [member ...]
+>summary: Get the score associated with the given members in a sorted set
+
+>ZPOPMAX key [count]
+>summary: Remove and return members with the highest scores in a sorted set
+
+>ZPOPMIN key [count]
+>summary: Remove and return members with the lowest scores in a sorted set
+
+获取一/多个随机元素（带分值）
+>ZRANDMEMBER key [count [WITHSCORES]]
+>summary: Get one or multiple random elements from a sorted set
+
+获取索引范围内的元素
+>ZRANGE key min max [BYSCORE|BYLEX] [REV] [LIMIT offset count] [WITHSCORES]
+>summary: Return a range of members in a sorted set
+
+>ZRANGEBYLEX key min max [LIMIT offset count]
+>summary: Return a range of members in a sorted set, by lexicographical range
+
+获取分值范围内的元素
+>ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]
+>summary: Return a range of members in a sorted set, by score
+
+>ZRANGESTORE dst src min max [BYSCORE|BYLEX] [REV] [LIMIT offset count]
+>summary: Store a range of members from sorted set into another key
+
+算出元素的位置
+>ZRANK key member
+>summary: Determine the index of a member in a sorted set
+
+根据元素移除对应元素
+>ZREM key member [member ...]
+>summary: Remove one or more members from a sorted set
+
+>ZREMRANGEBYLEX key min max
+>summary: Remove all members in a sorted set between the given lexicographical range
+
+>ZREMRANGEBYRANK key start stop
+>summary: Remove all members in a sorted set within the given indexes
+
+>ZREMRANGEBYSCORE key min max
+>summary: Remove all members in a sorted set within the given scores
+
+>ZREVRANGE key start stop [WITHSCORES]
+>summary: Return a range of members in a sorted set, by index, with scores ordered from high to low
+
+>ZREVRANGEBYLEX key max min [LIMIT offset count]
+>summary: Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
+
+>ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]
+>summary: Return a range of members in a sorted set, by score, with scores ordered from high to low
+
+>ZREVRANK key member
+>summary: Determine the index of a member in a sorted set, with scores ordered from high to low
+
+>ZSCAN key cursor [MATCH pattern] [COUNT count]
+>summary: Incrementally iterate sorted sets elements and associated scores
+
+查看元素的分值
+>ZSCORE key member
+>summary: Get the score associated with the given member in a sorted set
+
+带分值求并集
+>ZUNION numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX] [WITHSCORES]
+>summary: Add multiple sorted sets
+>ps：numkeys -- key数量
+>WEIGHTS weigh -- 权重，按分数比例相乘
+>AGGREGATE SUM|MIN|MAX --求值策略
+
+带分值求并集并放入目标key
+>ZUNIONSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
+>summary: Add multiple sorted sets and store the resulting sorted set in a new key
+
+ps：带REV的都是反向命令
 # 数据库引擎
+
 https://db-engines.com/en/
 
 技术选型
