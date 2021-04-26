@@ -525,6 +525,243 @@ ps：随机造层：可是到底要不要插入上一层呢？跳表的思路是
 >summary: Add multiple sorted sets and store the resulting sorted set in a new key
 
 ps：带REV的都是反向命令
+
+## Pipelining管道
+
+一次请求发送多条命令到服务器，再获取返回值，节省往返时间
+
+### 操作
+
+安装nc指令
+
+> echo -e "set k v" | nc localhost 6379
+
+###  nc命令
+
+NetCat，在网络工具中有“瑞士军刀”美誉，其有Windows和Linux的版本。因为它短小精悍（1.84版本也不过25k，旧版本或缩减版甚至更小）、功能实用，被设计为一个简单、可靠的网络工具，可通过TCP或UDP协议传输读写数据。同时，它还是一个网络应用Debug分析器，因为它可以根据需要创建各种不同类型的网络连接。
+
+### 冷加载
+
+从文件中读取多个指令。通过管道送入到redis服务器中
+http://www.redis.cn/topics/batch-insert.html
+
+1.下载unix2dos指令，用于转换\n变成\n\r
+2.书写指令文件，并且使用unix2dos指令  unix2dos xxx.txt
+3.建立管道进行通讯 cat d.txt | redis-cli --pipe
+
+## redis发布订阅的使用
+
+help @pubsub
+
+### 指令
+
+消费发布到通道的符合规则的消息
+
+> PSUBSCRIBE pattern [pattern ...]
+> summary: Listen for messages published to channels matching the given patterns
+
+发布消息到通道中
+
+> PUBLISH channel message
+> summary: Post a message to a channel
+
+检查发布订阅系统状态
+
+> PUBSUB subcommand [argument [argument ...]]
+> summary: Inspect the state of the Pub/Sub subsystem
+
+退订指定模式
+
+> PUNSUBSCRIBE [pattern [pattern ...]]
+> summary: Stop listening for messages posted to channels matching the given patterns
+
+从通道中消费消息（注意只有先监听才能收到监听后其他客户端发送来的请求）
+
+> SUBSCRIBE channel [channel ...]
+> summary: Listen for messages published to the given channels
+
+停止从部分通道中消费消息
+
+> UNSUBSCRIBE [channel [channel ...]]
+> summary: Stop listening for messages posted to the given channels
+
+### 应用场景
+
+聊天群
+分为三类聊天数据（读取）
+1.实时性的，使用pub/sub，发布订阅模式
+2.历史性的
+  三天内的，用redis缓存，可以用sort_set进行一个排序
+  更老的，放入磁盘数据库
+
+存储：用户向redis服务器发送消息，redis服务器订阅并存储消息到sorted_set，然后其他用户和RS也订阅消息
+
+## redis事务
+
+### 指令
+
+取消事务
+
+> DISCARD -
+> summary: Discard all commands issued after MULTI
+
+开始执行所有命令
+
+> EXEC -
+> summary: Execute all commands issued after MULTI
+
+标记事务的开始
+
+> MULTI -
+> summary: Mark the start of a transaction block
+
+忘记观察键的修改
+
+> UNWATCH -
+> summary: Forget about all watched keys
+
+提供CAS，一旦watch的键被修改了，所有事务都不执行
+
+> WATCH key [key ...]
+> summary: Watch the given keys to determine execution of the MULTI/EXEC block
+
+### redis不支持回滚的一个解释
+
+1.不支持回滚让redis更快
+2.redis只会因为错误语法而失败，可以通过编程去修正这些错误
+
+## 布隆过滤器
+
+解决缓存穿透问题
+
+什么是缓存穿透？
+就是查询一些redis中和数据库中都不存在的数据，请求直接到达数据库，导致进行了无用操作，给数据库服务器增加了压力
+
+bloom过滤器如何解决缓存穿透问题？
+通过一些（k个）映射函数（hash函数）将数据库中的数据元素映射到布隆过滤器的数组上，然后客户端进行请求的时候，先看redis中是否存在，如果不存在，再看布隆过滤器的位图中经过映射函数算出的每个位是否都是1，如果都是1，那么就去数据库查询，不然直接返回空。
+由于函数映射涉及的位置不是一对一的，所以有概率请求仍然会穿透到数据库，造成不必要的浪费，但是经过测试，bloom过滤器可以阻挡住99%以上的穿透
+
+ps：如果数据不巧穿透了，但是db取不出数据，可以加入一个key到redis中，将value置为null。如果db被加入了数据，需要同步加入到bloom过滤器中
+
+### 使用
+扩展功能模块
+redis-server --loadmodule ./redisbloom.so
+
+ps：redisbloom.so相当于windows中的dll文件
+
+### BF命令(Bloom)
+
+### CF命令(Cuckoo)
+
+### ps：布谷鸟过滤器（Cuckoo）
+布谷鸟过滤器维护了一个指纹数组，通过一对hash函数求出对应的两个位置，主位置和备用位置。它的key存储过程如下：
+1.客户端注册一个key进入cuckoo过滤器，cuckoo对key进行hash运算，算出对应的位置
+2.如果1上的位置为空，直接放入指纹（指纹由hash函数计算而来，是一个8-12位的数据）
+3.如果1上的位置不为空，计算备用位置（公式为 当前位置loc^对指纹进行hash计算）
+4.如果3上位置为空，放入指纹
+5.如果3上位置不为空，直接剔除3上指纹，将当前指纹放入，然后对剔除的指纹进行3的计算，循环3-5步骤，直到达到次数上限，进行扩容，或者找到空位置进行插入
+
+过滤过程如下：
+计算key的hash值，找到对应位置，如果有值，那么代表数据库中可能有值，如果为空，代表无值，直接返回
+
+#### bloom vs cuckoo
+Bloom过滤器在插入项时通常表现出更好的性能和可伸缩性（因此，如果您经常向数据集添加项，那么Bloom过滤器可能是理想的）。布谷鸟过滤器检查操作更快，也允许删除。
+
+## redis缓存的使用
+用于解决数据的读请求
+redis作为缓存与作为数据库的最大区别就是，存储的是非全量数据，缓存数据随着用户的访问而变化，数据可以有丢失，但是数据库数据绝对不能丢失
+
+### 数据随访问而变化
+两种方式：
+第一种：设定key的过期时间
+第二种：根据业务逻辑的运转使用对应的策略
+
+对于第一种，要注意倒计时不随读取（访问）而重置时间，倒计时中如果重新写入对应key，会移除过期时间。时间戳定时删除。
+
+**Redis如何淘汰过期的keys**
+1.访问时判断并淘汰
+2.轮询判断并淘汰
+
+> Redis keys过期有两种方式：被动和主动方式。
+  当一些客户端尝试访问它时，key会被发现并主动的过期。
+  当然，这样是不够的，因为有些过期的keys，永远不会访问他们。 无论如何，这些keys应该过期，所以定时随机测试设置keys的过期时间。所有这些过期的keys将会从密钥空间删除。
+  具体就是Redis每秒10次做的事情：
+  1.测试随机的20个keys进行相关过期检测。
+  2.删除所有已经过期的keys。
+  3.如果有多于25%的keys过期，重复步奏1.
+
+对于第二种，可以通过conf文件去设置
+> maxmemory <bytes\>  --设置redis内存大小
+> maxmemory-policy noeviction --删除策略
+
+LRU：最少最近使用
+LFU：最少频率使用
+
+```linux
+# volatile-lru ->  移除过期集合中的最老的数据
+# allkeys-lru -> 移除所有键中的最老的数据
+# volatile-lfu -> 移除过期集合中使用频率最少的数据
+# allkeys-lfu -> 移除所有键中使用频率最少的数据
+# volatile-random -> 随机移除过期集合中的数据
+# allkeys-random -> 随机移除所有键中的数据
+# volatile-ttl -> 移除过期集合中马上要过期的数据
+# noeviction -> 报错，不移除任何元素，当redis作为数据库时可以这么做
+```
+
+## redis持久化
+### RDB（Relation Databas）（快照持久化）
+原理：调用内核的fork函数创建子进程，然后子进程进行一个数据的持久化过程（什么调用fork，时点就是那个时候）
+
+#### 触发方式
+手动触发(指令)
+1.save（阻塞保存）（场景是关机维护）
+2.bgsave（后台保存，调用fork）
+配置文件触发
+1.save <seconds\> <changes\> (seconds是时间，changes是操作数)(两者同时符合，就触发save)
+
+#### linux 管道
+作用：
+1.衔接前一个命令的输出 作为后一个命令的输入
+2.管道会创建子进程
+
+ps：
+echo \$\$取当前进程id
+echo \$BASHPID取当前进程id
+注意\$\$优先级高于管道
+
+#### 父子进程
+父进程的可以让子进程看到数据，但是子进程修改的数据，父进程无法看到，父进程修改的数据，子进程也看不到（修改互不影响），父进程可以与子进程进行绑定，如果父进程异常退出，子进程同时异常退出
+
+验证操作：
+> num=1
+> echo $num
+> pstree
+> /bash/bin
+> pstree
+> echo $num
+> //此时无法看到
+> exit
+> export num
+> /bash/bin
+> echo $num
+> //通过使用export方法可以让子进程看到数据
+
+ps：
+./test.sh \$ --加\$表示后台运行
+
+##### 原理
+linux有一个系统调用fork函数
+fork函数的原理是浅拷贝+内核写时复制机制
+
+#### RDB弊端
+1.不支持拉链，只有一个dump.rdb
+2.如果宕机，丢失数据相对多（全量数据备份的通病）
+
+#### RDB优点
+类似于java序列化， 持久化速度比aof快
+
+### AOF（Append-only File）
+
 # 数据库引擎
 
 https://db-engines.com/en/
