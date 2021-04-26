@@ -709,7 +709,7 @@ LFU：最少频率使用
 ```
 
 ## redis持久化
-### RDB（Relation Databas）（快照持久化）
+### RDB（Redis Database）（快照持久化）
 原理：调用内核的fork函数创建子进程，然后子进程进行一个数据的持久化过程（什么调用fork，时点就是那个时候）
 
 #### 触发方式
@@ -734,16 +734,16 @@ echo \$BASHPID取当前进程id
 
 验证操作：
 > num=1
-> echo $num
+> echo \$num
 > pstree
 > /bash/bin
 > pstree
-> echo $num
+> echo \$num
 > //此时无法看到
 > exit
 > export num
 > /bash/bin
-> echo $num
+> echo \$num
 > //通过使用export方法可以让子进程看到数据
 
 ps：
@@ -758,10 +758,52 @@ fork函数的原理是浅拷贝+内核写时复制机制
 2.如果宕机，丢失数据相对多（全量数据备份的通病）
 
 #### RDB优点
-类似于java序列化， 持久化速度比aof快
+类似于java序列化， 持久化速度比AOF快
 
 ### AOF（Append-only File）
+AOF是redis中另一种持久化技术，AOF是实时记录用户的操作（如果宕机，只会丢失一秒的数据），默认是关闭的，类似于mysql binlog
+AOF与RDB可以同时开启不会产生任何问题，如果一起开启的话，恢复的时候只会按照AOF去恢复，注意2.4之后，BGSAVE执行与BGREWRITEAOF是互斥的，防止同时对磁盘进行大量IO操作
 
+#### 相关配置
+appendonly no   //是否开启AOF
+appendfilename "appendonly.aof"  //log位置
+
+自动触发BGREWRITEAOF指令，表示增长到64mb的时候会触发bgrewriteaof进行压缩，然后如果超过了64mb，redis会记录压缩后的大小，再增长了100%（auto-aof-rewrite-percentage）时触发
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+
+AOF支持三种方式的异写操作
+appendfsync always //每次输入都异写到磁盘，最安全，最慢，阻塞完成
+appendfsync everysec //每秒将OS缓冲区的数据异写到磁盘，默认，最多丢失一秒的数据，折中（开线程进行异写）
+appendfsync no //不刷新缓冲区，让缓冲区满了自动异写到磁盘，最快，但是最不安全
+
+no-appendfsync-on-rewrite no //当子进程在重写数据的时候，主进程不进行AOF操作，在严重情况下可能丢失很多数据，减少IO
+
+aof-use-rdb-preamble yes //是否用rdb+aof方式进行重写
+#### AOF弊端及解决方案
+恢复大量数据耗时严重，为了解决这一弊端，各个版本采用不同的策略，都对aof文件进行了重写，压缩大小
+重写指令：BGREWRITEAOF
+
+4.0版本前：对数据的处理是进行一个抵消或者合并计算，例如原本lpush key 1，接着lpop key，可以直接抵消，原本incrby key 1，incrby key 1，合并成incrby key 2操作
+4.0版本后：将数据存储为RDB二进制数据开始+AOF增量操作在结尾的一种文件，这种文件通常以REDIS开头，表示这是4.0之后的AOF文件，这样操作，通过存储全量数据+增量操作，依然保证了数据的完整性，也减少了恢复数据的时间
+
+#### AOF内容
+\*代表要向下取多少个操作，\$代表下面指令的宽度，其余为正常指令
+
+#### 工作原理
+AOF 重写和 RDB 创建快照一样，都巧妙地利用了写时复制机制:
+
+1.Redis 执行 fork() ，现在同时拥有父进程和子进程。
+2.子进程开始将新 AOF 文件的内容写入到临时文件。
+3.对于所有新执行的写入命令，父进程一边将它们累积到一个内存缓存中，一边将这些改动追加到现有 AOF 文件的末尾,这样样即使在重写的中途发生停机，现有的 AOF 文件也还是安全的。
+4.当子进程完成重写工作时，它给父进程发送一个信号，父进程在接收到信号之后，将内存缓存中的所有数据追加到新 AOF 文件的末尾。
+搞定！现在 Redis 原子地用新文件替换旧文件，之后所有命令都会直接追加到新 AOF 文件的末尾。
+### RDB AOF实操
+
+1.操作配置文件，开启对应配置，将log关闭，让redis前台运行
+2.操作
+
+ps:可以使用redis-check-rdb dump.rdb读取rdb二进制文件
 # 数据库引擎
 
 https://db-engines.com/en/
@@ -777,3 +819,4 @@ https://db-engines.com/en/
 其他字符集都叫做扩展字符集
 ascii码一般形式为0xxxxxxx
 扩展的意思是其他字符集不会再对ascii码进行重编码
+
