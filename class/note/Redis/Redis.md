@@ -908,13 +908,42 @@ raft选举保证在一个任期内只有一个leader，刚开始的时候所有�
 
 #### Twemproxy
 是memcached和redis的轻量级快速代理。
-主要目的是为了减少redis服务器的连接数
+主要目的是为了减少redis服务器的连接数，解耦后端的复杂度
+特点：
+Zero Copy：采用mbufs 0拷贝，只做数据的分发
+对数据进行一个整合，整合成管道进行发送
+
+**官方解释**
+Twemproxy是Twitter维护的（缓存）代理系统，代理Memcached的ASCII协议和Redis协议。它是单线程程序，使用c语言编写，运行起来非常快。它是采用Apache 2.0 license的开源软件。
+
+Twemproxy支持自动分区，如果其代理的其中一个Redis节点不可用时，会自动将该节点排除（这将改变原来的keys-instances的映射关系，所以你应该仅在把Redis当缓存时使用Twemproxy)。
+
+Twemproxy本身不存在单点问题，因为你可以启动多个Twemproxy实例，然后让你的客户端去连接任意一个Twemproxy实例。
+
+Twemproxy是Redis客户端和服务器端的一个中间层，由它来处理分区功能应该不算复杂，并且应该算比较可靠的。
 
 ##### Twemproxy的分发模式
 对应上面2.1：modula
 对应上面2.2：random
 对应上面2.3：ketama
 弊端是无法做数据库用，因为都会丢失数据
+
+##### Twemproxy实操
+1.打开Twemproxy的github官网
+2.读readme.md，根据操作进行安装
+3.配置yml文件
+
+##### 弊端
+数据分治导致一些方法不可用，例如keys，例如事务watch
+
+ps：
+支持的命令
+https://github.com/twitter/twemproxy/blob/master/notes/redis.md
+
+hash_tag：可以通过{}或者$$指定映射到同一台机器中
+
+#### Predixy
+同样也是一款redis代理服务器，相较于twemproxy和redis cluster，速度更快
 
 #### redis集群
 由于上面三种模型的限制，使得redis不得不在加入机器的时候对数据进行处理，使用一些过期策略或者对数据进行全量重hash运算，这些代价是非常高的。基于这个问题，引入了redis集群，我们可以在多个redis中进行一些槽位划分，每个redis都维持了一个映射表，当客户端向redis服务器发送指令，redis某一台服务器接收到请求之后，会对key进行hash运算，运算后根据映射表查看落在哪个redis服务器上，如果是自己就直接返回，如果不是自己，就返回对应服务器位置，客户端就会通过返回信息去对应服务器找。当加入新的服务器时，只要根据hash运算将对应槽位进行一个转移就可以正常工作了，转移的时候的过程类似于主从复制的过程。
