@@ -864,7 +864,7 @@ min-replicas-to-write 3 规定最少写几个写成功
 #### 主要功能
 1.监控：检查主从健康情况
 2.提醒：发送通知
-3.自动故障迁移:如果主死亡，哨兵会进行投票，然后选择新的主服务器，然后对新的主进行一个监控，并修改对应监控的配置文件
+3.自动故障迁移:如果主服务客观下线，leader哨兵会选择新的主服务器，然后对新的主进行一个监控，并修改对应监控的配置文件
 
 ps：判断主死亡：给点时间内，没有返回哨兵的ping命令，或者返回错误，那么哨兵会标记当前服务器主观下线，当标记达到一定数量（人为设置），服务器标记为客观下线，正式死亡。
 
@@ -964,12 +964,47 @@ CRC16的16位输出中的14位会被使用（这也是为什么上面的式子�
 ## 缓存击穿，穿透，雪崩
 ### 击穿
 是指查询数据库中已有的数据，但是请求的时候有很高的并发，由于redis中没有缓存对应的数据，大量请求直接冲击数据库，对数据库造成巨大压力。
-解决方案：分布式锁
+解决方案：互斥锁(分布式锁)，使用setnx实现互斥锁，让每个key只会访问一次数据库，其他key访问的时候数据已经load到redis中
 
 ### 穿透
 指查询数据库中没有的数据，如果一直请求数据库中没有的数据，会影响数据库的性能。
 解决方案：过滤器
 
+### 雪崩
+一批key在同一时间过期，导致大量请求压到数据库，增加数据库的压力
+解决方案：对于热点数据，直接不设置key的过期时间，对于非热点数据，如果对时点没有要求的话，设置随机过期时间，如果一定要在某个时点一起过期，比如说某个数据由前一天一整天的数据整合而来，那么可以在那段时间对相应key的访问在客户端做一个延迟，然后在这期间load数据，防止产生的并发请求落到数据库，新更新的请求没有办法，一定要更新一遍的，主要是为了防止读到脏数据
+
+## 分布式锁
+用redis实现一个分布式锁，可以用现成的redison，也可以用zookeeper
+
+自己写主要考虑的一些事情
+1.setnx
+2.设定过期时间
+3.设定守护线程（注意一定是守护线程，如果其他线程的话主线程死亡就会死锁）去延长时间
+
+代码：
+```
+ public static boolean lock(String lockKey, String requestId, int expireTime) {
+        String result = redis.setNx(lockKey, requestId , expireTime);
+        if ("OK".equals(result)) {
+            return true;
+        }
+        return false;
+    }
+    
+   用lru脚本实现原子性，下面代码不正确 
+   public static boolean unLock(String lockKey, String requestId) {
+        if (requestId.equals(redis.get(lockKey))) {
+            redis.del(lockKey);
+        }
+    }
+```
+
+## API
+
+注意：redisTemplate在进行操作时会产生java的序列化
+
+https://docs.spring.io/spring-data/redis/docs/2.5.0/reference/html/#redis.hashmappers.jackson2
 
 # 数据库引擎
 
