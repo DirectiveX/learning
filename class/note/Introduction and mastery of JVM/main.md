@@ -353,7 +353,7 @@ ps：关于 epoch，真正理解 epoch 的概念比较复杂，这里简单理�
 
 ps：为什么GC年龄默认是15，因为对象头中只有4位表示它
 
-ps:在hotSpot中，如果调用一个对象的hash方法或者System.identityHashCode方法，由于偏向锁和轻量级锁在对象头（markword）中没有存储hashcode的位置，会导致锁升级成重量级锁
+ps:在hotSpot中，如果调用一个对象的hash方法或者System.identityHashCode方法，由于偏向锁在对象头（markword）中没有存储hashcode的位置，会导致锁升级成重量级锁
 
 4.对象怎么定位
 ①句柄池
@@ -822,7 +822,7 @@ G1不会产生碎片，并且可以预测停顿时间，用户可以指定停顿
 #### 并发标记（Concurrent Mark）阶段的算法
 CMS：三色标记 + Incremental Update
 G1：三色标记 + SATB（Snapshot at the begining）
-ZGC：ColoredPointer
+ZGC：ColoredPointer + 读屏障 + SATB
 
 ##### 三色标记算法
 白色：未被标记的对象
@@ -1221,6 +1221,7 @@ OOM产生的原因多种多样，有些程序未必产生OOM，不断FGC（CPU�
 6.disrupter有个可以设置链的长度，如果过大，对象大，消费完不主动释放，会溢出
 7.重写finalize导致频繁GC
 8.比较以下这两段程序的一同，分析哪一个是更优的写法：
+
 ```java
 Object o = null;
 for(int i = 0;i < 100;i ++){
