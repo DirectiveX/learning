@@ -74,6 +74,8 @@ AB应用不再互相依赖
 通过nameserver集群的一个节点，建立长连接，获取topic信息，找到对应的broker的master/slave ips，定期（30s）查询信息
 然后与master/slave都建立长连接，消费信息，定期（30s）发送心跳
 
+consumer是集群式消费，两个group就会对订阅的同一topic消费两次，不管一个group有多少consumer，只要consumer类型是cluster，那么在同一group中就只会被消费一次
+
 ### broker
 协调者，协调producer和consumer
 
@@ -126,6 +128,15 @@ consumer.setMessageModel(MessageModel.CLUSTERING);
 
 ### producer
 **同步消息**
+```Java 
+// 异步发送时 重试次数，默认 2
+	producer.setRetryTimesWhenSendAsyncFailed(1);
+	// 同步发送时 重试次数，默认 2
+	producer.setRetryTimesWhenSendFailed(1);	
+	
+	// 是否向其他broker发送请求 默认false
+	producer.setRetryAnotherBrokerWhenNotStoreOK(true);
+```
 *一对一*
 producer.send(Message)
 ```java
@@ -186,15 +197,107 @@ public static void main(String[] args) throws MQClientException, RemotingExcepti
 **单向（不可靠）消息，无需答复，如保存日志**
 producer.sendOneWay(Message)
 
+### 过滤消息
+consumer.subscribe(String,String/MessageSelector);
+第二个参数，既可以使用sql进行过滤，也可以使用tag进行过滤，注意，producer写入的时候要带tag
+用sql92进行过滤的时候记得开启broker的sql查询参数enablePropertyFilter=true
+[sql](http://rocketmq.apache.org/docs/filter-by-sql92-example/)
 
-## 对比jms的Topic和Queue
-jms标准的Topic是一种广播形式的消息，Queue是一种单次消费的消费
-而RocketMQ中没有广播形式的消息，物理上只有Queue这一种消息形式，但是在消费的时候可以对消息进行设置达到广播的效果
-RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同时消费一个Topic，也就是一组Queue，也可以单独消费单个Queue，Topic内容可以在多台broker中，每台broker也可以有多个topic，多对多关系
+eg：
 
-## 如何保持集群数据最终一致性
+```java
+//producer
+      message.putUserProperty("age",String.valueOf(i));
+//consumer
+      consumer.subscribe("Topic",MessageSelector.bySql("age >= 10 and age <= 20"));
+      consumer.subscribe("Topic","tagA");
+```
 
-使用分布式事务提交算法
+## 保证消息的顺序消费
+1.同一topic
+2.同一queue
+3.同一线程发送消息
+
+producer.send(MESSAGE,SELECTOR,Object,Long)
+
+## 事务
+[事务](http://rocketmq.apache.org/docs/transaction-example/)
+![事务大体逻辑](picture/事务大体逻辑.png)
+
+**Half Message：**预处理消息，当broker收到此类消息后，会存储到RMQ_SYS_TRANS_HALF_TOPIC的消息消费队列中
+
+**检查事务状态：**Broker会开启一个定时任务，消费RMQ_SYS_TRANS_HALF_TOPIC队列中的消息，每次执行任务会向消息发送者确认事务执行状态（提交、回滚、未知），如果是未知，等待下一次回调。
+
+**超时：**如果超过回查次数，默认回滚消息
+
+### TransactionListener的两个方法
+
+#### executeLocalTransaction
+
+半消息发送成功触发此方法来执行本地事务
+
+#### checkLocalTransaction
+
+broker将发送检查消息来检查事务状态，并将调用此方法来获取本地事务状态
+
+#### 本地事务执行状态
+**LocalTransactionState.COMMIT_MESSAGE**
+执行事务成功，确认提交
+
+**LocalTransactionState.ROLLBACK_MESSAGE**
+回滚消息，broker端会删除半消息
+
+**LocalTransactionState.UNKNOW**
+暂时为未知状态，等待broker回查
+
+```java
+public static void main(String[] args) throws MQClientException {
+        TransactionMQProducer transactionMQProducer = new TransactionMQProducer("tx_prodRR");
+        transactionMQProducer.setNamesrvAddr("192.168.1.100:9876");
+        //用来回查的线程池
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(2, 4, 100, TimeUnit.SECONDS, new ArrayBlockingQueue<>(100), new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("client");
+                return thread;
+            }
+        });
+
+        transactionMQProducer.setExecutorService(threadPoolExecutor);
+
+        //回调
+        transactionMQProducer.setTransactionListener(new TransactionListener() {
+            @Override
+            //执行本地事务
+            public LocalTransactionState executeLocalTransaction(Message msg, Object arg) {
+                System.out.println("msg body: " + new String(msg.getBody()));
+                System.out.println("msg transaction id: " + msg.getTransactionId());
+                System.out.println("thread name : " + Thread.currentThread().getName());
+                return LocalTransactionState.UNKNOW;
+            }
+
+            @Override
+            //broker将发送检查消息来检查事务状态，并将调用此方法来获取本地事务状态
+            public LocalTransactionState checkLocalTransaction(MessageExt msg) {
+                System.out.println("msg body: " + new String(msg.getBody()));
+                System.out.println("msg transaction id: " + msg.getTransactionId());
+                System.out.println("thread name : " + Thread.currentThread().getName());
+                return LocalTransactionState.UNKNOW;
+                //return LocalTransactionState.ROLLBACK_MESSAGE;
+                //return LocalTransactionState.UNKNOW;
+            }
+        });
+
+        transactionMQProducer.start();
+        transactionMQProducer.sendMessageInTransaction(new Message("TopicTD","ASGA".getBytes()),null);
+//        transactionMQProducer.shutdown();
+    }
+```
+
+### 如何保持集群数据最终一致性
+
+使用分布式事务提交算法，rocketmq使用二阶段提交
 
 **2PC（二阶段提交）**
 
@@ -227,14 +330,32 @@ RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同�
 
 从维基百科上看，3PC 的引入是为了解决提交阶段 2PC 协调者和某参与者都挂了之后新选举的协调者不知道当前应该提交还是回滚的问题。
 
-3PC主要还是解决2PC在提交时由于调度者宕机而产生的阻塞问题
+3PC主要还是解决2PC在提交时由于调度者宕机而产生的阻塞问题，未解决数据不一致的问题
 
 **TCC（try confirm cancel）（补偿事务）**
 
 数据库锁定一个数据的数据状态，提交的时候解锁，或者cancel的时候回滚
 
-
+如果提交不成功或者cancel失败，会多次尝试
 
 **TCC 2PC区别**
+如果拿TCC事务的处理流程与2PC两阶段提交做比较，2PC通常都是在跨库的DB层面，而TCC则在应用层面的处理，需要通过业务逻辑来实现。这种分布式事务的实现方式的优势在于，可以让应用自己定义数据操作的粒度，使得降低锁冲突、提高吞吐量成为可能。
 
-2PC是数据库层面的分布式事务，而TCC是应用层面的分布式事务
+**XA协议**
+https://blog.csdn.net/weixin_32822759/article/details/106585407
+
+## 对比jms的Topic和Queue
+jms标准的Topic是一种广播形式的消息，Queue是一种单次消费的消费
+而RocketMQ中没有广播形式的消息，物理上只有Queue这一种消息形式，但是在消费的时候可以对消息进行设置达到广播的效果
+RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同时消费一个Topic，也就是一组Queue，也可以单独消费单个Queue，Topic内容可以在多台broker中，每台broker也可以有多个topic，多对多关系
+
+## 解决消息重复消费的方案（通用）
+### 数据库表
+处理消息前，使用消息主键在表中带有约束的字段中insert
+
+### Map
+单机时可以使用map *ConcurrentHashMap* -> putIfAbsent   guava cache
+
+### Redis
+使用主键或set操作
+
