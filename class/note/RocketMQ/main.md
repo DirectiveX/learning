@@ -297,7 +297,7 @@ public static void main(String[] args) throws MQClientException {
     }
 ```
 
-### 如何保持集群数据最终一致性
+### 如何保持分布式系统数据最终一致性
 
 使用分布式事务提交算法，rocketmq使用二阶段提交
 
@@ -351,7 +351,24 @@ jms标准的Topic是一种广播形式的消息，Queue是一种单次消费的�
 而RocketMQ中没有广播形式的消息，物理上只有Queue这一种消息形式，但是在消费的时候可以对消息进行设置达到广播的效果
 RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同时消费一个Topic，也就是一组Queue，也可以单独消费单个Queue，Topic内容可以在多台broker中，每台broker也可以有多个topic，多对多关系
 
+## RocketMQ的消息存储
+
+存储模式：通过文件系统持久化数据
+
+### M.2 NVME协议的磁盘存储
+
+写入速度3G/s，随机读写2G/s
+
+### RocketMQ为什么快？
+
+使用了数据零拷贝技术，调用内核的sendfile方法，在java中调用MappedByteBuffer类（对标linux mmap方法）
+
+1.java中的MappedByteBuffer类读取的数据大小还是有限制的
+2.当文件超出1.5G的时候可以通过position去定位
+3.RocketMQ使用的时候每个文件大小都控制在1G，超过1G会重新建立新文件
+
 ## 解决消息重复消费的方案（通用）
+
 ### 数据库表
 处理消息前，使用消息主键在表中带有约束的字段中insert
 
@@ -379,3 +396,37 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 客户端向服务器发送请求获取数据，服务器有数据就返回，没数据就挂起，等待数据，直到有数据才返回
 优点是实时，并且不会产生客户端接收数据消费不了的问题
 
+# 源码
+
+里面频繁的offset就是索引
+
+## PullRequest
+
+拉回来的报文处理类，记录一个topic对应的consumergroup的拉取进度，包括MessageQueue和ProcessQueue，还有拉取的offset
+
+## MessageQueue
+
+元数据信息
+
+## ProcessQueue
+
+真正处理数据的Queue
+
+## OffsetStore
+
+偏移，两个具体实现，对于Clustering的消费模式，从broker中拉取，对于broadcast的消费模式，从本地文件拉取
+
+## PullResult
+
+从broker回来的结果类，包含了消息和offset还有状态
+
+## startScheduledTask() 
+设置了一些定时任务
+1.如果nameserver没给定，会定时去动态获取nameserver，频率2min/次
+2.从nameserver更新路由信息（consumer，producer，topic信息），30s/次
+3.清理下线的broker，给broker发送心跳，30s/次
+4.同步consumer的消费进度，5s/次
+5.调整线程池数量，1s/次（内部方法未实现）
+
+## ps
+1.pull下来的queue超过100M的，超过1000个的，都会延迟执行防止拉取过快消费不了
