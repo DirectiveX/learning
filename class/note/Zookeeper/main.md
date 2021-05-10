@@ -201,6 +201,9 @@ zk.setData(path,data,version);
 ### ps
 api创建zk对象时，是异步创建，会立即返回一个正在连接状态的zk对象，可以通过countdownlatch去判断是否创建完成
 
+## zookeeper刷盘
+zookeeper在磁盘上存储的文件与redis等数据库刷盘不同，由于zookeeper采用了paxos协议，所以刷盘发生在接收到数据之后，不管存有多少数据，服务器一旦收到数据，就会进行磁盘的写入，即刷盘，不会定时进行刷盘，因为没有必要
+
 ## 分布式协调实例
 充分利用react回调方式
 可以做配置中心，服务注册发现

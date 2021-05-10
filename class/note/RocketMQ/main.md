@@ -76,13 +76,20 @@ AB应用不再互相依赖
 
 consumer是集群式消费，两个group就会对订阅的同一topic消费两次，不管一个group有多少consumer，只要consumer类型是cluster，那么在同一group中就只会被消费一次
 
+**持久化**
+开启线程处理1s/次刷盘到consumerqueue，直到broker停止
+开启线程每隔10ms（距离上一次刷盘完成后的10ms）刷盘到commitlog，直到broker停止
+
 ### broker
 协调者，协调producer和consumer
 
-每个broker节点在启动时，都会遍历nameserver列表，对所有nameserver进行一个服务注册和长连接，定时（30s）上报自己的topic信息
+每个broker节点在启动时，都会遍历nameserver列表，对所有nameserver进行一个服务注册和长连接，定时（30s）上报自己的topic信息（发送心跳）
 定期（10s）清理不活跃（2分钟）的producer和consumer
 
-只能消费一个topic下的消息
+心跳包内容：
+header：broker id，name，addr，cluster name，haServerAddr
+body：crc32校验，class过滤器，topic信息
+同步定时开启线程发送心跳包
 
 ### broker集群
 broker集群是主从模式，读写分离（slave只进行消息分发，不负责写入，写入的时候只能连master，但是slave分发时也会进行写操作，会通知master去写，master读写都可以）
@@ -383,8 +390,39 @@ consumequeue文件采取定长设计，每一个条目共20个字节，分别为
 ### index
 存储索引，通过key或时间区间去查询
 
-## 解决消息重复消费的方案（通用）
+## 消息分配策略
 
+[策略](https://blog.csdn.net/yewandemty/article/details/81989695)
+
+平均分配策略
+
+环形分配策略
+
+机房分配策略：就近分配原则/指定机房模式（指定某几个机房，可能有机房消费不到）
+
+一致性hash策略
+
+手动分配
+
+## NameServer原理
+**职责**
+提供服务的注册发现
+
+**特点**
+无状态，不开启持久化的情况下不会持久化数据
+集群节点间不会通讯，数据不同步
+
+**如何保证高可用**
+通过启动多个nameserver集群保证高可用，虽然说是集群，实际上，namesever为了保证速度的极致，并不会互相通讯，broker需要向每一台nameserver进行注册，nameserver每隔10秒会监测broker的心跳，将超过2分钟没有心跳的broker剔除。
+producer如果通过nameserver找到的broker不可用，那么数据就会发送失败，producer每隔30s会从nameserver上更新broker的数据，消息发送失败时会进行重投，保证数据投递到依然存活的broker中
+comsumer如果通过nameserver找到的broker不可用，那么comsumer每隔30s会从nameserver上更新broker的数据，找到其他broker进行消费，因为broker是主从复制的架构，所以保证了从任何一台broker中获取的数据都是一致的
+
+## 产生消息重复消费的原因
+1.consumer重平衡（重平衡是由于某台group中的机器下线导致重新分配消息）
+2.拉取broker的时候由于网络原因，延迟收到了consumer的ack，导致消息的重投递
+3.consumer group中消费模式的设定不一致导致消息重复消费
+
+## 解决消息重复消费的方案（通用）
 ### 数据库表
 处理消息前，使用消息主键在表中带有约束的字段中insert
 
@@ -413,27 +451,23 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 优点是实时，并且不会产生客户端接收数据消费不了的问题
 
 # 源码
-
 里面频繁的offset就是索引
+
 ## consumer
 ### PullRequest
 
 拉回来的报文处理类，记录一个topic对应的consumergroup的拉取进度，包括MessageQueue和ProcessQueue，还有拉取的offset
 
 ### MessageQueue
-
 元数据信息
 
 ### ProcessQueue
-
 真正处理数据的Queue
 
 ### OffsetStore
-
 偏移，两个具体实现，对于Clustering的消费模式，从broker中拉取，对于broadcast的消费模式，从本地文件拉取
 
 ### PullResult
-
 从broker回来的结果类，包含了消息和offset还有状态
 
 ### startScheduledTask() 
@@ -459,7 +493,7 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 > 5.打印水印，各个队列的任务大小以及最早的放入时间，1s/次
 > 6.打印已经存储在commitlog中但是没有调度到消费队列的字节数，1m/次
 > 7.如果nameserver没给定，会定时去动态获取nameserver的服务列表，频率2min/次
-> 8.1如果是从，拉去主的数据，60s/次
+> 8.1如果是从，拉取主的数据，60s/次
 > 8.2如果是主，打印主从数据差距，60s/次
 
 4.初始化tls连接
@@ -467,6 +501,44 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 6.初始化权限控制
 7.初始化远程调用
 
-### doFlush
+### doFlush()（重要）
 开启线程处理1s/次刷盘到consumerqueue，直到broker停止
 开启线程每隔10ms（距离上一次刷盘完成后的10ms）刷盘到commitlog，直到broker停止
+
+## Nameserver
+请求先进入netty服务器，然后netty转发到DefaultRequestProcessor类中进行处理
+
+### RouteInfoManager
+
+管理路由消息
+
+### clusterAddrTable(Map)
+集群相关信息
+
+### brokerAddrTable(Map)
+
+broker元数据信息
+
+### BrokerLiveInfo
+
+存活的broker列表
+
+### TopicRouteData
+
+根据topic返回给producer和comsumer的信息，包含了QueueData和BrokerData，filterServiceTable
+
+### QueueData
+queue元数据信息
+
+brokerName
+readQueueNums
+writeQueueNums
+perm
+topicSyncFlag
+
+### BrokerData
+
+cluster
+brokerName
+HashMap<brokerid,addrs>brokerAddrs
+
