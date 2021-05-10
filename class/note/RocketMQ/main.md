@@ -365,7 +365,23 @@ RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同�
 
 1.java中的MappedByteBuffer类读取的数据大小还是有限制的
 2.当文件超出1.5G的时候可以通过position去定位
-3.RocketMQ使用的时候每个文件大小都控制在1G，超过1G会重新建立新文件
+3.RocketMQ使用的时候每个commitLog文件大小都控制在1G，超过1G会重新建立新文件
+
+## 数据存储
+除index是时间为文件名外，其余数据存储的文件名均为offset偏移量
+
+### commitLog
+存储堆积的真实的数据
+
+### config
+json形式存储了各种配置信息，例如过滤器配置，消费进度，topic的信息，延迟消费的进度，订阅组信息
+
+### consumequeue
+基于topic的commitlog索引文件
+consumequeue文件采取定长设计，每一个条目共20个字节，分别为8字节的commitlog物理偏移量、4字节的消息长度、8字节tag hashcode，单个文件由30W个条目组成，可以像数组一样随机访问每一个条目，每个ConsumeQueue文件大小约5.72M
+
+### index
+存储索引，通过key或时间区间去查询
 
 ## 解决消息重复消费的方案（通用）
 
@@ -399,28 +415,28 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 # 源码
 
 里面频繁的offset就是索引
-
-## PullRequest
+## consumer
+### PullRequest
 
 拉回来的报文处理类，记录一个topic对应的consumergroup的拉取进度，包括MessageQueue和ProcessQueue，还有拉取的offset
 
-## MessageQueue
+### MessageQueue
 
 元数据信息
 
-## ProcessQueue
+### ProcessQueue
 
 真正处理数据的Queue
 
-## OffsetStore
+### OffsetStore
 
 偏移，两个具体实现，对于Clustering的消费模式，从broker中拉取，对于broadcast的消费模式，从本地文件拉取
 
-## PullResult
+### PullResult
 
 从broker回来的结果类，包含了消息和offset还有状态
 
-## startScheduledTask() 
+### startScheduledTask() 
 设置了一些定时任务
 1.如果nameserver没给定，会定时去动态获取nameserver，频率2min/次
 2.从nameserver更新路由信息（consumer，producer，topic信息），30s/次
@@ -428,5 +444,29 @@ client与sever建立长连接，长连接是双向的，可以互相发送数据
 4.同步consumer的消费进度，5s/次
 5.调整线程池数量，1s/次（内部方法未实现）
 
-## ps
+### ps
 1.pull下来的queue超过100M的，超过1000个的，都会延迟执行防止拉取过快消费不了
+
+## broker
+### initialize()
+1.加载topic
+2.初始化线程池
+3.初始化一些定时任务
+> 1.更新broker状态，统计每天消息量，24h/次
+> 2.更新consumerOffset信息，5s/次
+> 3.更新consumerFilter信息，10s/次
+> 4.保护broker，定时检查当前消费组消费消息的进度，超过阈值剔除订阅组，3m/次
+> 5.打印水印，各个队列的任务大小以及最早的放入时间，1s/次
+> 6.打印已经存储在commitlog中但是没有调度到消费队列的字节数，1m/次
+> 7.如果nameserver没给定，会定时去动态获取nameserver的服务列表，频率2min/次
+> 8.1如果是从，拉去主的数据，60s/次
+> 8.2如果是主，打印主从数据差距，60s/次
+
+4.初始化tls连接
+5.初始化事务
+6.初始化权限控制
+7.初始化远程调用
+
+### doFlush
+开启线程处理1s/次刷盘到consumerqueue，直到broker停止
+开启线程每隔10ms（距离上一次刷盘完成后的10ms）刷盘到commitlog，直到broker停止
