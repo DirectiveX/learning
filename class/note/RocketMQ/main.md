@@ -91,16 +91,6 @@ header：broker id，name，addr，cluster name，haServerAddr
 body：crc32校验，class过滤器，topic信息
 同步定时开启线程发送心跳包
 
-### broker集群
-broker集群是主从模式，读写分离（slave只进行消息分发，不负责写入，写入的时候只能连master，但是slave分发时也会进行写操作，会通知master去写，master读写都可以）
-
-master对应多个slave，HA使用raft协议进行选主（参考redis sentinel选主）
-master和slave对应关系通过指定相同的brokerName，不同的brokerid来定义，brokerid为0表示master，其余为slave
-
-
-**运作**
-producer发送消息的时候，nameserver根据请求的topic发现broker在哪，并将ip告诉producer，producer再将数据丢到broker中，consumer消费消息的时候，根据Topic让nameserver去取对应的broker的ip，再发送给consumer
-
 ## API
 [simple example](http://rocketmq.apache.org/docs/simple-example/)
 [order example](http://rocketmq.apache.org/docs/order-example/)
@@ -416,6 +406,34 @@ consumequeue文件采取定长设计，每一个条目共20个字节，分别为
 通过启动多个nameserver集群保证高可用，虽然说是集群，实际上，namesever为了保证速度的极致，并不会互相通讯，broker需要向每一台nameserver进行注册，nameserver每隔10秒会监测broker的心跳，将超过2分钟没有心跳的broker剔除。
 producer如果通过nameserver找到的broker不可用，那么数据就会发送失败，producer每隔30s会从nameserver上更新broker的数据，消息发送失败时会进行重投，保证数据投递到依然存活的broker中
 comsumer如果通过nameserver找到的broker不可用，那么comsumer每隔30s会从nameserver上更新broker的数据，找到其他broker进行消费，因为broker是主从复制的架构，所以保证了从任何一台broker中获取的数据都是一致的
+
+## broker集群
+
+broker集群有两种模式，多主（无主）模式横向分离数据，减缓服务器压力增加吞吐量，topic分布在不同的主上，主从模式保证高可用
+
+broker集群主从模式情况下，读写分离（slave只进行消息分发，不负责写入，写入的时候只能连master，但是slave分发时也会进行写操作，会通知master去写，master读写都可以）
+
+master对应多个slave，HA使用raft协议进行选主（参考redis sentinel选主）
+master和slave对应关系通过指定相同的brokerName，不同的brokerid来定义，brokerid为0表示master，其余为slave
+
+**运作**
+producer发送消息的时候，nameserver根据请求的topic发现broker在哪，并将ip告诉producer，producer再将数据丢到broker中，consumer消费消息的时候，根据Topic让nameserver去取对应的broker的ip，再发送给consumer
+
+根据brokerName进行分片，根据brokerId区分主从，0为主，非0为从
+
+**主从复制**
+4.5之前两种复制机制，复制的是commitLog和内存数据
+*同步双写*
+主从同时写入，等待slave返回ok才认为写入完毕，可能产生网络阻塞
+*异步复制*
+可能会丢失数据但是速度较快，不会产生网络阻塞，一般使用这种，如果怕数据丢失，重要数据可以放入数据库
+
+4.5之后使用Dledger
+raft协议的完全实现，用于选举和数据复制（半数复制QUORUM）
+
+**版本差距**
+4.5之前，不支持自动故障恢复，只能手动将slave的brokerid改成0进行master转换
+4.5之后，支持自动故障修复，使用Dleger
 
 ## 产生消息重复消费的原因
 1.consumer重平衡（重平衡是由于某台group中的机器下线导致重新分配消息）
