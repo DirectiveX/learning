@@ -409,11 +409,13 @@ comsumer如果通过nameserver找到的broker不可用，那么comsumer每隔30s
 
 ## broker集群
 
+[集群](https://github.com/apache/rocketmq/tree/master/docs/en)
+
 broker集群有两种模式，多主（无主）模式横向分离数据，减缓服务器压力增加吞吐量，topic分布在不同的主上，主从模式保证高可用
 
 broker集群主从模式情况下，读写分离（slave只进行消息分发，不负责写入，写入的时候只能连master，但是slave分发时也会进行写操作，会通知master去写，master读写都可以）
 
-master对应多个slave，HA使用raft协议进行选主（参考redis sentinel选主）
+4.5之后使用Dledger master对应多个slave，HA使用raft协议进行选主（参考redis sentinel选主）
 master和slave对应关系通过指定相同的brokerName，不同的brokerid来定义，brokerid为0表示master，其余为slave
 
 **运作**
@@ -422,18 +424,40 @@ producer发送消息的时候，nameserver根据请求的topic发现broker在哪
 根据brokerName进行分片，根据brokerId区分主从，0为主，非0为从
 
 **主从复制**
-4.5之前两种复制机制，复制的是commitLog和内存数据
+4.5之前两种复制机制，复制的是commitLog(包含了index和consumerQueue的两个索引信息)和内存数据
 *同步双写*
 主从同时写入，等待slave返回ok才认为写入完毕，可能产生网络阻塞
 *异步复制*
 可能会丢失数据但是速度较快，不会产生网络阻塞，一般使用这种，如果怕数据丢失，重要数据可以放入数据库
 
 4.5之后使用Dledger
-raft协议的完全实现，用于选举和数据复制（半数复制QUORUM）
+raft协议的部分实现，用于选举和数据复制（半数复制QUORUM）
 
 **版本差距**
 4.5之前，不支持自动故障恢复，只能手动将slave的brokerid改成0进行master转换
-4.5之后，支持自动故障修复，使用Dleger
+4.5之后，支持自动故障修复，使用Dledger
+
+根据源码可知，一旦使用了Dledger，同步数据的CommitLog类变为DledgerCommitLog类，对数据进行append
+
+## Dledger
+
+[Dledger](https://github.com/apache/rocketmq/blob/master/docs/en/dledger/deploy_guide.md)   
+
+可以理解为一对一的哨兵
+
+用于实现broker主从HA和数据一致性
+
+实现raft协议，不再依赖于broker id进行选主，数据同步方式也使用raft方式进行同步，不再使用原始的同步双写或者异步写入
+
+Dledger之间互相有心跳信息
+
+至少三台才能使用raft协议
+
+### 开启
+
+由于Dleger集成在broker中，与broker公用配置文件
+
+enableDlegerCommitLog=true
 
 ## 产生消息重复消费的原因
 1.consumer重平衡（重平衡是由于某台group中的机器下线导致重新分配消息）
