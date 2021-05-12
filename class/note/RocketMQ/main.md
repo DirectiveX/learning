@@ -380,7 +380,13 @@ consumequeue文件采取定长设计，每一个条目共20个字节，分别为
 ### index
 存储索引，通过key或时间区间去查询
 
-## 消息分配策略
+## 负载均衡
+### 生产者发送消息策略
+1.默认策略，随机选择，取模，如果超时发送失败，会选择当前broker集群下的其他MessageQueue
+
+使用MQAdmin工具进行Topic，Queue的定制
+
+### 消费者消息分配策略
 
 [策略](https://blog.csdn.net/yewandemty/article/details/81989695)
 
