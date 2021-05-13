@@ -358,7 +358,7 @@ RocketMQ中的Topic是逻辑上的概念，它包含了很多Queue，可以同�
 
 ### RocketMQ为什么快？
 
-使用了数据零拷贝技术，调用内核的sendfile方法，在java中调用MappedByteBuffer类（对标linux mmap方法）
+使用了数据零拷贝技术，在java中调用MappedByteBuffer类（对标linux mmap方法）
 
 1.java中的MappedByteBuffer类读取的数据大小还是有限制的
 2.当文件超出1.5G的时候可以通过position去定位
@@ -386,11 +386,13 @@ consumequeue文件采取定长设计，每一个条目共20个字节，分别为
 
 使用MQAdmin工具进行Topic，Queue的定制
 
+如果要做负载均衡，那么就要提前用mqadmin去设置好对应的queue，在业务逻辑中规划好哪些queue存放哪些tag，然后向对应queue中写入消息，以达到负载均衡的效果
+
 ### 消费者消息分配策略
 
 [策略](https://blog.csdn.net/yewandemty/article/details/81989695)
 
-平均分配策略
+平均分配策略（默认）
 
 环形分配策略
 
@@ -470,7 +472,7 @@ enableDlegerCommitLog=true
 2.拉取broker的时候由于网络原因，延迟收到了consumer的ack，导致消息的重投递
 3.consumer group中消费模式的设定不一致导致消息重复消费
 
-## 解决消息重复消费的方案（通用）
+## 解决消息重复消费的方案（通用）（如何使消息幂等？）
 ### 数据库表
 处理消息前，使用消息主键在表中带有约束的字段中insert
 
