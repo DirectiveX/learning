@@ -123,6 +123,23 @@ consumer.setMessageModel(MessageModel.CLUSTERING);
 消息的状态由broker维护
 如果收到ack并且是success代表消息被成功消费，不然就要进行消息的重新投递
 
+**setConsumeFromWhere**
+
+可以设置这个属性，来告诉新上线consumer group从哪里开始消费
+
+#### 调优参数
+
+**setConsumeMessageBatchMaxSize**
+
+一次处理多少条，MessageExt list中有多少，默认一次一条
+
+**setPullBatchSize**
+
+一次拉取多少条，默认32
+
+**setConsumeThreadMin/setConsumeThreadMax**
+最大最小线程数
+
 ### producer
 **同步消息**
 ```Java 
