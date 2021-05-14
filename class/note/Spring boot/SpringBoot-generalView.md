@@ -78,3 +78,28 @@ list: list
 
 @Inherited：子类可以继承父类注解
 
+## spi
+
+java spi是用提供给第三方软件的一个接口（jdk1.6之后提供的），第三方软件通过实现这个接口可以实现对应的功能，是一种解耦的思路。通过ServiceLoader扫描jar的META-INF下面的类获得接口的具体实现
+
+**应用场景**
+
+JDBC加载驱动，SLF4J门面模式，dubbo
+
+## 配置文件优先级
+
+高到低分别为
+
+当前目录下的config下的配置文件
+
+当前目录下的配置文件
+
+classpath下的config下的配置文件
+
+classpath下的配置文件
+
+## 多配置文件
+
+application-xxx.yaml或者在yaml中以---分割
+
+使用spring.profiles.active=xxx
