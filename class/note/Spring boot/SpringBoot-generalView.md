@@ -86,6 +86,20 @@ java spi是用提供给第三方软件的一个接口（jdk1.6之后提供的）
 
 JDBC加载驱动，SLF4J门面模式，dubbo
 
+**jdk9之后出现了巨大变化，增加了很多流式处理**
+
+**spi打破双亲委派**
+
+如果使用到了java内置的接口如JDBC，那么遵循双亲委派的做法是采用Class.forName通过当前类的ClassLoader进行加载，但是如果通过ClassLoader，那么加载DriverManager的ClassLoader必然是就是BootStrapClassLoader，而加载实现类肯定用不了BootStrapClassLoader，只能用自己实现的ClassLoader或者AppClassLoader，所以要向下寻找，spi使用了getContextClassLoader()方法去找到下面的ClassLoader进行一个加载
+
+**用idea的坑爹情况**
+
+建包的时候不要用.分割，一个个键，不然idea以为你包名带点
+
+ps：
+
+> ServiceLoader<xxxInterface> service = ServiceLoader.load(xxxInterface.class);
+
 ## 配置文件优先级
 
 高到低分别为
@@ -103,3 +117,80 @@ classpath下的配置文件
 application-xxx.yaml或者在yaml中以---分割
 
 使用spring.profiles.active=xxx
+
+## Servlet
+
+[servlet](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-embedded-container)
+
+### @WebServlet,继承HttpServlet
+
+### @WebFilter
+
+### @WebListener
+
+### @ServletComponetScan
+
+> 实现方式有三种方式：第一种：使用servlet注解。如上面我们演示的@Webservlet注解。
+>
+> 其实就是@ServletComponentScan+@webServlet
+>
+> 或者+@WebFilter或者+@WebListener注解
+>
+> 方式二：使用spring注解
+>
+> @Bean+Servlet(Filter\Listener)
+>
+> 方式三：使用RegistrationBean方法(推荐)
+>
+> ServletRegistrationBean
+>
+> FilterRegistrationBean
+>
+> ServletListenerRegistrationBean
+
+## 静态文件
+
+[static content](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-spring-mvc-static-content)
+
+static和templates
+
+## Spring MVC自动配置
+
+[mvc](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-spring-mvc-auto-configuration)
+
+### 自定义视图解析器
+
+实现ViewResolver，加入到spring容器中即可，Spring会从容器中找到所有视图解析器的子类进行一个分析
+
+### 注意
+
+如果想要保留MVC的功能并且做更多的配置，可以实现WebMvcConfigurer并且标注解@Configuration，但是不能使用@EnableWebMvc注解
+
+如果想要完全管理Mvc，不让springboot自动的配置生效，那么可以加上@EnableWebMvc注解或者直接导入@import(DelegatingWebMvcConfiguration.class)
+
+## thymelaf
+
+[中文文档](https://raledong.gitbooks.io/using-thymeleaf/content/)
+
+所有的表达式都可以在org.thymeleaf.expression包下找到，如org.thymeleaf.expression.Calendars
+
+## i18n国际化
+
+注意点：resolver在请求成功的时候会被调用2次
+
+## Spring Boot多数据源
+
+### 集成druid
+
+[druid-starter](https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter)
+
+**sql监控不到**
+
+加过滤器 filters: stat,wall,sl4j
+
+**Spring 使用AbstractRoutingDataSource类实现多数据源切换，将数据源绑定在ThreadLocal上**
+
+# 开发者工具
+
+JRebel和Devtools
+

@@ -6,7 +6,7 @@
 
 **常用**
 
-各种工具类
+各种工具类，thymeleaf TemplateMode枚举单例
 
 ## 原型模式
 **定义**
