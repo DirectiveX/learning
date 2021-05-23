@@ -728,7 +728,7 @@ MixedGC（回收部分老年代（收益高,根据global concurrent marking去�
 > stw
 
 清除垃圾
-> stw,将对象复制到其他region，清除空region,正是因为这边进行了stw，所以不会产生浮动垃圾问题
+> stw,将对象复制到其他region，清除空region,正是因为这边进行了stw，所以这里不会产生浮动垃圾问题，但是全局由于用了stab算法，依然会产生浮动垃圾问题
 
 ##### GC日志
 
