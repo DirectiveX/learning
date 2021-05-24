@@ -152,6 +152,59 @@ ps:做集群的时候注意hostname是查找主机地址的，appname是标识�
 
 [eureka client](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/#service-discovery-eureka-clients)
 
+**自我保护机制**
+用来防止网络分区，如果每分钟心跳次数小于numberOfRenewsPerMinThreshold时，会开启自我保护，此时，不会进行服务的自动下线操作，但是提供的服务列表可能不可用
+renwalPercentThreshold = 0.85,占比，可以设置
+
+numberOfRenewsPerMinThreshold = $服务数*2*0.85$
+
+**acturator**
+
+server启动的时候会自带acturator监控健康信息，但是client没有，所以要自己引入对应的jar包，拆封即用，无需配置
+
+*可以开启acturator的健康检查*
+
+##### provider
+```yaml
+spring:
+  application:
+    name: provider
+  profiles:
+    active: dev2
+---
+spring:
+  config:
+    activate:
+      on-profile: dev1
+server:
+  port: 7072
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka1:7070/eureka/
+#  instance:
+#    hostname: provider1
+---
+spring:
+  config:
+    activate:
+      on-profile: dev2
+server:
+  port: 7073
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka1:7070/eureka/
+      #如果加了hostname那么一定要配对应的hosts文件，默认是当前主机名
+#  instance:
+#    hostname: provider2
+```
+
+##### consumer
+```yaml
+
+```
+
 # 杂项
 
 **服务熔断**
