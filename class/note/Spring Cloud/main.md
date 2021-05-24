@@ -54,6 +54,15 @@ http://www.martinfowler.com/articles/microservices.html
 
 Eureka客户端每30秒向服务器发送一次心跳，服务器90s内没有更新客户端信息的话，就会从注册表删除实例
 
+```properties
+#续约发送间隔默认30秒，心跳间隔
+eureka.instance.lease-renewal-interval-in-seconds=5
+#表示eureka client间隔多久去拉取服务注册信息，默认为30秒，对于api-gateway，如果要迅速获取服务注册状态，可以缩小该值，比如5秒
+eureka.client.registry-fetch-interval-seconds=5
+# 续约到期时间（默认90秒）
+eureka.instance.lease-expiration-duration-in-seconds=60
+```
+
 **fetch registty**
 
 Eureka客户端从服务器获取注册表信息并将其缓存在本地
@@ -148,23 +157,93 @@ server:
 
 ps:做集群的时候注意hostname是查找主机地址的，appname是标识集群分组的
 
-#### client
-
-[eureka client](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/#service-discovery-eureka-clients)
-
 **自我保护机制**
 用来防止网络分区，如果每分钟心跳次数小于numberOfRenewsPerMinThreshold时，会开启自我保护，此时，不会进行服务的自动下线操作，但是提供的服务列表可能不可用
 renwalPercentThreshold = 0.85,占比，可以设置
 
 numberOfRenewsPerMinThreshold = $服务数*2*0.85$
 
-**acturator**
+```properties
+#关闭自我保护模式
+eureka.server.enable-self-preservation=false
+#失效服务间隔
+eureka.server.eviction-interval-timer-in-ms=3000
+```
+
+#### client
+
+[eureka client](https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/#service-discovery-eureka-clients)
+
+**actuator**
 
 server启动的时候会自带acturator监控健康信息，但是client没有，所以要自己引入对应的jar包，拆封即用，无需配置
 
-*可以开启acturator的健康检查*
+*可以开启actuator的健康检查,如果需要的话可以开启远程上下线功能*
+
+```properties
+#暴露 Endpoint
+management.endpoints.jmx.exposure.exclude=
+#jmx方式排除需要公开的端点
+management.endpoints.jmx.exposure.include=*
+#jmx方式包含需要公开的端点
+management.endpoints.web.exposure.exclude=
+#http方式排除需要公开的端点
+management.endpoints.web.exposure.include=info, health
+
+#上下线
+management.endpoint.shutdown.enabled=true
+```
+
+**应用场景**
+
+通常会做服务供应端的自身健康检测，并上报给注册中心
+
+在client端配置：将自己真正的健康状态传播到server。
+
+```yaml
+#不加这个的话会默认使用心跳去判断服务器是否可用，而不是通过actuator的health节点去观察，会产生错误
+eureka:
+  client:
+    healthcheck:
+      enabled: true
+```
+
+改变健康状态的Service
+
+```java
+@Service
+public class HealthStatusService implements HealthIndicator{
+private Boolean status = true;
+
+public void setStatus(Boolean status) {
+	this.status  = status;
+}
+
+@Override
+public Health health() {
+	// TODO Auto-generated method stub
+	if(status)
+	return new Health.Builder().up().build();
+	return new Health.Builder().down().build();
+}
+
+public String getStatus() {
+	// TODO Auto-generated method stub
+	return this.status.toString();
+}
+```
+
+```java
+	@GetMapping("/health")
+	public String health(@RequestParam("status") Boolean status) {
+		
+		healthStatusSrv.setStatus(status);
+		return healthStatusSrv.getStatus();
+	}
+```
 
 ##### provider
+
 ```yaml
 spring:
   application:
@@ -201,9 +280,145 @@ eureka:
 ```
 
 ##### consumer
-```yaml
-
+```properties
+eureka.client.serviceUrl.defaultZone=http://eureka2:8080/eureka/
+eureka.instance.appname=clientConsumer
+server.port=8082
 ```
+
+#### 整合security
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+```
+
+```properties
+spring.security.user.name=jiahao
+spring.security.user.password=123456
+
+# 连接的时候带用户名和密码
+defaultZone: http://jiahao:123456@eureka2:8081/eureka/
+```
+
+新版本security会有防止csrf攻击的问题，如下方式解决
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
+
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		// TODO Auto-generated method stub
+		http.csrf().disable();
+		super.configure(http);
+	}
+
+}
+```
+
+#### 负载均衡
+
+​		当系统面临大量的用户访问，负载过高的时候，通常会增加服务器数量来进行横向扩展（集群），多个服务器的负载需要均衡，以免出现服务器负载不均衡，部分服务器负载较大，部分服务器负载较小的情况。通过负载均衡，使得集群中服务器的负载保持在稳定高效的状态，从而提高整个系统的处理能力。
+
+```sh
+软件负载均衡：nginx,lvs
+
+硬件负载均衡：F5
+
+我们只关注软件负载均衡，
+第一层可以用DNS，配置多个A记录，让DNS做第一层分发。
+第二层用比较流行的是反向代理，核心原理：代理根据一定规则，将http请求转发到服务器集群的单一服务器上。
+```
+
+软件负载均衡分为：服务端（集中式），客户端。
+
+服务端负载均衡：在客户端和服务端中间使用代理，nginx。
+
+客户端负载均衡：根据自己的情况做负载。Ribbon就是。
+
+客户端负载均衡和服务端负载均衡最大的区别在于 ***服务端地址列表的存储位置，以及负载算法在哪里***。
+
+[ribbon官网](https://github.com/Netflix/ribbon)
+
+##### 基于客户端
+
+在客户端上存放服务列表，新版本（3.x.x）客户端移除了Ribbon, Hystrix, Zuul 和 Turbine，默认实现使用BlockingLoadBalancerClient
+
+**Ribbon**
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-ribbon</artifactId>
+</dependency>
+```
+
+choose的时候使用负载均衡策略
+
+内置策略如下
+
+> 默认实现：
+>
+> ZoneAvoidanceRule（区域权衡策略）：复合判断Server所在区域的性能和Server的可用性，轮询选择服务器。
+>
+> 其他规则：
+>
+> BestAvailableRule（最低并发策略）：会先过滤掉由于多次访问故障而处于断路器跳闸状态的服务，然后选择一个并发量最小的服务。逐个找服务，如果断路器打开，则忽略。
+>
+> RoundRobinRule（轮询策略）：以简单轮询选择一个服务器。按顺序循环选择一个server。
+>
+> RandomRule（随机策略）：随机选择一个服务器。
+>
+> AvailabilityFilteringRule（可用过滤策略）：会先过滤掉多次访问故障而处于断路器跳闸状态的服务和过滤并发的连接数量超过阀值得服务，然后对剩余的服务列表安装轮询策略进行访问。
+>
+> WeightedResponseTimeRule（响应时间加权策略）：据平均响应时间计算所有的服务的权重，响应时间越快服务权重越大，容易被选中的概率就越高。刚启动时，如果统计信息不中，则使用RoundRobinRule(轮询)策略，等统计的信息足够了会自动的切换到WeightedResponseTimeRule。响应时间长，权重低，被选择的概率低。反之，同样道理。此策略综合了各种因素（网络，磁盘，IO等），这些因素直接影响响应时间。
+>
+> RetryRule（重试策略）：先按照RoundRobinRule(轮询)的策略获取服务，如果获取的服务失败则在指定的时间会进行重试，进行获取可用的服务。如多次获取某个服务失败，就不会再次获取该服务。主要是在一个时间段内，如果选择一个服务不成功，就继续找可用的服务，直到超时。
+
+*切换负载均衡策略*
+
+1.bean
+
+```java
+@Bean
+	public IRule myRule(){
+		//return new RoundRobinRule();
+		//return new RandomRule();
+		return new RetryRule(); 
+```
+
+2.配置文件
+
+```properties
+provider.ribbon.NFLoadBalancerRuleClassName=com.netflix.loadbalancer.RandomRule
+```
+
+**Ribbon脱离Eureka**
+
+```sh
+ribbon.eureka.enabled=false
+ribbon.listOfServers=localhost:80,localhost:81
+```
+
+为service-sms设置 请求的网络地址列表。
+
+Ribbon可以和服务注册中心Eureka一起工作，从服务注册中心获取服务端的地址信息，也可以在配置文件中使用listOfServers字段来设置服务端地址。
+
+**Ribbon配合restTemplate**
+
+```java
+@Autowired
+@LoadBalanced
+RestTemplate restTemplate;
+```
+
+##### 基于服务器
+
+在服务器（网关）上存放服务列表
 
 # 杂项
 
