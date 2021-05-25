@@ -411,10 +411,28 @@ Ribbon可以和服务注册中心Eureka一起工作，从服务注册中心获�
 **Ribbon配合restTemplate**
 
 ```java
-@Autowired
+@Bean
 @LoadBalanced
-RestTemplate restTemplate;
+public RestTemplate restTemplate(){
+	return new RestTemplate();
+}
+------------
+    @RequestMapping("/searchInfo1")
+    public ResponseEntity<String> searchInfo1(){
+        ResponseEntity<String> forEntity = restTemplate.getForEntity("http://PROVIDER/"+ URL, String.class);
+        return forEntity;
+    }
 ```
+
+###### 为什么使用rest风格
+
+1.支持异构，跨平台
+
+2.HTTP请求，可插拔（不同于长连接，一直建立连接），弱依赖，无状态服务
+
+3.生态
+
+缺点：性能没有传输二进制对象好，增加了可用性
 
 ##### 基于服务器
 
