@@ -409,6 +409,254 @@ feign在方法上可以设置：@RequestMapping,@ResponseBody。
 
 推荐使用yml配置方式，在yml中按 代码提示键，可以看到所有配置。
 
+### 请求
+
+#### API
+
+```
+@FeignClient(name = "user-provider")
+public interface ConsumerApi extends UserApi {
+
+	@GetMapping("/getMap")
+	Map<Integer, String> getMap(@RequestParam("id") Integer id);
+	@GetMapping("/getMap2")
+	Map<Integer, String> getMap2(@RequestParam("id") Integer id,@RequestParam("name") String name);
+	
+	@GetMapping("/getMap3")
+	Map<Integer, String> getMap3(@RequestParam Map<String, Object> map);
+	
+	@PostMapping("/postMap")
+	Map<Integer, String> postMap(Map<String, Object> map);
+
+}
+```
+
+
+
+#### Controller
+
+```
+package com.mashibing.UserConsumer;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.mashibing.UserAPI.UserApi;
+
+@RestController
+public class MainController {
+
+	@Autowired
+	ConsumerApi api;
+	
+	@Autowired
+	MashibingApi mapi;
+
+	@GetMapping("/alive")
+	public String alive() {
+		/**
+		 * URL 不能变 
+		 * 
+		 * jar
+		 * 文档
+		 */
+		return api.alive();
+	}
+	
+	
+	@GetMapping("/vip")
+	public String vip() {
+		
+		return mapi.getVip();
+	}
+	
+	@GetMapping("/map")
+	public Map<Integer, String> map(Integer id) {
+		System.out.println(id);
+		return api.getMap(id);
+	}
+	
+	@GetMapping("/map2")
+	public Map<Integer, String> map2(Integer id,String name) {
+		System.out.println(id);
+		return api.getMap2(id,name);
+	}
+	
+	
+	@GetMapping("/map3")
+	public Map<Integer, String> map3(@RequestParam Map<String, Object> map) {
+//		System.out.println(id);
+//		HashMap<String, Object> map = new HashMap<>(2);
+//		
+//		map.put("id", id);
+//		map.put("name", name);
+//		syso
+		System.out.println(map);
+		return api.getMap3(map);
+	}
+	
+	
+	@GetMapping("/map4")
+	public Map<Integer, String> map4(@RequestParam Map<String, Object> map) {
+//		System.out.println(id);
+//		HashMap<String, Object> map = new HashMap<>(2);
+//		
+//		map.put("id", id);
+//		map.put("name", name);
+//		syso
+		System.out.println(map);
+		return api.postMap(map);
+	}
+}
+
+```
+
+#### Provider
+
+```
+package com.mashibing.UserProvider;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.mashibing.UserAPI.UserApi;
+
+@RestController
+public class UserController implements UserApi {
+
+	@Value("${server.port}")
+	String port;
+	
+	
+	private AtomicInteger count = new AtomicInteger();
+	
+	@Override
+	public String alive() {
+
+		try {
+			System.out.println("准备睡");
+			
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		int i = count.getAndIncrement();
+		System.out.println("====好的第：" + i + "次调用");
+		return "port:" + port;
+	}
+
+	@Override
+	public String getById(Integer id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@GetMapping("/getMap")
+	public Map<Integer, String> getMap(@RequestParam("id") Integer id) {
+		// TODO Auto-generated method stub
+		System.out.println(id);
+		return Collections.singletonMap(id, "mmeme");
+	}
+	@GetMapping("/getMap2")
+	public Map<Integer, String> getMap2(Integer id,String name) {
+		// TODO Auto-generated method stub
+		System.out.println(id);
+		return Collections.singletonMap(id, name);
+	}
+	
+	@GetMapping("/getMap3")
+	public Map<Integer, String> getMap3(@RequestParam Map<String, Object> map) {
+		// TODO Auto-generated method stub
+		System.out.println(map);
+		return Collections.singletonMap(Integer.parseInt(map.get("id").toString()), map.get("name").toString());
+	}
+	
+	
+	@PostMapping("/postMap")
+	public Map<Integer, String> postMap(@RequestBody Map<String, Object> map) {
+		// TODO Auto-generated method stub
+		System.out.println(map);
+		return Collections.singletonMap(Integer.parseInt(map.get("id").toString()), map.get("name").toString());
+	}
+
+	
+
+}
+
+```
+
+
+
+### 开启日志
+
+#### 配置文件
+
+```
+logging.level.com.mashibing.UserConsumer:debug
+```
+
+#### 重写日志等级
+
+```java
+package com.mashibing.UserConsumer;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import feign.Logger;
+
+@Configuration
+public class FeiginConfig {
+
+	@Bean
+	Logger.Level logLevel(){
+		
+		return Logger.Level.BASIC;
+	}
+}
+
+```
+
+### 超时
+
+Feign默认支持Ribbon；Ribbon的重试机制和Feign的重试机制有冲突，所以源码中默认关闭Feign的重试机制,使用Ribbon的重试机制
+
+```
+#连接超时时间(ms)
+ribbon.ConnectTimeout=1000
+#业务逻辑超时时间(ms)
+ribbon.ReadTimeout=6000
+```
+
+### 重试
+
+```
+#同一台实例最大重试次数,不包括首次调用
+ribbon.MaxAutoRetries=1
+#重试负载均衡其他的实例最大重试次数,不包括首次调用
+ribbon.MaxAutoRetriesNextServer=1
+#是否所有操作都重试
+ribbon.OkToRetryOnAllOperations=false
+```
+
+使用ribbon重试机制，请求失败后，每个6秒会重新尝试
+
 ## 原理
 
 1. 主程序入口添加@EnableFeignClients注解开启对Feign Client扫描加载处理。根据Feign Client的开发规范，定义接口并加@FeignClient注解。

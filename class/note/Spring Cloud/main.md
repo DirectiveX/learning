@@ -344,6 +344,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
 [ribbon官网](https://github.com/Netflix/ribbon)
 
+**ribbon重试**
+
+```properties
+# 连接超时
+ribbon.ConnectionTimeout=1000
+# 业务超时
+ribbon.ReadTimeout=1000
+# 同一台实例最大重试次数，不包括首次调用
+ribbon.MaxAutoRetries=1
+# 其他实例最大重试次数，不包括首次调用
+ribbon.MaxAutoRetriesNextServer=1
+# 是否所有操作都重试
+ribbon.OkToRetryOnAllOperations=false
+```
+
+ribbon有鱼的记忆，当业务逻辑在一段时间内超时多次，就暂时不调用了，但是过段时间（6s）就忘了
+
 ##### 基于客户端
 
 在客户端上存放服务列表，新版本（3.x.x）客户端移除了Ribbon, Hystrix, Zuul 和 Turbine，默认实现使用BlockingLoadBalancerClient
@@ -434,21 +451,101 @@ public RestTemplate restTemplate(){
 
 缺点：性能没有传输二进制对象好，增加了可用性
 
+
+
 ##### 基于服务器
 
 在服务器（网关）上存放服务列表
+
+#### Hystrix
+做服务的熔断，降级，隔离,返回一些兜底数据，可以单独使用，也可以配合feign使用
+hystrix的bug，如果使用hystrix又在api类上定义了RequestMapping注解，会报错
+
+##### 使用代理实现hystrix，注解标识
+
+**服务熔断（自己写code）**
+
+失败计数，当连续失败次数达到阈值，直接切断请求，抛异常，然后可以设置随机数当下次请求到达时随机数等于某个值，就去尝试，或者每隔一段时间开线程去重发请求，当前，要提前用一个缓存去存储之前失败的请求
+
+**服务降级（自己写code）**
+
+当当前服务不可用，但是被请求到了之后，对返回进行一个处理，给出一个友好的提示或者将当前请求放入MQ中，然后再进行一个返回，虽然没有准确执行任务，但是也进行了相应的处理，俗称服务降级（凑合用）
+
+**服务限流（隔离）（自己写code）**
+
+当前服务较忙（请求线程数过多），可以设置Map，Map中key为url，value为线程池，设置最大线程数，进行线程隔离，达到限流的作用，如果线程数过多，就直接抛出异常
+
+##### 使用hystrix
+```xml
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+		</dependency>
+```
+```yaml
+feign:
+  hystrix:
+    enabled: true
+```
+
+```java
+//联合Feign使用
+@FeignClient(name = "provider",fallback = ProviderFallback.class)
+```
+
+更细粒度降级
+
+```java
+//联合Feign使用
+@FeignClient(name = "provider",fallbackFactory = ProviderFallbackFactory.class)
+//-----------------------------------------
+@Component
+public class ProviderFallbackFactory implements FallbackFactory<FeignService> {
+
+    @Override
+    public FeignService create(Throwable cause) {
+        return new FeignService() {
+            @Override
+            public String provider() {
+                return null;
+            }
+
+            @Override
+            public Map<String, String> client1() throws InterruptedException {
+                return Collections.singletonMap("jiang","ji");
+            }
+
+            @Override
+            public Person client2() throws InterruptedException {
+                return null;
+            }
+
+            @Override
+            public Person client3(String name) {
+                return null;
+            }
+
+            @Override
+            public URI client4(Person person) throws URISyntaxException {
+                return null;
+            }
+
+            @Override
+            public Person client5(Person person, Integer id) {
+                return null;
+            }
+        };
+    }
+}
+```
+
+
+
+##### hystrix原理
+
+代理了实现了接口的类，提供了run方法和failed方法，run方法就是实际干活的方法，failed方法就是当run方法出现错误的时候，会回调的方法，可以在failed中实现降级操作，实际上就是代理的时候套了一层try catch，catch住异常的时候进行降级和熔断准备
 
 #### feign的坑
 在进行feign的参数配置时，要使用@RequestParam注解才能正确传递值，多参数的时候，只能同时有一个@RequestBody，不写的默认@RequestBody
 
 传多个值+对象的时候对象用@SpringQueryMap注解注释，当然也可以用@RequestBody+@RequestParam
-# 杂项
-
-**服务熔断**
-
-指后面服务不可运行，进行一个熔断，不再向这些服务器进行请求
-
-**服务降级**
-
-指服务器比较忙，调用服务的时候本来要调用多个服务的，降级成调用一个服务
-
