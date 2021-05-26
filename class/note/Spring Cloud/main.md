@@ -438,6 +438,10 @@ public RestTemplate restTemplate(){
 
 在服务器（网关）上存放服务列表
 
+#### feign的坑
+在进行feign的参数配置时，要使用@RequestParam注解才能正确传递值，多参数的时候，只能同时有一个@RequestBody，不写的默认@RequestBody
+
+传多个值+对象的时候对象用@SpringQueryMap注解注释，当然也可以用@RequestBody+@RequestParam
 # 杂项
 
 **服务熔断**
