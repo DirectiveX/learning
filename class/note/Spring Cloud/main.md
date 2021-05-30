@@ -135,7 +135,7 @@ eureka:
       # 这边是节点间通讯的地址，一般是访问地址+eureka/,如果配置https，需要做一些额外工作
       defaultZone: http://eureka2:8081/eureka/
   instance:
-    # 当前主机名，用来区分主机的
+    # 当前主机名，用来区分主机的，不填默认localhost
     hostname: eureka1
 server:
   # eureka web服务器的地址
@@ -476,6 +476,9 @@ hystrix的bug，如果使用hystrix又在api类上定义了RequestMapping注解�
 当前服务较忙（请求线程数过多），可以设置Map，Map中key为url，value为线程池，设置最大线程数，进行线程隔离，达到限流的作用，如果线程数过多，就直接抛出异常
 
 ##### 使用hystrix
+
+**集成feign**
+
 ```xml
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -539,13 +542,122 @@ public class ProviderFallbackFactory implements FallbackFactory<FeignService> {
 }
 ```
 
+**集成restTemplate**
+
+```java
+//加注解，开启hystrix
+@EnableHystrix
+```
+
+```java
+//在方法上加入注解
+@HystrixCommand(fallbackMethod = "hystrixFallback",  commandProperties = { // 设置隔离策略，THREAD 表示线程池 SEMAPHORE：信号池隔离 @HystrixProperty(name = "execution.isolation.strategy", value = "THREAD"), // 当隔离策略选择信号池隔离的时候，用来设置信号池的大小(最大并发数) @HystrixProperty(name = "execution.isolation.semaphore.maxConcurrentRequests", value = "10"), } )
+
+/*    @HystrixCommand(commandKey = "testCoreSizeCommand",groupKey = "testGroup",fallbackMethod = "infoFallback",threadPoolProperties = {
+            @HystrixProperty(name = "coreSize",value = "2"),
+            @HystrixProperty(name = "maxQueueSize",value="2")})*/
+    
+public String infoFallback() {
+       return "ohoh";
+}
+```
+
 
 
 ##### hystrix原理
 
 代理了实现了接口的类，提供了run方法和failed方法，run方法就是实际干活的方法，failed方法就是当run方法出现错误的时候，会回调的方法，可以在failed中实现降级操作，实际上就是代理的时候套了一层try catch，catch住异常的时候进行降级和熔断准备
 
+##### 资源隔离方式：信号量隔离和线程隔离
+
+信号量隔离是将信号量绑定到tomcat线程池上，针对每个url进行信号量隔离
+
+线程隔离是针对每个url都开启一个线程池，进行操作，官方推荐，好处是异步请求，性能优秀，有良好的拒绝策略
+
+**信号量隔离使用场景**
+
+程序健壮，如果不健壮一旦出问题会造成tomcat线程池出问题
+
+通过semaphore count来限制并发请求数，适用于无网络的高并发请求
+
+**线程隔离使用场景**
+
+普通场景，建议使用，IO密集型，网络请求较多的情况下
+
+通过线程数量来限制并发请求数，可以提供额外的保护，但有一定的延迟。一般用于网络调用
+
+**对比**
+
+信号量的开销远比线程池的开销小，但是它不能设置超时和实现异步访问
+
+**具体实现**
+
+```properties
+hystrix.command.default.execution.isolation.strategy=SEMAPHORE
+#隔离策略，默认是Thread, 可选Thread｜Semaphore
+
+#hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds 命令执行超时时间，默认1000ms
+#hystrix.command.default.execution.timeout.enabled 执行是否启用超时，默认启用true
+#hystrix.command.default.execution.isolation.thread.interruptOnTimeout 发生超时是是否中断，默认true
+#hystrix.command.default.execution.isolation.semaphore.maxConcurrentRequests 最大并发请求数，默认10，该参数当使用ExecutionIsolationStrategy.SEMAPHORE策略时才有效。如果达到最大并发请求数，请求会被拒绝。理论上选择semaphore size的原则和选择thread size一致，但选用semaphore时每次执行的单元要比较小且执行速度快（ms级别），否则的话应该用thread。
+#semaphore应该占整个容器（tomcat）的线程池的一小部分。
+```
+
+ ```yaml
+ hystrix:
+   threadpool:
+     default:
+       coreSize: 200 #并发执行的最大线程数，默认10
+       maxQueueSize: 1000 #BlockingQueue的最大队列数，默认值-1
+       queueSizeRejectionThreshold: 800 #即使maxQueueSize没有达到，达到queueSizeRejectionThreshold该值后，请求也会被拒绝，默认值5
+ ```
+
+启动类
+
+```java
+@EnableHystrixDashboard
+```
+
+引入依赖
+
+```xml
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>
+				spring-cloud-starter-netflix-hystrix-dashboard
+			</artifactId>
+		</dependency>
+		
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+如果有请求异常错误
+
+```yaml
+hystrix:
+  dashboard:
+    proxy-stream-allow-list: localhost
+```
+
+健康上报
+
+http://localhost:8082/actuator/hystrix.stream
+
+图形化
+
+http://localhost:8082/hystrix
+
+
+
 #### feign的坑
 在进行feign的参数配置时，要使用@RequestParam注解才能正确传递值，多参数的时候，只能同时有一个@RequestBody，不写的默认@RequestBody
 
 传多个值+对象的时候对象用@SpringQueryMap注解注释，当然也可以用@RequestBody+@RequestParam
+
+#### zuul网关
+
+
+
