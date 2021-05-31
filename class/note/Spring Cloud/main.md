@@ -671,6 +671,24 @@ zuul功能和nginx一样，只不过开发语言不同，并且nginx可以加入
 
 业务网关
 
+**引入依赖**
+
+```properties
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-zuul</artifactId>
+        </dependency>
+```
+
+**主类加入**
+```java
+@EnableZuulProxy
+```
+
 **负载均衡**
 
 ```properties
@@ -688,7 +706,7 @@ management.endpoint.routes.enabled=true
 
 ##### 原理
 
-通过servlet或者filter拦截请求，并且进行一系列操作
+自己实现的时候可以通过servlet或者filter拦截请求，并且进行一系列操作，实际实现的时候用的是filter，然后用ribbon实现了负载均衡，用hystrix完成了熔断降级和隔离
 
 #### 链路追踪
 
@@ -698,5 +716,69 @@ management.endpoint.routes.enabled=true
 
 直接加依赖就行了
 
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-sleuth</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zipkin</artifactId>
+</dependency>
+```
+
+
 如果要加入zipkin，需要让其他微服务上报自己的信息，并且zipkin是单独的server，单独jar包要单独启动
+
+```properties
+spring.zipkin.base-url=http://localhost:9411
+spring.sleuth.sampler.rate=1
+```
+
+#### admin（服务监控）
+开启admin服务器
+
+```xml
+<dependency>
+    <groupId>de.codecentric</groupId>
+    <artifactId>spring-boot-admin-starter-server</artifactId>
+    <version>2.4.1</version>
+</dependency>        
+<dependency>
+    <groupId>de.codecentric</groupId>
+    <artifactId>spring-boot-admin-server-ui</artifactId>
+    <version>2.4.1</version>
+</dependency>
+```
+
+微服务端上报状态信息（需要装actuator和client，只是用于上报的，所以client版本不一定要与server相同）
+
+```xml
+<dependency>
+   <groupId>org.springframework.boot</groupId>
+   <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+    <groupId>de.codecentric</groupId>
+    <artifactId>spring-boot-admin-starter-client</artifactId>
+    <version>2.4.1</version>
+</dependency>  
+```
+
+配置
+
+```yaml
+spring:  
+  boot:
+    admin:
+      client:
+        url: http://localhost:8085
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+    health:
+      show-details: always
+```
 
