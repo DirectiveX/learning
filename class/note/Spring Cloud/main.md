@@ -659,5 +659,44 @@ http://localhost:8082/hystrix
 
 #### zuul网关
 
+zuul功能和nginx一样，只不过开发语言不同，并且nginx可以加入lua脚本，但是zuul可以在网关上写code
 
+网关可以做到的一些事情
+
+路由，权限检测，防火墙，防爬虫，分发地址，监控，逻辑负载均衡（业务网关），限流，熔断
+
+**网关种类**
+
+流量网关
+
+业务网关
+
+**负载均衡**
+
+```properties
+consumer.ribbon.NFLoadBalancerRuleClassName=com.netflix.loadbalancer.RandomRule
+```
+
+**路由端点**
+
+```properties
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+management.endpoint.health.enabled=true
+management.endpoint.routes.enabled=true
+```
+
+##### 原理
+
+通过servlet或者filter拦截请求，并且进行一系列操作
+
+#### 链路追踪
+
+##### sleuth + zipkin
+
+配置到每一个要使用到的服务上，因为原理是每个微服务向zipkin服务器去上报自己的信息
+
+直接加依赖就行了
+
+如果要加入zipkin，需要让其他微服务上报自己的信息，并且zipkin是单独的server，单独jar包要单独启动
 
