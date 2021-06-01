@@ -36,7 +36,7 @@
 
 依赖
 
-```
+```xml
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-config-server</artifactId>
@@ -50,30 +50,19 @@
 
 配置文件
 
-```
-spring.cloud.config.server.git.uri=https://github.com/piziniao/config-center.git
+```properties
+spring.cloud.config.server.git.uri=https://github.com/DirectiveX/configCenter.git
 spring.cloud.config.label=master
 
 eureka.client.service-url.defaultZone=http://euk1.com:7002/eureka/
+#拉取失败就强制拉取
+spring.cloud.config.server.git.force-pull=true
 ```
 
 启动类
 
-```
-package com.mashibing.admin;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.config.server.EnableConfigServer;
+```java
 @EnableConfigServer
-@SpringBootApplication
-public class AConfigApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(AConfigApplication.class, args);
-	}
-
-}
 ```
 
 #### 3.启动测试拉取
@@ -120,7 +109,7 @@ spring.cloud.config.label=dev
 
 ### 引入依赖
 
-```
+```xml
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-config-client</artifactId>
@@ -146,7 +135,7 @@ config.info="config-dev,v1"
 ### 手动配置热更新
 
 1. 开启actuator中的refresh端点
-2. Controller中添加`@RefreshScope`注解
+2. Controller中添加`@RefreshScope`注解，要用哪些放哪些
 3. 向客户端 url `http://localhost:91/actuator/refresh`发送Post请求
 
 ### 自动刷新
@@ -164,7 +153,10 @@ http://www.rabbitmq.com/install-windows.html
 path中添加 `%ERLANG_HOME%\bin`
 
 ```bash
-# 开启RabbitMQ节点rabbitmqctl start_app# 开启RabbitMQ管理模块的插件，并配置到RabbitMQ节点上rabbitmq-plugins enable rabbitmq_management
+# 开启RabbitMQ节点
+rabbitmqctl start_app
+# 开启RabbitMQ管理模块的插件，并配置到RabbitMQ节点上
+rabbitmq-plugins enable rabbitmq_management
 ```
 
 #### 管理界面
@@ -177,14 +169,20 @@ http://localhost:15672
 
 配置文件
 
-```
-spring.rabbitmq.host=localhostspring.rabbitmq.port=5672spring.rabbitmq.username=guestspring.rabbitmq.password=guest
+```properties
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
 ```
 
 依赖
 
-```
-		<dependency>			<groupId>org.springframework.cloud</groupId>			<artifactId>spring-cloud-starter-bus-amqp</artifactId>		</dependency>
+```xml
+		<dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+        </dependency>
 ```
 
 #### 测试
