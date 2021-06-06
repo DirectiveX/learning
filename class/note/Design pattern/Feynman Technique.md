@@ -124,7 +124,7 @@ slfj日志
 
 **常用**
 
-QueueingFuture 和 FutureTask
+QueueingFuture 和 FutureTask，spring中的BeanWrapper
 
 ## 代理模式
 **定义**

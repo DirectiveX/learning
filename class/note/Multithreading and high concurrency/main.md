@@ -445,7 +445,7 @@ public class CLHLock implements Lock {
 当内存不够使用的时候会被GC回收
 
 3.弱引用
-当GC检测到弱引用就会被回收，java中的WeakHashMap和ThreadLocalMap中的Entry的key都使用了弱引用，防止内存泄露
+当GC检测到弱引用就会被回收，java中的WeakHashMap和ThreadLocalMap中的Entry的key都使用了弱引用，防止内存泄露，还有Proxy中也用到了弱引用的封装WeakCache类（键值均为弱引用，自键为强引用）
 
 4.虚引用
 当GC检测就会被回收，并且和弱引用不同点在于虚引用的对象无法用get方法去访问，只有在垃圾回收后会被放入队列中。虚引用通常用于处理堆外内存也就是直接内存。比如我们通过Unsafe类的allocateMemory方法去申请一块内存，需要用freeMemory去释放。

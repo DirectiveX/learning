@@ -60,9 +60,9 @@ Sync释放的时候会减少state，如果减到0就释放锁并且将独占锁�
 ## ThreadLocal
 每个线程上都有一个threadLocals属性，维护了线程专属的本地变量，当使用set方法时，将ThreadLocal对象存入threadLocals属性中，取的时候从threadLocals中取
 threadLocals是一个ThreadLocalMap对象，里面用数组存储了一组Entry对象，Entry中存储了具体值，get时通过当前对象的hash值去找到Entry的位置，返回对应的值
-Entry是一个继承了弱引用的对象，它的key是一个弱引用，以达到一个防止内存泄露的效果，对于被回收的key而言，在ThreadLocalMap中就是一个老旧对象，在数组空间不足的时候会移除这些key为null的Entry
+Entry是一个继承了弱引用的对象，它的key是一个弱引用，以达到一个防止内存泄露的效果，对于被回收的key而言，在ThreadLocalMap中就是一个老旧对象，在数组空间不足的时候会替换这些key为null的Entry
 
-做事务
+具体应用：spring做事务进行线程隔离
 
 ## 强软弱虚
 强引用永远不会被垃圾回收器处理

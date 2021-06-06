@@ -30,13 +30,13 @@
 
 2、加载解析bean对象，准备要创建的bean对象的定义对象beanDefinition,(xml或者注解的解析过程)
 
-3、beanFactoryPostProcessor的处理，此处是扩展点，PlaceHolderConfigurSupport,ConfigurationClassPostProcessor
+3、beanFactoryPostProcessor的处理，此处是扩展点，PlaceholderConfigurerSupport,ConfigurationClassPostProcessor
 
 4、BeanPostProcessor的注册功能，方便后续对bean对象完成具体的扩展功能
 
 5、通过反射的方式讲BeanDefinition对象实例化成具体的bean对象，
 
-6、bean对象的初始化过程（填充属性，调用aware子类的方法，调用BeanPostProcessor前置处理方法，调用init-mehtod方法，调用BeanPostProcessor的后置处理方法）
+6、bean对象的初始化过程（填充属性，调用aware子类的方法，调用BeanPostProcessor前置处理方法，查看是否实现了initializingBean接口，调用afterPropertiesSet方法，调用init-mehtod方法，调用BeanPostProcessor的后置处理方法）
 
 7、生成完整的bean对象，通过getBean方法可以直接获取
 
@@ -92,7 +92,7 @@ createBeanFactory，getBean,doGetBean,createBean,doCreateBean,createBeanInstance
 
 7、获取到完整的对象，可以通过getBean的方式来进行对象的获取
 
-8、销毁流程，1；判断是否实现了DispoableBean接口，2，调用destroyMethod方法
+8、销毁流程，1；判断是否实现了DisposableBean接口，2，调用destroyMethod方法
 
 # 4.Spring 是如何解决循环依赖的问题的？
 

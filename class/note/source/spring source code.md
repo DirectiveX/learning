@@ -25,3 +25,6 @@ Class.forName("全限定类名");
 6.Aware
 7.FactoryBean
 8.Environment
+
+## 事务
+
