@@ -53,9 +53,36 @@ spring的AOP的底层实现是依靠动态代理去实现的，它通过判断�
 2.然后进行代理对象的创建的准备工作，比如说创建advisor，advisor是一个通知器，创建advisor的时候会调用它的有参构造函数，从而创建对应的advice对象，同样创建advice的时候也需要使用到有参构造器，创建它的三个属性，里面有AspectJExpressionPointCut，MethodLocationFactoryBean，SimpleBeanFactoryAwareAspectInstanceFactory
 3.根据情况进行cglib或者jdk动态代理生成代理对象，并不是实现了接口就一定要使用jdk动态代理的，还受到一些属性值的影响，比如说，proxy-target-class，当然正常情况下，是实现接口jdk动态代理，不然使用cglib
 4.生成完代理对象之后，在进行代理方法的调用的时候，会先调用到代理对象中的对应方法，然后找到DynamicAdvisedInterceptor中的intercept方法，进行调用。
-5.会生成一条拦截器链，从链的头部开始调用，也就是index为-1的地方开始调用，先调用一个ExposeInvocationInterceptor的intercept方法，然后按照顺序依次调用MethodInterceptor的intercept方法，最后依次返回
+5.会生成一条拦截器链，从链的头部开始调用，也就是index为-1的地方开始调用，先调用一个ExposeInvocationInterceptor的invoke方法，然后按照顺序依次调用MethodInterceptor的invoke方法，最后依次返回
 
 7.为什么spring的@configuration修饰的类要使用代理？
 
 因为@configuration中的bean可能会被手动调用，加上动态代理能够保证单独调用方法的时候会先从容器中获取，调用proxy.invokeSuper方法，如果有，从容器中获取，如果没有，才创建
 
+8.Spring的事务如何进行回滚的？
+
+spring中的事务机制依赖于aop来完成，但又有一点点不同，spring的事务在创建的时候并不是完全遵从于aop的定义的，他没有直接使用对应的advice，而是使用了TransactionInteceptor实现了MethodInteceptor接口，从而进行一个aop的执行工作。
+
+事务执行过程如下：①准备工作，解析事务属性，根据传播特性来判断是否要开启新事务，或者报异常或者使用原来事务，或者挂起②要开启的话，打开连接，关闭自动提交，将连接持有器放入到本地线程中③进行具体业务逻辑的执行④如果执行报错，那么就进入completeTransactionAfterThrowing方法进行回滚处理，具体方法使用doRollback⑤如果没有出现异常，就进行commitTransactionAfterReturning方法进行一个提交，具体方法使用doCommit⑥事务执行完毕进行事务信息的清除
+
+9.spring事务传播机制？
+
+spring事务传播一共分为7种，3类，分别为required（默认的，有外层事务就用外层事务，没有就新建事务），support（有外层事务就用外层事务，没有就不用），mandatory（有外层事务就用外层事务，没有就报异常），required_new（不管外层是否有事务，都会新建事务，如果存在外层事务，就将外层事务挂起），not_support（不支持事务，如果外层事务存在，就挂起），never（不支持事务，如果外层事务存在，就报异常），nested（有外层事务，就用外层事务，同时创建保存点，没有外层事务，就新建一个事务）
+
+常用的事务传播机制有required，required_new和nested
+
+下面讲讲他们之间的组合
+
+①required，required_new，nested存在外层，内层是required的情况，如果成功，就在外层一起提交，如果外层报错，内层与外层一起回滚，如果内层报错，内层与外层一起回滚
+
+②required，required_new，nested存在外层，内层是required_new的情况，如果成功，内层先提交，外层再提交，如果外层报错，内层提交，外层回滚，如果内层报错，内层回滚，外层回滚
+
+③required，required_new，nested存在外层，内层是nested的情况，如果成功，一起提交，如果内层失败，外层与内层一起回滚，如果外层失败，外层与内层一起回滚。如果外层对内层报错方法加入了try catch，内层失败，内层回滚，外层正常提交
+
+required和nested异同
+
+两者在外层有事务的时候都不会新开事务，不同之处在于，如果内层事务发生异常，抛出异常，require会设置回滚标记，导致就算在外层中捕获了对应异常，由于回滚标记的设置，外层事务仍然需要被回滚，而nested会清空回滚标记，所以如果外层事务捕获了内层异常，就可以正常提交外层事务了。两者的异常信息也不同
+
+required_new和nested区别
+
+nested如果存在外层事务，不会新开事务，只是开启保存点，在原事务上执行，而required_new不管外层是否有事务，都会开启新事务，nested会对外层事务的异常产生反应，可以与外层事务一起回滚，而required由于两个事务，无法做到这种效果
