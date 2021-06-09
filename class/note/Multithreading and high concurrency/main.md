@@ -205,8 +205,8 @@ loadload确保load1读入的数据在load2读入前读入
 JMM内存屏障策列
 每个volatile写前插入storestore
 每个volatile写后插入storeload
+每个volatile读前插入loadload
 每个volatile读后插入loadstore
-每个volatile读后插入loadload
 
 2.实现一个容器，提供两个方法，add，size，写两个线程，线程1添加10个元素到容器中，线程2实现监控元素的个数，当个数到5个时，线程2给出提示并结束
 
@@ -445,7 +445,7 @@ public class CLHLock implements Lock {
 当内存不够使用的时候会被GC回收
 
 3.弱引用
-当GC检测到弱引用就会被回收，java中的WeakHashMap和ThreadLocalMap中的Entry的key都使用了弱引用，防止内存泄露，还有Proxy中也用到了弱引用的封装WeakCache类（键值均为弱引用，自键为强引用）
+当GC检测到弱引用就会被回收，java中的WeakHashMap和ThreadLocalMap中的Entry的key都使用了弱引用，防止内存泄露
 
 4.虚引用
 当GC检测就会被回收，并且和弱引用不同点在于虚引用的对象无法用get方法去访问，只有在垃圾回收后会被放入队列中。虚引用通常用于处理堆外内存也就是直接内存。比如我们通过Unsafe类的allocateMemory方法去申请一块内存，需要用freeMemory去释放。
@@ -664,7 +664,7 @@ public ThreadPoolExecutor(int corePoolSize,
 阻塞队列：当存的时候，如果队列满，就阻塞，当取的时候，如果队列空，就阻塞
 
 **==DefaultThreadFactory==**
-1.创建的线程是不是守护线程，如果没有设置，默认是守护线程
+1.创建的线程是不是守护线程，如果没有设置，默认是非守护线程
 2.默认的权限是正常权限NORM_PRIORITY=5
 
 ```java
