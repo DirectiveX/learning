@@ -1,4 +1,4 @@
-1.谈谈Spring IOC的理解，原理与实现?
+# 1.谈谈Spring IOC的理解，原理与实现?
 
 首先，spring ioc用英文全名解释为spring inverse of control，控制翻转，它是一种思想，将对象的管理交由给spring 容器去管理，不需要手动管理对象的生命周期。它的具体实现是DI，依赖注入。依赖注入有几种方式，分别为构造器注入，新版本spring推荐的，然后是setter注入，接口注入。
 
@@ -8,7 +8,7 @@ spring ioc是一种容器，具体表现为singletenMap，说到IOC容器，就�
 
 以上就是Spring IOC的理解，原理与实现
 
-2.Spring 是如何解决循环依赖的问题的？
+# 2.Spring 是如何解决循环依赖的问题的？
 
 这个问题首先要解释下循环依赖是怎么产生的，循环依赖的产生是因为A对象持有了B对象，然后B对象内部又持有了A对象，形成了一个闭环结构，导致循环依赖，只要形成闭环结构，就会产生循环依赖问题
 
@@ -16,15 +16,15 @@ spring ioc是一种容器，具体表现为singletenMap，说到IOC容器，就�
 
 三级缓存放置的时候先放置singletenFactories，也就是第三缓存，使用addSingletenFactory的方法，然后放入二级缓存，使用getSingleten方法，最后丢入一级缓存，初始化完毕，使用addSingleten方法，当然并不一定要按部就班，二级缓存有时候可以直接跳过
 
-3.Bean Factory与FactoryBean有什么区别？
+# 3.Bean Factory与FactoryBean有什么区别？
 
 BeanFactory与FactoryBean首先他们的相同点就是都是用来创建bean实例并交由spring去管理的，但是BeanFactory创建的时候要走一整套bean的创建流程，也就是bean的生命周期。而FactoryBean创建的时候是按照自己的写法进行一个创建，然后通过实现FactoryBean接口的对应方法，将创建好的对象交给spring容器去管理，这就是他们两者的区别
 
-4.Spring中用到的设计模式?
+# 4.Spring中用到的设计模式?
 
 首先，单例模式，spring最著名的ioc容器默认就是单例模式，其次，原型模式，spring中的bean也可以设置scope，让他变成prototype，也就是原型模式，然后使用了观察者模式，spring大量运用了观察者模式，比如说，各种listener，通过发布event事件，进行一个muticast的广播，实现了观察者模式，还有责任链模式，在spring aop的时候用了一个拦截器链进行处理，还有工厂模式，三级缓存的bean工厂等，还有模板方法，onrefresh方法，beanpostprocessor方法，还有适配器模式，spring里面的各种Adapter都是适配器模式的，还有一种不属于23中设计模式的模式，叫做委托者模式，也使用的比较广泛，一般带delegator字眼的都使用了这种模式，还有代理模式，spring的aop是代理模式的一种标准使用
 
-5.AOP是什么？
+# 5.AOP是什么？
 
 AOP是一种编程思想，它将业务逻辑与横切逻辑区分开来，让程序员更加集中于业务逻辑的开发，中间定义了一些具体的名词，有切面，切点，连接点，通知，织入，目标对象
 
@@ -42,7 +42,7 @@ AOP是一种编程思想，它将业务逻辑与横切逻辑区分开来，让�
 
 一般对于AOP的实现，可以在编译class的时候进行一个静态织入，例如AspectJ，也可以在程序运行时进行动态代理，例如Spring的AOP
 
-6.Spring的AOP的底层实现原理?
+# 6.Spring的AOP的底层实现原理?
 
 先简单介绍一下AOP，AOP全名为面向切面编程，切面的主要功能就是将业务逻辑与横切逻辑区分开来，让程序员更加集中于业务逻辑的开发
 
@@ -55,17 +55,17 @@ spring的AOP的底层实现是依靠动态代理去实现的，它通过判断�
 4.生成完代理对象之后，在进行代理方法的调用的时候，会先调用到代理对象中的对应方法，然后找到DynamicAdvisedInterceptor中的intercept方法，进行调用。
 5.会生成一条拦截器链，从链的头部开始调用，也就是index为-1的地方开始调用，先调用一个ExposeInvocationInterceptor的invoke方法，然后按照顺序依次调用MethodInterceptor的invoke方法，最后依次返回
 
-7.为什么spring的@configuration修饰的类要使用代理？
+# 7.为什么spring的@configuration修饰的类要使用代理？
 
 因为@configuration中的bean可能会被手动调用，加上动态代理能够保证单独调用方法的时候会先从容器中获取，调用proxy.invokeSuper方法，如果有，从容器中获取，如果没有，才创建
 
-8.Spring的事务如何进行回滚的？
+# 8.Spring的事务如何进行回滚的？
 
 spring中的事务机制依赖于aop来完成，但又有一点点不同，spring的事务在创建的时候并不是完全遵从于aop的定义的，他没有直接使用对应的advice，而是使用了TransactionInteceptor实现了MethodInteceptor接口，从而进行一个aop的执行工作。
 
 事务执行过程如下：①准备工作，解析事务属性，根据传播特性来判断是否要开启新事务，或者报异常或者使用原来事务，或者挂起②要开启的话，打开连接，关闭自动提交，将连接持有器放入到本地线程中③进行具体业务逻辑的执行④如果执行报错，那么就进入completeTransactionAfterThrowing方法进行回滚处理，具体方法使用doRollback⑤如果没有出现异常，就进行commitTransactionAfterReturning方法进行一个提交，具体方法使用doCommit⑥事务执行完毕进行事务信息的清除
 
-9.spring事务传播机制？
+# 9.spring事务传播机制？
 
 spring事务传播一共分为7种，3类，分别为required（默认的，有外层事务就用外层事务，没有就新建事务），support（有外层事务就用外层事务，没有就不用），mandatory（有外层事务就用外层事务，没有就报异常），required_new（不管外层是否有事务，都会新建事务，如果存在外层事务，就将外层事务挂起），not_support（不支持事务，如果外层事务存在，就挂起），never（不支持事务，如果外层事务存在，就报异常），nested（有外层事务，就用外层事务，同时创建保存点，没有外层事务，就新建一个事务）
 
