@@ -539,7 +539,7 @@ Parallel Scanvage的老年代版本，使用标记整理算法
 8.ZGC(1ms)
 并发标记算法：ColoredPointers + 写屏障
 9.Shenandoah
-并发标记算法：ColoredPointers + 读屏障
+并发标记算法：转移指针+ 读屏障
 10.Eplison
 debug用的
 

@@ -13,7 +13,7 @@ Redo log的存在保证了持久化这一事务特性
 
 某种方式指：
 1.线程周期性任务，每10秒，将redo log buffer刷新到磁盘（包含未提交事务）
-2.每秒，将redo log buffer刷新到磁盘‘
+2.每秒，将redo log buffer刷新到磁盘
 3.redo log buffer size空间小于$\frac12$（innodb_log_buffer_size参数），将redo log buffer刷新到磁盘
 4.redo log file大小达到阈值
 
@@ -735,6 +735,7 @@ mysql通过语法解析器会将SQL转成AST树，预处理器会验证树是否
 
 在很多情况下mysql会选择错误的执行计划，原因如下
 优化器的优化策略
+
 > 静态优化（只执行一次）：直接对解析树进行分析，完成优化
 > 动态优化（每次都要执行）：与查询上下文有关，可能跟取值，索引对应的行数有关
 
