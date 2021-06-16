@@ -164,7 +164,7 @@ AppClassLoader加载java.class.path
 ClassLoader构造方法中调用父类构造方法，默认的是通过无参构造方法创建的AppClassLoader
 
 2.如何打破双亲委派机制？
-因为双亲委派机制实质是模板方法的设计模式，它的loadclass方法中调用了父加载器并且loadclass方法是非final的，可以通过重写loadclass方法去打破双亲委派机制
+因为双亲委派机制实质是模板方法的设计模式，它的loadclass方法中调用了父加载器并且loadclass方法是protected的，可以通过重写loadclass方法去打破双亲委派机制
 
 3.何时打破？
 Tomcat热部署，热启动的时候，需要加载同一类库的不同版本，如果使用双亲委派就无法加载,在加载前就已经从缓存中取出了
