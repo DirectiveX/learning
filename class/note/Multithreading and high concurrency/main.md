@@ -318,6 +318,8 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 4.底层CAS，sync使用锁升级机制
 5.ReentrantLock要手动加锁和释放锁，sync不用
 
+关键是使用的AQS的独占锁模式
+
 ### condition本质
 不同的等待队列，底层用的LockSupport.park实现阻塞
 
@@ -325,7 +327,7 @@ cpu去内存读取数据的时候，可能先做一些本地的操作，在不�
 使用FIFO队列来实现公平锁，加锁前查看是否在等待队列中有其他线程在等待这把锁，如果有就让其他线程先执行，否则自己执行
 
 ## CountDownLatch（Sync ext AQS）
-每次调用latch.countDown()时计数器减一，直到计数器变为0，才能够通过latch.await()方法
+每次调用latch.countDown()时计数器减一，直到计数器变为0，才能够通过latch.await()方法，使用了AQS的共享锁模式
 
 ## CyclicBarrier（ReentrantLock）
 每次调用await方法会将计数器加一，要达到一定线程数量才会继续执行
