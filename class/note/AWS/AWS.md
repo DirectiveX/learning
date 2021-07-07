@@ -1,8 +1,6 @@
-# AWS
+# 云计算
 
-## 云计算
-
-### 模型
+## 服务模式
 
 ![yunjisuan](picture/yunjisuan.png)
 
@@ -17,6 +15,187 @@ PAAS：平台即服务（机器+操作系统+运行库+数据库）
 SAAS：软件即服务（机器+操作系统+运行库+数据库+软件）
 
 > 软件即服务提供了一种完善的产品，其运行和管理皆由服务提供商负责。人们通常所说的软件即服务指的是终端用户应用程序。使用 SaaS 产品时，服务的维护和底层基础设施的管理都不用您操心，您只需要考虑怎样使用 SaaS 软件就可以了。SaaS 的常见应用是基于 Web 的电子邮件，在这种应用场景中，您可以收发电子邮件而不用管理电子邮件产品的功能添加，也不需要维护电子邮件程序运行所在的服务器和操作系统。
+
+## 部署类型
+
+公有云
+
+> 云端资源开发给社会公众使用。云端的所有权、日常管理和操作的主体可以是一个商业组织、学术机构、政府部门或者它们其中的几个联合。云端可能部署在本地，也可能部署于其他地方，比如中山市民公共云的云端可能就建在中山，也可能建在深圳。	
+
+私有云
+
+> 云端资源只给一个单位组织内的用户使用，这是私有云的核心特征。而云端的所有权、日程管理和操作的主体到底属于谁并没有严格的规定，可能是本单位，也可能是第三方机构，还可能是二者的联合。云端可能位于本单位内部，也可能托管在其他地方。
+
+社区云
+
+> 云端资源专门给固定的几个单位内的用户使用，而这些单位对云端具有相同的诉求（如安全要求、云端使命、规章制度、合规性要求等）。云端的所有权、日常管理的操作的主体可能是本社区内的一个或多个单位，也可能是社区外的第三方机构，还可能是二者的联合。云端可能部署在本地，也可能部署与他处。
+
+混合云
+
+> 混合云由两个或两个以上不同类型的云（私有云、社区云、公共云）组成，它们各自独立，但用标准的或专有的技术将它们组合起点，而这些技术能实现云之间的数据和应用程序的平滑流转。由多个相同类型的云组合在一起，混合云属于多云的一种。私有云和公共云构成的混合云是目前最流行的——当私有云资源短暂性需求过大（称为云爆发，Cloud Bursting）时，自动租赁公共云资源来平抑私有云资源的需求峰值。例如，网店在节假日期间点击量巨大，这时就会临时使用公共云资源的应急。
+
+**对比**
+
+|        | 公有云             | 私有云     | 社区云             | 混合云 |
+| ------ | ------------------ | ---------- | ------------------ | ------ |
+| 受众   | 社会公众           | 单一组织   | 固定单位           | 混合体 |
+| 管理者 | 单个或多个部门联合 | 无明确规定 | 单个或多个部门联合 | 混合体 |
+
+## 常见厂家
+
+AWS，阿里云，腾讯，微软
+
+## 优势
+1.增加速度和灵活性
+2.减少维护成本
+3.从大规模经济中获益
+4.资本投入变成可变投入
+5.无需计算所需资源
+6.快速扩展到全球（由于云计算的机房在全球各地）
+
+# AWS（Amazon Web Service）
+
+## 服务模式
+
+IAAS:EC2,VPC,DX
+
+PAAS:S3,AMI,Cloud Watch(监控平台),Cloud Watch Log(监控日志)
+
+SAAS:RDS,DynamoDB,Redshift,AWS Glue,AWS EMR
+
+## 基础服务
+1.计算资源服务：EC2,ECS,Lambda,ESR,Elastic Beanstalk LightSail
+2.数据库：Amazon Aurora（关系型数据库）,DynamoDB(K-V数据库 和 文档数据库)，ElasticCache，Redshift，RDS
+3.存储：EBS（持久化磁盘）,EPS,S3,Glacier,Snowball,Storage Gateway
+4.网络：VPC,Route53,CloudFront（CDN服务器）,API,GateWay,Direct Connect(DX)
+5.管理与合成：CloudWatch,CloudTrail（链路追踪）,CloudFormation,AWS CLI
+6.多媒体服务：Elastic Transcoder，Kiness Video Streams，Elemental MedaConnect
+7.迁移服务：Database Migration Service,DataSync,Sonwball,Snowmobile
+8.移动服务：API Gateway,Pinpoint ,Amplify,AppSync,Device Farm
+9.安全与身份：Directory Service,IAM,Organizations,Shield,WAF
+10.其他服务：机器学习，IoT，区块链，卫星服务，机器人服务，语音识别，大数据处理，AR/VR等
+
+## 计算服务
+
+Amazon EC2：云中的弹性 虚拟服务器
+
+Amazon ECS：Docker 容器集群管理
+
+Auto Scaling：自动缩放EC2容量
+
+Elastic Load Balancing：动态 流量分发（负载均衡）
+
+Amazon EKS：高可用的Kubernetes服务，进行服务托管
+
+Amazon Fargate：无需管理服务器或集群运行容器
+
+Amazon LightSail：提供快速启动项目 一切资源
+
+AWS Batch：完全托管的批处理服务
+
+**EC2实例类型**
+
+<img src="picture/EC2实例类型.png" alt="EC2实例类型"  />
+
+**EC2计费模式**
+
+![EC2计费类型](picture/EC2计费类型.png)
+
+**支持微服务+无服务（AWS Lambda）（直接跑代码）**
+
+## 存储服务
+
+**存储方案**
+
+Elastic Block Store
+Simple Storage System
+Elastic File System
+AWS Snowball
+AWS Storage Gateway
+AWS S3 Glacier
+
+**S3（Simple Storage System）(访问从频繁到不频繁)**
+S3 Standard -> S3 Intellingent-Tiering -> S3 Standard-IA -> S3 One Zone-IA -> S3 Glacier -> S3 Glacier deep archive
+
+![S3](picture/S3.png)
+
+**大量数据数据迁移**
+
+![数据迁移](picture/数据迁移.png)
+
+## 网络服务
+
+VPC（Virtual Private Cloud）：隔离的专属网络（虚拟局域网）
+
+VPN（Virtual Private Network）：自己数据中心与AWS网络之间的基于Internet的加密通道
+
+DirectConnect：自己数据中心与AWS网络的专线
+
+CloudFront CDN：CDN服务器
+
+![网络服务](picture/网络服务.png)
+
+## 数据库服务
+
+Amazon Aurora,MariaDB,PostgreSQL,Microsoft SQL Server,MySQL,Oracle
+
+![数据库](picture/数据库.png)
+
+## 其他服务
+
+![大数据](picture/大数据.png)
+
+## DynamoDB
+
+[文档](https://docs.aws.amazon.com/zh_cn/amazondynamodb/latest/developerguide/Introduction.html)
+
+**定义**
+
+完全托管，多区域，多活动的持久数据库。提供个位数的毫秒级性能。
+
+**数据库扩展方式**
+
+传统数据库：scale up（纵向扩展：扩展容量）
+
+NoSQL：scale out（横向扩展：扩展容量、算力等）
+
+### 结构
+
+- **表**— 类似于其他数据库系统，DynamoDB 将数据存储在表中。*表* 是数据的集合。例如，请参阅名为 *People* 的示例表，该表可用于存储有关好友、家人或关注的任何其他人的个人联系信息。您也可以建立一个 *Cars* 表，存储有关人们所驾驶的车辆的信息。
+- **项目**— 每个表包含零个或更多个项目。*项目* 是一组属性，具有不同于所有其他项目的唯一标识。在 *People* 表中，每个项目表示一位人员。在 *Cars* 表中，每个项目代表一种车。DynamoDB 中的项目在很多方面都类似于其他数据库系统中的行、记录或元组。在 DynamoDB 中，对表中可存储的项目数没有限制。
+- **属性**— 每个项目由一个或多个属性组成。*属性* 是基础的数据元素，无需进一步分解。例如，*People* 表中的一个项目包含名为 *PersonID*、*LastName*、*FirstName* 等的属性。对于 *Department* 表，项目可能包含 *DepartmentID*、*Name*、*Manager* 等属性。DynamoDB 中的属性在很多方面都类似于其他数据库系统中的字段或列。
+
+### 主键类型
+
+分区键（指定了物理存储位置）
+
+分区键+排序键（指定了物理存储位置 + 存储顺序）
+
+ps：每个主键属性必须为标量 (表示它只能具有一个值)。主键属性唯一允许的数据类型是字符串、数字和二进制。对于其他非键属性没有任何此类限制。
+
+### 索引支持
+
+- 全局二级索引 — 一种带有可能与表中不同的分区键和排序键的索引。
+- 本地二级索引 — 一种分区键与表中的不同的索引。
+
+### DynamoDB Streams
+
+实时捕获数据修改事件
+
+**触发条件**
+
+- 将向表中添加一个新项目：流将捕获整个项目的映像，包括其所有属性。
+- 项目已更新：流将捕获项目中已修改的任何属性的 “之前” 和 “之后” 映像。
+- 将从表中删除一个项目：流将在整个项目被删除前捕获其映像。
+
+
+### 一致性模型
+
+最终一致性/强一致性
+
+## EC2
+
+
 
 ## Route53
 
