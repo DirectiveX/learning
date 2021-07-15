@@ -1,3 +1,4 @@
+[TOC]
 # 云计算
 
 ## 服务模式
@@ -78,19 +79,12 @@ SAAS:RDS,DynamoDB,Redshift,AWS Glue,AWS EMR
 ## 计算服务
 
 Amazon EC2：云中的弹性 虚拟服务器
-
 Amazon ECS：Docker 容器集群管理
-
 Auto Scaling：自动缩放EC2容量
-
 Elastic Load Balancing：动态 流量分发（负载均衡）
-
 Amazon EKS：高可用的Kubernetes服务，进行服务托管
-
 Amazon Fargate：无需管理服务器或集群运行容器
-
 Amazon LightSail：提供快速启动项目 一切资源
-
 AWS Batch：完全托管的批处理服务
 
 **EC2实例类型**
