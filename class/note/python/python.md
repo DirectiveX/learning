@@ -363,15 +363,92 @@ def 函数名(输入参数):
 	[return 返回值]
 
 ```python
-def add(a,b):
+def add(a,b=10): #b含有默认值
     return a+b
 
 print(add(1,2))
 # 关键字参数传参
 print(add(b=1,a=2))
+# 可变位置参数，传递元组
+def fun(*args):
+    return sum(args)
+
+print(fun(2,5,16))
+# 可变关键字参数，传递字典
+def fun(**args):
+    print(args)
+
+fun(a=1,b=5,c=6)
+# 列表取值传入
+def fun1(a,b,c):
+    print(a+b+c)
+
+lis =[1,8,6]
+fun1(*lis)
+# 字典转关键字传参
+def fun1(a,b,c):
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
+# 关键字形参，*后只能使用关键字实参传递
+def fun1(a,b,*,c):
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
 ```
 
 python为值传递
+
+## 变量
+
+局部变量使用global关键字变成全局变量
+
+```python
+def fun1(a,b,*,c):
+    global age
+    age = 10
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
+
+print(age)
+```
+
+## 异常处理机制
+
+```python
+def fun():
+    a = int(input("输入一个整数："))
+    b = int(input("输入二个整数："))
+    try:
+        print(a/b)
+    except ZeroDivisionError:
+        print("error !")
+fun()
+```
+
+```python
+# IndexError,KeyError,NameError,SyntaxError,ValueError,ZeroDivisionError
+def fun():
+    try:
+        a = int(input("输入一个整数："))
+        b = int(input("输入二个整数："))
+        result = a/b
+    except ZeroDivisionError as e:
+        print(e)
+    except ValueError:
+        print("enter error !")
+    else:
+        print(result)
+    finally:
+        print("finished")
+fun()
+```
+
+
 
 # 一般内置函数
 
