@@ -448,6 +448,62 @@ def fun():
 fun()
 ```
 
+## 上下文管理器
+
+可以被with操作，自动关闭资源
+
+上下文管理器是指实现了\__enter\__(self)和\__exit\__()方法的类
+
+## os模块
+
+```python
+os.chdir("D:/")
+print(os.getcwd())
+print(os.listdir("./"))
+os.mkdir("a")
+os.makedirs("/fff/a")
+os.rmdir("a")
+os.removedirs("/fff/a")
+
+#递归查找所有的文件
+path=os.getcwd()
+files=os.walk(path)
+for i in files:
+    print(i)
+```
+
+### os.path模块
+
+```python
+print(p.abspath("Test.py"))
+print(p.exists("Test.py"))
+print(p.join("C:\\","a.txt"))
+print(p.split("C:\\a.txt"))  #文件夹分离
+print(p.splitext("C:\\a.txt"))  #扩展名分离
+print(p.basename("C:\\a.txt")) #文件
+print(p.dirname("C:\\a.txt")) #目录
+print(p.isdir("C:\\a.txt"))
+```
+
+# 内置库
+
+sys:解释器相关
+time:时间相关
+os:操作系统相关
+calendar:日期相关
+urllib:读取服务器
+json:json相关
+re:正则相关
+math:标准运算库
+decimal:精确计算
+logging:日志相关
+
+
+
+# 第三方模块的安装
+
+pip install {moduleName}
+
 
 
 # 一般内置函数
