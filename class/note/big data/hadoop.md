@@ -133,12 +133,26 @@ FsImage：镜像，快照（恢复速度块，容易丢失数据，体积小）
 - 如果在读取程序的同一个机架上有一个副本，那么就读取该副本。
 - 如果一个HDFS集群跨越多个数据中心，那么客户端也将首先读本地数据中心的副本。
 - 语义：下载一个文件：
--- Client和NN交互文件元数据获取fileBlockLocation
--- NN会按距离策略排序返回
--- Client尝试下载block并校验数据完整性
+  -- Client和NN交互文件元数据获取fileBlockLocation
+  -- NN会按距离策略排序返回
+  -- Client尝试下载block并校验数据完整性
 - 语义：下载一个文件其实是获取文件的所有的block元数据，那么子集获取某些block应该成立
--- Hdfs支持client给出文件的offset自定义连接哪些block的DN，自定义获取数据
--- 这个是支持计算层的分治、并行计算的核心
+  -- Hdfs支持client给出文件的offset自定义连接哪些block的DN，自定义获取数据
+  -- 这个是支持计算层的分治、并行计算的核心
+
+## Hadoop模式
+
+**local 非分布式（debug）**
+**pseudo distribute 伪分布式**
+单节点 每个角色一个进程，放在一个机器
+**full distribute 完全分布式（线上使用）**
+单节点每个角色分开放到不同机器
+
+## 实操
+
+https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
+
+
 
 
 # 杂项
