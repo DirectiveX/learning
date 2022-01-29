@@ -152,6 +152,129 @@ FsImage：镜像，快照（恢复速度块，容易丢失数据，体积小）
 
 https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
 
+### 基础设施
+
+**设置静态路由**
+
+```sh
+vim /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE=eth0
+ONBOOT=yes
+IPADDR=192.168.1.23
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS1=114.114.114.114
+```
+
+**设置主机名**
+
+```sh
+vim /etc/sysconfig/network
+
+#####################
+NETWORKING=yes
+HOSTNAME=node01
+########### 或者
+hostnamectl  set-hostname hostname
+```
+
+**设置host映射**
+
+```sh
+vim /etc/hosts
+
+#####################
+192.168.1.23 node01
+192.168.1.46 node02
+```
+
+**关闭防火墙**
+
+**时间同步**
+
+**安装jdk**
+
+**设置SSH免秘钥**
+
+### Hadoop部署
+
+**下载**
+
+**配置环境变量**
+
+```sh
+export HADOOP_HOME=/xxx/xxx/x
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+```
+
+**修改配置文件**
+
+etc/hadoop/core-site.xml:（配置nn）
+
+```xml
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+```
+
+etc/hadoop/hdfs-site.xml:（配置副本， 设置保险的目录防止nn，dn，sn数据丢失）
+
+```xml
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/name</value>
+    </property>
+    <!-- 原始的目录存放于临时文件夹中，非常不安全 -->
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/data</value>
+    </property>
+    <property>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>node01:9868</value>
+    </property>
+    <property>
+        <name>dfs.namenode.checkpoint.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/namesecondary</value>
+    </property>
+</configuration>
+```
+
+etc/hadoop/slaves 
+
+```xml
+node01
+```
+
+### 初始化和使用
+
+见官网
+
+**格式化硬盘(初始化nn)**
+
+```sh
+bin/hdfs namenode -format
+# 其中nn的clusterId相同才能连接对应的dn
+```
+
+**修改配置项**
+
+**访问node01:50070端口有页面显示**
+
+**使用**
+
+```sh
+hdfs dfs -help
+hdfs dfs -put xxx.zip /directory
+```
 
 
 
