@@ -363,15 +363,148 @@ def 函数名(输入参数):
 	[return 返回值]
 
 ```python
-def add(a,b):
+def add(a,b=10): #b含有默认值
     return a+b
 
 print(add(1,2))
 # 关键字参数传参
 print(add(b=1,a=2))
+# 可变位置参数，传递元组
+def fun(*args):
+    return sum(args)
+
+print(fun(2,5,16))
+# 可变关键字参数，传递字典
+def fun(**args):
+    print(args)
+
+fun(a=1,b=5,c=6)
+# 列表取值传入
+def fun1(a,b,c):
+    print(a+b+c)
+
+lis =[1,8,6]
+fun1(*lis)
+# 字典转关键字传参
+def fun1(a,b,c):
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
+# 关键字形参，*后只能使用关键字实参传递
+def fun1(a,b,*,c):
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
 ```
 
 python为值传递
+
+## 变量
+
+局部变量使用global关键字变成全局变量
+
+```python
+def fun1(a,b,*,c):
+    global age
+    age = 10
+    print(a+b+c)
+
+lis ={'a':1,'b':2,'c':3}
+fun1(**lis)
+
+print(age)
+```
+
+## 异常处理机制
+
+```python
+def fun():
+    a = int(input("输入一个整数："))
+    b = int(input("输入二个整数："))
+    try:
+        print(a/b)
+    except ZeroDivisionError:
+        print("error !")
+fun()
+```
+
+```python
+# IndexError,KeyError,NameError,SyntaxError,ValueError,ZeroDivisionError
+def fun():
+    try:
+        a = int(input("输入一个整数："))
+        b = int(input("输入二个整数："))
+        result = a/b
+    except ZeroDivisionError as e:
+        print(e)
+    except ValueError:
+        print("enter error !")
+    else:
+        print(result)
+    finally:
+        print("finished")
+fun()
+```
+
+## 上下文管理器
+
+可以被with操作，自动关闭资源
+
+上下文管理器是指实现了\__enter\__(self)和\__exit\__()方法的类
+
+## os模块
+
+```python
+os.chdir("D:/")
+print(os.getcwd())
+print(os.listdir("./"))
+os.mkdir("a")
+os.makedirs("/fff/a")
+os.rmdir("a")
+os.removedirs("/fff/a")
+
+#递归查找所有的文件
+path=os.getcwd()
+files=os.walk(path)
+for i in files:
+    print(i)
+```
+
+### os.path模块
+
+```python
+print(p.abspath("Test.py"))
+print(p.exists("Test.py"))
+print(p.join("C:\\","a.txt"))
+print(p.split("C:\\a.txt"))  #文件夹分离
+print(p.splitext("C:\\a.txt"))  #扩展名分离
+print(p.basename("C:\\a.txt")) #文件
+print(p.dirname("C:\\a.txt")) #目录
+print(p.isdir("C:\\a.txt"))
+```
+
+# 内置库
+
+sys:解释器相关
+time:时间相关
+os:操作系统相关
+calendar:日期相关
+urllib:读取服务器
+json:json相关
+re:正则相关
+math:标准运算库
+decimal:精确计算
+logging:日志相关
+
+
+
+# 第三方模块的安装
+
+pip install {moduleName}
+
+
 
 # 一般内置函数
 

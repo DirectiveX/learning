@@ -133,12 +133,149 @@ FsImage：镜像，快照（恢复速度块，容易丢失数据，体积小）
 - 如果在读取程序的同一个机架上有一个副本，那么就读取该副本。
 - 如果一个HDFS集群跨越多个数据中心，那么客户端也将首先读本地数据中心的副本。
 - 语义：下载一个文件：
--- Client和NN交互文件元数据获取fileBlockLocation
--- NN会按距离策略排序返回
--- Client尝试下载block并校验数据完整性
+  -- Client和NN交互文件元数据获取fileBlockLocation
+  -- NN会按距离策略排序返回
+  -- Client尝试下载block并校验数据完整性
 - 语义：下载一个文件其实是获取文件的所有的block元数据，那么子集获取某些block应该成立
--- Hdfs支持client给出文件的offset自定义连接哪些block的DN，自定义获取数据
--- 这个是支持计算层的分治、并行计算的核心
+  -- Hdfs支持client给出文件的offset自定义连接哪些block的DN，自定义获取数据
+  -- 这个是支持计算层的分治、并行计算的核心
+
+## Hadoop模式
+
+**local 非分布式（debug）**
+**pseudo distribute 伪分布式**
+单节点 每个角色一个进程，放在一个机器
+**full distribute 完全分布式（线上使用）**
+单节点每个角色分开放到不同机器
+
+## 实操
+
+https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
+
+### 基础设施
+
+**设置静态路由**
+
+```sh
+vim /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE=eth0
+ONBOOT=yes
+IPADDR=192.168.1.23
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS1=114.114.114.114
+```
+
+**设置主机名**
+
+```sh
+vim /etc/sysconfig/network
+
+#####################
+NETWORKING=yes
+HOSTNAME=node01
+########### 或者
+hostnamectl  set-hostname hostname
+```
+
+**设置host映射**
+
+```sh
+vim /etc/hosts
+
+#####################
+192.168.1.23 node01
+192.168.1.46 node02
+```
+
+**关闭防火墙**
+
+**时间同步**
+
+**安装jdk**
+
+**设置SSH免秘钥**
+
+### Hadoop部署
+
+**下载**
+
+**配置环境变量**
+
+```sh
+export HADOOP_HOME=/xxx/xxx/x
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+```
+
+**修改配置文件**
+
+etc/hadoop/core-site.xml:（配置nn）
+
+```xml
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+```
+
+etc/hadoop/hdfs-site.xml:（配置副本， 设置保险的目录防止nn，dn，sn数据丢失）
+
+```xml
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/name</value>
+    </property>
+    <!-- 原始的目录存放于临时文件夹中，非常不安全 -->
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/data</value>
+    </property>
+    <property>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>node01:9868</value>
+    </property>
+    <property>
+        <name>dfs.namenode.checkpoint.dir</name>
+        <value>/var/bigdata/hadoop/local/dfs/namesecondary</value>
+    </property>
+</configuration>
+```
+
+etc/hadoop/slaves 
+
+```xml
+node01
+```
+
+### 初始化和使用
+
+见官网
+
+**格式化硬盘(初始化nn)**
+
+```sh
+bin/hdfs namenode -format
+# 其中nn的clusterId相同才能连接对应的dn
+```
+
+**修改配置项**
+
+**访问node01:50070端口有页面显示**
+
+**使用**
+
+```sh
+hdfs dfs -help
+hdfs dfs -put xxx.zip /directory
+```
+
 
 
 # 杂项
