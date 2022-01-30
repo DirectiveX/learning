@@ -91,13 +91,11 @@ Neo4J
 
 集合NoSQL和关系型数据库的特性
 
-TiDB
-
 ## TiDB架构
 
 计算与存储分离的架构(高度分层架构)（由于现阶段硬件与网络的发展推动了这一架构）
 
-![tidb-architecture-v3.1](picture/tidb-architecture-v3.1.png)
+![tidb-architecture-v3.1](picture/tidb-architecture-v3.1.png) 
 
 ### 核心组件
 
@@ -143,15 +141,75 @@ DDL语句，MVCC版本控制的老数据删除
 
 **存储层**
 
+**TiKV**
+
 行式存储
 
 分布式且支持事务的KV存储引擎，数据持久化，算子下推，自身副本高可用和强一致性（multi-raft）
+
+> 负责存储数据，从外部看 TiKV 是一个分布式的提供事务的 Key-Value 存储引擎。
+>
+> 存储数据的基本单位是 Region，每个 Region 负责存储一个 Key Range（从 StartKey 到 EndKey 的左闭右开区间）的数据，每个 TiKV 节点会负责多个 Region。
+>
+> TiKV 的 API 在 KV 键值对层面提供对分布式事务的原生支持，默认提供了 SI (Snapshot Isolation) 的隔离级别，这也是 TiDB 在 SQL 层面支持分布式事务的核心。
+>
+> TiDB 的 SQL 层做完 SQL 解析后，会将 SQL 的执行计划转换为对 TiKV API 的实际调用。所以，数据都存储在 TiKV 中。另外，TiKV 中的数据都会自动维护多副本（默认为三副本），天然支持高可用和自动故障转移。
 
 ##### TiFlash
 
 列式存储（通过raft共识算法与TiKV同步）（OLAP）
 
 ![1643471221(1)](picture/1643471221(1).png)
+
+##### 设计思想
+
+![tidb-storage-architecture](picture/tidb-storage-architecture.png)
+
+1.kv键值对
+
+> 以二进制方式有序存储键值对
+
+2.RocksDB（本地存储）
+
+> 基于facebook开源的优秀的单机KV存储引擎，借助rocksdb进行本地磁盘的写入
+
+3.Raft协议
+
+> 1.保证日志复制
+>
+> 2.leader选举
+>
+> 3.成员变更
+
+4.Region
+
+> 按照key连续分割range，默认单个大小为96M[StartKey,EndKey）
+>
+> 每一个副本叫做replica，其中一个作为Leader，另外作为Follower，Follower作为备数据，只进行写入，不进行读取
+
+![tidb-storage-3](picture/tidb-storage-3.png)
+
+5.MVCC  
+
+```text
+Key1_Version3 -> Value
+Key1_Version2 -> Value
+Key1_Version1 -> Value
+……
+Key2_Version4 -> Value
+Key2_Version3 -> Value
+Key2_Version2 -> Value
+Key2_Version1 -> Value
+……
+KeyN_Version2 -> Value
+KeyN_Version1 -> Value
+……
+```
+
+6.ACID
+
+
+
 
 #### TiSpark（辅助解决复杂OLAP）
 
