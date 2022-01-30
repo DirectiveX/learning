@@ -148,3 +148,11 @@ FsImage：镜像，快照（恢复速度块，容易丢失数据，体积小）
 机架：扁直长方体
 刀片：刀片式服务器可以一片一片的叠放在机柜上
 
+CBI-2742自动更新需要监控表变化
+新建 一个 lambda data_npd_entity_info_change_lambda
+
+新建 一个 触发器 data_npd_entity_info_change_lambda关联 corpdata_factset_corptree表，corpdata_factset_entity表，corpdata_factset_entity_offset表
+lambda 权限参考 data_npd_funded_research_lambda 
+
+data_npd_entity_info_change_lambda 的编辑和发布权限
+
