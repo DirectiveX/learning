@@ -1,0 +1,62 @@
+﻿(function ($) {
+    $.fn.extend({
+        characterCounter: function (limit) {
+            if (limit == undefined) {
+                limit = parseInt($(this).attr("maxlength"));
+            }
+
+            if (isNaN(limit)) {
+                return;
+            }
+
+            var placeholderWidth = limit.toString().length * 9;
+            $(this).wrap("<div style='display: inline-block;position: relative;'></div>");
+
+            ccinputLineHeight = parseInt($(this).css('line-height').replace('px', '')) + parseInt($(this).css('padding-top').replace('px', '')) + parseInt($(this).css('padding-bottom').replace('px', ''));
+
+            ccinputHeight = $(this).innerHeight();
+            ccinputPos = $(this).position();
+            $(this).parent().append('<div class="ccinput-counter" style="position:absolute; visibility: hidden; color:#000; z-index:911; text-align: right; top: 2px; height:' + ccinputHeight + 'px; line-height:' + ccinputLineHeight + 'px; width: ' + placeholderWidth + 'px;">' + limit + '</div>');
+            var ccinputEl = $('.ccinput-counter', $(this).parent());
+
+            var cssWidth = $(this).clone().css('width');
+            if (cssWidth.indexOf('%') !== -1) {
+                // %-ban adták meg a szélességet
+                ccinputEl.css('left', 'calc(' + cssWidth + ' - ' + (placeholderWidth + 'px') + ')');
+            }
+            else if (cssWidth.indexOf('px') !== -1) {
+                // pixelben adták meg a szélességet
+                ccinputWidth = $(this).innerWidth();
+                ccinputPosLeft = ccinputWidth - placeholderWidth;
+                ccinputEl.css('left', ccinputPosLeft + 'px');
+            }
+            else {
+                // Nem tudjuk miben méretezzünk
+                return;
+            }
+
+            $(this).css('width', ccinputEl.clone().css('left'));
+            $(this).css('padding-right', placeholderWidth + 'px');
+            
+            $(this).on("focus", function () {
+                $('.ccinput-counter', $(this).parent()).css('visibility', 'visible');
+            });
+            $(this).on("blur", function () {
+                $('.ccinput-counter', $(this).parent()).css('visibility', 'hidden');
+            });
+            $(this).on("keyup", function () {
+                countString($(this));
+            });
+
+            function countString(src) {
+                var chars = src.val().length;
+                if (chars > limit) {
+                    src.val(src.val().substr(0, limit));
+                    chars = limit;
+                }
+
+                $('.ccinput-counter', src.parent()).text((limit - chars));
+            }
+        }
+    });
+})(jQuery);

@@ -1,0 +1,1131 @@
+﻿// JScript File
+/// <reference name="MicrosoftAjax.js" />
+/// <reference path="~/javascript/jquery-1.7.min.js"/>
+/// <reference path="~/javascript/jquery-ui.min.js"/>
+/// <reference path="~/javascript/neptun.js" />
+
+// -------------------------------------------- Modalpopup-hoz tartozo resize esemenyek ------------------
+// ModalPopup resize esemenyek
+var _resizebehaviorid = null;
+var _modalpanelid = null;
+var _modalpanel = null;
+var _oldboundsarray = new Array();
+
+// Minimum képernyő méretűre állítjuk a magasságot, hogy a footer alulra kerüljön
+$(document).ready(function () {
+    if ($('#tableMain') != null) {
+        var innerheight = Math.max($(document).height(), $(window).height(), /* For opera: */document.documentElement.clientHeight);
+        $('#tableMain').css('min-height', innerheight + 'px');
+        // Ez azért kell, mert mozillában nem működik a min-height
+        if (Sys.Browser.agent == Sys.Browser.Firefox) {
+            $('#tableMain').css('height', innerheight + 'px');
+        }
+    }
+});
+
+//collection ami tartalmazza a modalpopupok tulajdonsagait
+var ModalCollection = new Array();
+// a modalhoz beallitom a hozzatartozo controlokat
+function SetControlClientIDs(modalpanelid, modalpanelbehaviorid, pnlmodalid, modalpopuptitleid, modalcontentid, resizebehaviorid) {
+    // modalpanel betoltese    
+    _modalpanelid = modalpanelid;
+    _modalpanel = $get(modalpanelid);
+    if (_modalpanel) {
+
+        //_modalpanel._sdamodalpanel = $find(modalpanelbehaviorid);
+        if (resizebehaviorid)
+            _modalpanel._resizectrl = $find(resizebehaviorid);  // resize kontrol
+        _modalpanel._modalcontent = $get(modalcontentid);   // modal panel content
+
+        _modalpanel._modalpopuptitle = $get(modalpopuptitleid); // fejlec
+        _modalpanel._pnlmodal = $get(pnlmodalid);   // az egesz modal panel
+
+        if (_modalpanel._runCounter == null)
+            _modalpanel._runCounter = 0;
+        _modalpanel._handleImage = null;
+        _modalpanel._pnlmodal.style.filter = 'alpha(opacity=100)';
+        _modalpanel.style.filter = 'alpha(opacity=100)';
+        _modalpanel._modalpopuptitle.style.filter = 'alpha(opacity=100)';
+
+        _modalpanel._pnlmodal.style.MozOpacity = '1';
+        _modalpanel.style.MozOpacity = '1';
+        _modalpanel._modalpopuptitle.style.MozOpacity = '1';
+
+        // ha van beallitva az adott modalhoz alapertelmezett szelesseg es magassag
+        if (_modalpanel.attributes['initialwidth'] != null
+            && _modalpanel.attributes['initialwidth'].value > 0) {
+            _modalpanel._defaultwidth = parseInt(_modalpanel.attributes['initialwidth'].value);
+        }
+        else {
+            // beallitom a default modal ablak magassagat (80%a az aktualis kepernyo magassaganak)
+            _modalpanel._defaultwidth = parseInt((this.getClientBounds().width / 100) * 80);
+            if (_modalpanel._defaultwidth < 300)
+                _modalpanel._defaultwidth = 300;
+        }
+
+        if (_modalpanel.attributes['initialheight'] != null
+             && _modalpanel.attributes['initialheight'].value > 0) {
+            _modalpanel._defaultheight = parseInt(_modalpanel.attributes['initialheight'].value);
+        }
+        else {
+            // beallitom a default modal ablak magassagat (70%a az aktualis kepernyo magassaganak)
+            _modalpanel._defaultheight = parseInt((this.getClientBounds().height / 100) * 70);
+            if (_modalpanel._defaultheight < 200)
+                _modalpanel._defaultheight = 200;
+        }
+    }
+}
+
+//Ha a balalasó átméretezővel méretezzük át
+var oldmodalbounds = null;
+var olddivpanelheight = null;
+function ModalClientResizeBegin(sender, eventArgs) {
+    oldmodalbounds = sender.get_Size(); // regi meret elmentese a modalnak
+    elteresmagassag = 0;
+    if (_modalpanel.isfullscreenstate) {
+        fullscreenimage = $get(_oldboundsarray[_modalpanel.id + '_fullscreenimageid']);
+        fullsreenimgurl = _oldboundsarray[_modalpanel.id + '_fullsreenimgurl'];
+
+        _modalpanel.isfullscreenstate = false;
+
+        // normal image allitas
+        fullscreenimage.src = fullsreenimgurl;
+        _oldboundsarray[_modalpanel.id + '_oldmodalbounds'] = null;
+    }
+    _modalpanel._runCounter = 2;
+}
+
+//Modal megjelenéskor átméretei a modalt
+var elteresmagassag = null; // az uj magassagbol kivonjuk a regi magassagot
+var oldwidth, oldheight; // a vegtelen ciklus kikuszobolesere kell
+function ModalClientResizing(sender, eventArgs) {
+    _modalpanel = $get(sender.get_id().replace('resize_', ''));
+    _modalpanel._resizectrl = sender;
+    if (_modalpanel && _modalpanel._runCounter > 0) {
+        var modallocation = Sys.UI.DomElement.getLocation(_modalpanel._pnlmodal);
+        var modalsize = sender.get_Size();
+        var fullclientsize = getFullClientSize();
+        var width = Number(modalsize.width);
+        var height = Number(modalsize.height);
+
+        if (modallocation.x + Number(modalsize.width) > fullclientsize.width) {
+            width = fullclientsize.width - modallocation.x;
+        }
+        if (modallocation.y + Number(modalsize.height) > fullclientsize.height) {
+            height = fullclientsize.height - modallocation.y;
+        }
+
+        if (Number(modalsize.width) != width || Number(modalsize.height) != height) {
+            // 20090701 - GyP - A set_Size meghvita ModalClientResizing-ot, igy lett egy vegtelen ciklus. Ennek kikuszobolesere
+            // kell ez a feltetel, mi szerint a set_Size csak akkor mehet, ha a width vagy a height valtozott.
+            if (oldwidth != width || oldheight != height) {
+                // 20101102 - GyP - kikommenteztem, mert ez okozta a modal job alsó kiszaladását méretezéskor
+                // Kérdés: miért volt erre szükség?
+                //sender.set_Size({ width: width, height: height });
+            }
+        }
+
+        // megjegyzem az beallitott meretet
+        oldwidth = width;
+        oldheight = height;
+
+        if (oldmodalbounds) {   // az uj magassagbol kivonjuk a regi magassagot
+            elteresmagassag = _modalpanel._resizectrl.get_Size().height - oldmodalbounds.height;
+        }
+
+        // atmeretezem a modalpanelcontentet is
+        var ModalclientHeight = _modalpanel._resizectrl.get_Size().height;
+        if (ModalclientHeight > 0)
+            _modalpanel._modalcontent.style.height = (ModalclientHeight - 73).toString() + 'px';
+        _modalpanel._modalcontent.style.width = (_modalpanel._resizectrl.get_Size().width - 15).toString() + 'px';
+        _modalpanel._modalcontent.style.width = '100%';
+        // atmeretezem a kontrolokat (jelenleg csak a grideket)
+        DoResizingCtrls(_modalpanel._modalcontent);
+        //havégzett eltávolítjuk az opacítiy mert másképpen teljes méretnél lesz egy fekete keret.
+        //hamarabb nem lehet, mert akkor villog
+        _modalpanel._pnlmodal.style.filter = '';
+        _modalpanel.style.filter = '';
+        _modalpanel._modalpopuptitle.style.filter = '';
+
+        _modalpanel._pnlmodal.style.MozOpacity = '';
+        _modalpanel.style.MozOpacity = '';
+        _modalpanel._modalpopuptitle.style.MozOpacity = '';
+    }
+
+    //if (navigator.userAgent.indexOf("Chrome") != -1) {
+    try {
+        $.each($("div.handleFullScreen"),
+            function (index) {
+                var rightleft = this.parentElement.parentElement.children[2].children[0].children[1].children[2].offsetLeft; //($("td.modalbodyright")[index]).offsetLeft;
+                var rightwidth = this.parentElement.parentElement.children[2].children[0].children[1].children[2].offsetWidth; //($("td.modalbodyright")[index]).offsetWidth;
+                var handlewidth = this.offsetWidth;
+                this.style.left = (parseInt(rightleft) + parseInt(rightwidth) - parseInt(handlewidth)).toString() + 'px'; //- parseInt(handlewidth)
+
+
+            }
+        );
+    }
+    catch (err) { }
+}
+
+// atmeretezes vegen
+function ModalClientResize(sender, eventArgs) {
+    _modalpanel = $get(sender.get_id().replace('resize_', ''));
+    var e = sender.get_element();
+
+    // a vegen resetelem a regi meretet es a magassagot
+    if (_modalpanel._runCounter == 2) {
+        _modalpanel._runCounter = 1;
+        _oldboundsarray[_modalpanel.id + '_modallocation'] = Sys.UI.DomElement.getLocation(_modalpanel._pnlmodal);  // elmentem az aktualis meretet
+    }
+    oldmodalbounds = null;
+    olddivpanelheight = null;
+    aktualissdatabmagassag = aktualissdatabmagassag + elteresmagassag;
+
+    if (_modalpanel._runCounter > 0) {
+        _oldboundsarray[_modalpanel.id + '_modalsize'] = sender.get_Size();  // elmentem az aktualis meretet
+        _oldboundsarray[_modalpanel.id + '_isfullscreenstate'] = _modalpanel.isfullscreenstate;
+        elteresmagassag = 0;
+    }
+
+    //if (navigator.userAgent.indexOf("Chrome") != -1) {
+    try {
+        $.each($("div.handleFullScreen"),
+            function (index) {
+                var rightleft = this.parentElement.parentElement.children[2].children[0].children[1].children[2].offsetLeft; //($("td.modalbodyright")[index]).offsetLeft;
+                var rightwidth = this.parentElement.parentElement.children[2].children[0].children[1].children[2].offsetWidth; //($("td.modalbodyright")[index]).offsetWidth;
+                var handlewidth = this.offsetWidth;
+                this.style.left = (parseInt(rightleft) + parseInt(rightwidth) - parseInt(handlewidth)).toString() + 'px'; //- parseInt(handlewidth) 
+
+
+            }
+        );
+    }
+    catch (err) { }
+}
+
+// beallitja az adott modal meretet, a modalpanelcontenthez allitja hozza a modalpanelt
+function SetModalPanelSize() {
+    if (_modalpanel._resizectrl && _modalpanel._modalcontent
+            && _modalpanel._modalpopuptitle) {
+        _modalpanel._runCounter = 0;
+        if (_oldboundsarray[_modalpanel.id + '_modalsize'] == null) {
+            // ha meg nem volt ilyen modal megjelenitve
+
+            // a modal meretet eloszor beallitja egy fix meretre
+            _modalpanel._resizectrl.set_Size({ width: _modalpanel._defaultwidth, height: _modalpanel._defaultheight });
+
+            // modal minimalis meretenek megadasa, ennel kisebbre ne lehessen meretezni
+            _modalpanel._resizectrl.set_MinimumHeight(_modalpanel._defaultheight);
+            _modalpanel._resizectrl.set_MinimumWidth(_modalpanel._defaultwidth);
+
+            // atmeretezem a modalpanelcontentet is
+            var ModalclientHeight = _modalpanel._resizectrl.get_Size().height;
+            if (ModalclientHeight > 0)
+                _modalpanel._modalcontent.style.height = (ModalclientHeight - 73).toString() + 'px';
+            _modalpanel._modalcontent.style.width = (_modalpanel._defaultwidth - 15).toString() + 'px';
+
+            // beallitom a content-ben az egyes controlokat
+            DoResizingCtrls(_modalpanel._modalcontent);
+
+            // modal poziciojanak allitasa
+            var modallocation = this.getClientCenterLocation(_modalpanel._modalcontent);
+            Sys.UI.DomElement.setLocation(_modalpanel._pnlmodal, modallocation.x, modallocation.y);
+            _oldboundsarray[_modalpanel.id + '_modalsize'] = _modalpanel._resizectrl.get_Size();  // elmentem az aktualis meretet
+
+            // innen 1es allapotba kerul
+            _modalpanel._runCounter = 1;
+        }
+        else {
+            // ha mar volt ilyen modal
+            var oldbounds = _oldboundsarray[_modalpanel.id + '_modalsize'];
+            var oldlocation = _oldboundsarray[_modalpanel.id + '_modallocation'];
+            var isfullscreenstate = _oldboundsarray[_modalpanel.id + '_isfullscreenstate'];
+
+            // atmeretezem a modalpanelcontentet is
+            var ModalclientHeight = Number(oldbounds.height);
+
+            if (isfullscreenstate) {
+                _modalpanel.isfullscreenstate = !isfullscreenstate;
+
+                SetModalState(_modalpanel.id, null, null, null);
+            }
+            else {
+                // meret beallitasa
+                _modalpanel._resizectrl.set_Size(oldbounds);
+                _modalpanel._modalcontent.style.height = (ModalclientHeight - 73).toString() + 'px';
+                _modalpanel._modalcontent.style.width = (_modalpanel._resizectrl.get_Size().width - 15).toString() + 'px';
+
+                // beallitom a content-ben az egyes controlokat
+                DoResizingCtrls(_modalpanel._modalcontent);
+
+                // modal poziciojanak allitasa
+                //                if (oldlocation)
+                //                    Sys.UI.DomElement.setLocation(_modalpanel._pnlmodal, oldlocation.x, oldlocation.y);
+            }
+            _modalpanel._runCounter = 1;
+        }
+    }
+}
+
+// control bal felso pozicio megadasa
+function getModalClientZeroLocation() {
+    if (_modalpanel && _modalpanel._pnlmodal) {
+        var scrollTop = (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+
+        return new Sys.UI.Point(0, scrollTop);
+    }
+}
+
+// teljes kepernyore/normal kepernyore valtas
+function SetModalState(modalpanelid, fullscreenimageid, normalscreenimgurl, fullsreenimgurl, level) {
+    //ha a masodik szintet akarjuk teljes kepernyőre rakni akkor először az elsőt kell
+    //mert a masodik div az elsőn belül van    
+    //    _modalpanel._pnlmodal.style.filter = '';
+    //    _modalpanel.style.filter = '';
+    //    _modalpanel._modalpopuptitle.style.filter = '';
+
+    if (level == null) {
+        var level = _modalpanel._pnlmodal.attributes["Level"] ? parseInt(_modalpanel._pnlmodal.attributes["Level"].value) : 1;
+        if (level > 1) {
+            var parentlevel = level - 2;
+            var parentmodal = ModalCollection[parentlevel];
+            var fullscreenstate = _oldboundsarray[parentmodal.id + '_isfullscreenstate'];
+            if (fullscreenstate == null || fullscreenstate == false) {
+                _modalpanel = parentmodal;
+                SetModalState(_modalpanel.id, _modalpanel.id + '_fullscreenbutton', normalscreenimgurl, fullsreenimgurl, level);
+                _modalpanel = ModalCollection[level - 1];
+            }
+        }
+    }
+
+    var fullscreenimage = null;
+    if (_oldboundsarray[_modalpanel.id + '_fullscreenimageid'] == null) {
+        // elmentem a valtozokat
+        fullscreenimage = $get(fullscreenimageid);
+        _oldboundsarray[_modalpanel.id + '_fullscreenimageid'] = fullscreenimageid;
+        _oldboundsarray[_modalpanel.id + '_normalscreenimgurl'] = normalscreenimgurl;
+        _oldboundsarray[_modalpanel.id + '_fullsreenimgurl'] = fullsreenimgurl;
+    }
+    else {
+        fullscreenimage = $get(_oldboundsarray[_modalpanel.id + '_fullscreenimageid']);
+        normalscreenimgurl = _oldboundsarray[_modalpanel.id + '_normalscreenimgurl'];
+        fullsreenimgurl = _oldboundsarray[_modalpanel.id + '_fullsreenimgurl'];
+    }
+
+    // allapot allitas
+    var isfullscreenstate = false;
+    if (_modalpanel && _modalpanel.isfullscreenstate != null)
+        isfullscreenstate = _modalpanel.isfullscreenstate;
+
+    isfullscreenstate = !isfullscreenstate;
+    _modalpanel.isfullscreenstate = isfullscreenstate;
+
+    // image allitas
+    if (fullscreenimage) {
+        if (isfullscreenstate) {
+            // teljes kepernyonel
+            fullscreenimage.src = normalscreenimgurl;
+        }
+        else {  // normal kepernyonel
+            fullscreenimage.src = fullsreenimgurl;
+        }
+    }
+
+    if (isfullscreenstate == true) {
+        // teljes kepernyo
+
+        // teljes lathato kepernyo adatainak lekerdezese
+        var FullScreenWidth = this.getClientBounds().width, FullScreenHeight = this.getClientBounds().height;
+
+        // regi kepernyo beallitasok elmentese
+        oldmodalbounds = _modalpanel.oldbounds = Sys.UI.DomElement.getBounds(_modalpanel._pnlmodal);
+
+        if (_oldboundsarray[_modalpanel.id + '_oldmodalbounds'] == null)
+            _oldboundsarray[_modalpanel.id + '_oldmodalbounds'] = oldmodalbounds;
+
+        // modal poziciojanak allitasa
+        var modallocation = this.getModalClientZeroLocation();
+        if (modallocation.x < 0)
+            modallocation.x = 0;
+        if (modallocation.y < 0)
+            modallocation.y = 0;
+        Sys.UI.DomElement.setLocation(_modalpanel._pnlmodal, modallocation.x + 6, modallocation.y + 4);
+
+        // atmeretezzuk a lathato kepernyo meretre
+        //_modalpanel._runCounter = 4;
+        _modalpanel._resizectrl.set_Size({ width: FullScreenWidth - 15, height: FullScreenHeight - 15 });
+        //_modalpanel._runCounter = 1;
+    }
+    else {
+        // normal kepernyo
+        // visszatoltjuk pozicioilag es meretileg a regi adatokat
+        oldmodalbounds = Sys.UI.DomElement.getBounds(_modalpanel._pnlmodal);
+        _modalpanel.oldbounds = _oldboundsarray[_modalpanel.id + '_oldmodalbounds'];
+        _oldboundsarray[_modalpanel.id + '_oldmodalbounds'] = null;
+        Sys.UI.DomElement.setLocation(_modalpanel._pnlmodal, _modalpanel.oldbounds.x, _modalpanel.oldbounds.y);
+
+        //_modalpanel._runCounter = 4;
+        _modalpanel._resizectrl.set_Size({ width: _modalpanel.oldbounds.width, height: _modalpanel.oldbounds.height });
+        //_modalpanel._runCounter = 1;
+    }
+}
+
+// megkeresi az osszes gridet a modalon belul es beallitja a szelesseget es magassagat a modalpanelhez kepest
+var aktualissdatabmagassag = 0; // aktualis tab magassaga
+function DoResizingCtrls(ctrl) {    // ctrl = a modalpanelcontent
+    _modalpanel._modalcontent.style.width = '100%';
+
+    // megkeressuk az osszes modalon levo gridet jQueryvel, amelynek tipusa gridcontent
+    var szelesseg = Number(_modalpanel._resizectrl.get_Size().width);
+    var magassag = Sys.UI.DomElement.getBounds(ctrl).height;
+
+    // tabok keresese
+    var sdawebtabok = $('#' + _modalpanel.id + ' div .ajax__tab_body:visible');
+    if (sdawebtabok.length > 0) {
+        // ha uj sdawebtab van
+        sdawebtabok.css('overflowY', 'auto');
+        //if (Sys.UI.DomElement.getBounds(sdawebtabok[0]).height > magassag) {
+        // ha a webtab tartalmanak a magassaga nagyobb mint a modal tartalmanak magassaga,
+        // akkor biztosan kirakja a scrolbart
+        // ilyenkor behuzok egy paddingot
+        //sdawebtabok.css('padding-right', '15px');
+        //}
+        if (elteresmagassag == null)
+            elteresmagassag = 0;
+        sdawebtabok.height(magassag - 44);
+        sdawebtabok.css('padding-right', '5px');
+        sdawebtabok.css('padding-top', '5px');
+        sdawebtabok.css('padding-left', '5px');
+    }
+    else {  // ha nincs tab
+        // divpanelnel scroll
+        //var divpanelek = $('#' + ctrl.id).find('div').filter('.DivPanel').css('overflowY', 'auto');
+        //divpanelek.css('padding', '5px');
+        //if (divpanelek.length == 0) {
+        //    divpanelek = $('#' + ctrl.id).find('div').filter('.DivPanel_330').css('overflowY', 'auto');
+
+        //    if (divpanelek.length == 0) {
+        //        divpanelek = $('#' + ctrl.id).find('div').filter('.DivPanel_330_with_xscrollbar').css('overflowY', 'auto');
+        //    }
+        //}
+        //if (divpanelek.length > 0) {
+        //    if (elteresmagassag != null && elteresmagassag > 0 && olddivpanelheight == null) {
+        //        olddivpanelheight = Sys.UI.DomElement.getBounds(divpanelek[0]).height;
+        //    }
+        //    else {
+        //        divpanelek.height(_modalpanel._modalcontent.clientHeight - 28);
+        //    }
+
+        //    if (elteresmagassag != null && divpanelek.length > 0 && olddivpanelheight != null) {
+        //        var aktdivpanelmagassag = olddivpanelheight + elteresmagassag;
+        //        divpanelek.height(aktdivpanelmagassag);
+        //    }
+        //}
+    }
+
+    // full uj ajaxgrid
+    //    var ajaxgridek = $('div .gridmaindiv:visible');
+    //    if (ajaxgridek != null && ajaxgridek.length > 0) {
+    //        ajaxgridek
+    //    }
+    //    
+
+}
+
+// ----------------------------------------- main tab top menu valtasa ----------------------------------
+function TabTopMenuValtas(tab) {
+    //if (tab._activeTabIndex == 0)
+    //$('#' + tab._element.id).removeClass().addClass('TabTopMenuNeptun ajax__tab_container ajax__tab_default');
+    //tab._element.className = 'TabTopMenuNeptun ajax__tab_container ajax__tab_default';
+    //else
+    //$('#' + tab._element.id).removeClass().addClass('TabTopMenuKollabTer ajax__tab_container ajax__tab_default');
+    //tab._element.className = 'TabTopMenuKollabTer ajax__tab_container ajax__tab_default';
+}
+
+// mindegyik tab valtaskor meghivodik
+// csak akkor frissuljon a tab, ha szukseges ( nem volt meg a tartalma betoltve )
+//function SDAWebTabClick(tab) {
+//    var activeTabIndex = tab._activeTabIndex;
+
+//    // csak akkor toltodjon be a tabitem legeloszor, ha az adott tabitemhez a enableautopostbackalgorythm valtozo be van allitva
+//    var enableautopostbackalgorythm = false;
+//    if (tab._element.attributes['enableautopostbackalgorythm_'+activeTabIndex] != null)
+//        enableautopostbackalgorythm = tab._element.attributes['enableautopostbackalgorythm_' + activeTabIndex].value;
+
+//    if (enableautopostbackalgorythm == 'False')
+//        return;
+//    
+//    var betoltve = 'false';
+//    if (tab._element.attributes['betoltve_' + activeTabIndex] != null) {
+//        betoltve = tab._element.attributes['betoltve_' + activeTabIndex].value;
+//    }
+//    
+//    if (betoltve == 'true') {
+//        if (tab._autoPostBackId != '')  // ha kiveszem az autoPostBackId-t, akkor nem megy le a szerverre
+//            tab._oldautoPostBackId = activeTabIndex;
+//        tab._autoPostBackId = '';
+//    }
+//    else if (tab._oldautoPostBackId != null) {
+//        tab._autoPostBackId = tab._oldautoPostBackId;
+//    }
+
+//    tab._element.setAttribute('betoltve_' + activeTabIndex, 'true');
+//}
+
+function SchedulerViewerSettings(args) {
+    // a naptar heti nezetekor az elemeket ra kell igazitani magassagban a tablazatra
+    // csak megjelenites utan tudjuk, milyen magas
+    var radiobuttons = $('table[radiotype=listtype] :radio:visible');
+    if (radiobuttons.length == 0
+        || (radiobuttons.length > 0 && radiobuttons[1].checked == false)) {
+        return;
+    }
+    // return;
+    var scheduleritemdivek = $('div .item');
+    for (var i = scheduleritemdivek.length - 1; i >= 0; i--) {
+        var itemdiv = $('div .item:eq(' + i.toString() + ') #scheduleritem');
+        if (itemdiv.length == 1) {
+            var scheduleritemdivheight = Sys.UI.DomElement.getBounds(scheduleritemdivek[i]).height;
+            itemdiv[0].style.height = (scheduleritemdivheight - 5).toString() + 'px';
+            var j = 0;
+        }
+        else
+            break;
+    }
+}
+
+// ha egy sem lenne becsekkelve, akkor az aktualisat visszacsekkelem
+function chkCalendarClicked(clickedID) {
+    if ($('#tableCheckedBoxs input:checkbox:checked').length == 0)
+        $get(clickedID).checked = true;
+}
+
+function chkCalendarClickedTab(clickedID) {
+    if ($('#tableCheckedBoxsSettings input:checkbox:checked').length == 0)
+        $get(clickedID).checked = true;
+}
+
+// exportalast inditom
+function ExportOutlook(link) {
+    location.href = link;
+}
+
+//kervenyek csatolmany
+function SetAttachment(btnID, caller) {
+    var result = false;
+    //checkbox
+    if (caller.type == 'checkbox') {
+        result = caller.checked ? false : true;
+    }
+    //combobox
+    else if (caller.type == 'select-one') {
+        result = caller.value != "" && caller.value != "---" ? false : true;
+    }
+    //radio
+    else if (caller.type == "radio") {
+        // barmit valaszt, az jo
+        result = false;
+    }
+    //textbox
+    else {
+        result = caller.value != "" ? false : true;
+    }
+    document.getElementById(btnID).disabled = result;
+}
+function GenerateICS(chkFeladatokID, chkFeliratkozasiListakID, chkOrarendID, chkTalalkozokID,
+                             chkVizsgakID, chkOktatoMentesitesekID, chkKonzultaciokID,
+                             dateFromID, dateToID, sdp,
+                             trainingID, linkbtnid, hipeid, fromButton) {
+    // megnezem, hogy milyen esemenyek vannak becsekkelve
+    var chkFeladatok_Checked = $get(chkFeladatokID).checked;
+    var chkOrarend_Checked = $get(chkOrarendID).checked;
+    var chkVizsgak_Checked = $get(chkVizsgakID).checked;
+    var chkTalalkozok_Checked = $get(chkTalalkozokID).checked;
+    var chkFeliratkozasiListak_Checked = $get(chkFeliratkozasiListakID).checked;
+    var chkOktatoMentesitesek_Checked = false;
+
+    // ha oktato
+    if ($get(chkOktatoMentesitesekID) != null)
+        chkOktatoMentesitesek_Checked = $get(chkOktatoMentesitesekID).checked;
+
+    var chkKonzultaciokID_Checked = $get(chkKonzultaciokID).checked;
+
+    var validatorHipe = $find(hipeid);
+    var cmbTraining = $get(trainingID);
+
+    var trainingIDSel = "0";
+    if (cmbTraining != null)
+        trainingIDSel = cmbTraining.options[cmbTraining.selectedIndex].value;
+
+    // beallitom, hogy milyen esemenyek jojjenek le
+    var boxesChecked = chkOrarend_Checked ? '1' : '0';
+    boxesChecked += chkVizsgak_Checked ? '_1' : '_0';
+    boxesChecked += chkTalalkozok_Checked ? '_1' : '_0';
+    boxesChecked += chkFeladatok_Checked ? '_1' : '_0';
+    boxesChecked += chkFeliratkozasiListak_Checked ? '_1' : '_0';
+    boxesChecked += chkOktatoMentesitesek_Checked ? '_1' : '_0';
+    boxesChecked += chkKonzultaciokID_Checked ? '_1' : '_0';
+
+    // osszehasonlitom a tol,ig datumokat.
+    var fromDate = $('#' + dateFromID).datepicker({ dateFormat: datepickerRegional.dateFormat }).val();
+    var toDate = $('#' + dateToID).datepicker({ dateFormat: datepickerRegional.dateFormat }).val();
+    
+    var timeFor = $.datepicker.parseDate(datepickerRegional.dateFormat, fromDate);
+    var timeTo = $.datepicker.parseDate(datepickerRegional.dateFormat , toDate);
+
+    timeTo.setHours(timeTo.getHours() + 23);
+    timeTo.setMinutes(timeTo.getMinutes() + 59);
+    timeTo.setSeconds(timeTo.getSeconds() + 59);
+
+    // ha jol adta meg a datumszurest
+    if (timeTo >= timeFor) {
+        // validator elrejtese
+        validatorHipe.hide();
+        ActivateAlertDiv('progress', 'block');
+
+        if (fromButton == 'outlook') {
+            //PageMethods.GetICS(boxesChecked, fromDate.value + ' 00:00:00', toDate.value + ' 23:59:59', trainingIDSel, function (result) {
+            PageMethods.GetICS(boxesChecked, fromDate, toDate, trainingIDSel, function (result) {
+                if (result == "ok") {
+                    window.open('CommonControls/SaveFileDialog.aspx?id=' + boxesChecked + '&Func=exportcalendar&from=' + fromDate + '&to=' + toDate + '&trainingid=' + trainingIDSel, '_top');
+                    ActivateAlertDiv('progress', 'none');
+                }
+                else {
+                    var prm = Sys.WebForms.PageRequestManager.getInstance();
+                    prm._doPostBack(linkbtnid, ''); // csinal postbacket a modal uzenet szamara                
+                }
+            });
+        }
+        else if (fromButton == 'excel') {
+            PageMethods.GetExcel(boxesChecked, fromDate, toDate, trainingIDSel, function (result) {
+                var EVENTARG = '';
+                if (result == "ok") {
+                    window.open('ExcelFileDownload.aspx?ExportExcel=excelexport' + boxesChecked + '&Func=exportcalendar&from=' + fromDate + '&to=' + toDate + '&trainingid=' + trainingIDSel, '_top');
+                    ActivateAlertDiv('progress', 'none');
+                }
+                else {
+                    var prm = Sys.WebForms.PageRequestManager.getInstance();
+                    prm._doPostBack(linkbtnid, EVENTARG); // csinal postbacket az excel export szamara
+                }
+            });
+        }
+    }
+    else {
+        // validator es figyelmezteto uzenet megjelenitese
+        validatorHipe.show();
+    }
+}
+
+//var tvID = "upFunction_c_message_rules_upParent_tcMessage_Rules_ctl01_upNotifications_tVNotifications";
+//function OnLoadNode() {
+//    if ($get(tvID) != null) {        
+//        var links = $get(tvID).getElementsByTagName('input');
+//        var tds = $get(tvID).getElementsByTagName('td');
+
+//        // a nowrap-et veszi le    
+//        
+//        for (var j = 0; j < tds.length; j++) {
+//            tds[j].style.cssText = '';
+//        }
+
+//        for (var i = 0; i < links.length; i++) {
+//            links[i].setAttribute('cursor', 'pointer');
+//        }
+
+//        var linksSpan = $("#" + tvID + " table" + " span[haschildren='true']");
+
+//        for (var j = 0; j < linksSpan.length; j++) {
+//            var tags = linksSpan[j].parentNode;
+//            for (var k = 0; k < tags.childNodes.length; k++) {
+//                if (tags.childNodes[k].type == 'checkbox') {
+//                    // az elso hierarchia checkbox-jai
+//                    var chkBox = tags.childNodes[k];
+
+//                    if (chkBox.getAttribute('chknumber') == null) {
+//                        chkBox.setAttribute("chknumber", "firstchk");
+//                        chkBox.setAttribute("onclick", "javascript:NodeClick('" + chkBox.id + "','firstchk')");
+//                    }
+//                    else {
+//                        chkBox.setAttribute("onclick", "javascript:NodeClick('" + chkBox.id + "','secondchk','" + chkBox.parentNode.childNodes[0].id + "')");
+//                    }
+
+//                    chkBox.setAttribute("style", "cursor:pointer;");
+//                }
+//            }
+//        }
+//    }
+//}
+
+//function NodeClick(id, attribute, nodeID) {
+//    var nodeLink = document.getElementById(id);
+//    var id2 = id.replace('CheckBox', 'Nodes');
+//    var id3 = '';
+//    if (nodeID != null)
+//        id3 = nodeID.replace('CheckBox', 'Nodes');
+
+//    if (nodeLink.checked) {
+//        if (attribute == 'firstchk')
+//            $("#" + id2 + ' input' + '[chknumber != "secondchk" ]').attr({ checked: "checked" });
+//        else
+//            $('#' + id3 + ' input' + '[chknumber =' + attribute + ']').attr({ checked: "checked" });
+//    }
+//    else {
+//        if (attribute == 'firstchk')
+//            $("#" + id2 + ' input' + '[chknumber != "secondchk"]').removeAttr("checked");
+//        else
+//            $("#" + id3 + ' input' + '[chknumber =' + attribute + ']').removeAttr("checked");
+//    }
+//}
+
+//function copyToClipboard(lblURLID) {
+//    $('a#btnCopyToClipboard').zclip({
+//        path: 'ZeroClipboard.swf',
+//        copy: $('#upFunction_c_options_UpdatePanel1_tab_SDAWebTabItem1_calexport_upAddMessage_lblGoogleCalendarExport').text()
+//    });
+//}
+
+//function iframeload(iFrameClientID, modalid) {
+//    // ha az src '#end''-el végződik, akkor becsukom a modált, mert vége a kérdőívnek
+//    var timeout = window.setTimeout(function () {
+//        var unipoll = $('iframe[id=' + iFrameClientID + '][src$="#end"]');
+//        //var ttt = document.getElementById(iFrameClientID).contentWindow.location.href;
+//        //var currentIFrame = $('#' + iFrameClientID);
+//        //var vmi = currentIFrame.contents();
+//        //alert(ttt);
+//        if (unipoll.length == 1) {
+//            var x = $find(modalid);
+//            if (x != null) {
+//                x.hide();
+//                submitCount = 0;
+
+//                // kikapcsolom a timeout-ot
+//                if (timeout != null) {
+//                    window.clearTimeout(timeout);
+//                    timeout = null;
+//                }
+//            }
+//        }
+
+//    }, 2000);
+//}
+
+//$(document).ready(function () {
+//    $("#upBoxes_upCalendar_gdgCalendar_ctl35_calendar_upPanel_calendar_")
+//		.datePicker({ inline: true });
+//});
+
+function onSubmit(sender, args) {
+    // sender = a customvalidator
+    var listViewItem = $(sender).closest('table').children('tbody');
+
+    /*van-e 0%*/
+    var ok0 = false;
+    var textboxes = listViewItem.find('table[id*="tblEntries"] > tbody > tr > td > input[type="text"]');
+    //$('table[id*="tblEntries"] input[type="text"]');
+    $.each(textboxes, function (index) {
+        if ($(this).val() == "0") {
+            ok0 = true;
+            return false; //break
+        }
+    });
+
+    /*van-e 100%*/
+    var ok100 = false;
+    $.each(textboxes, function (index) {
+        if ($(this).val() == "100") {
+            ok100 = true;
+            return false; //break
+        }
+    });
+
+    /*ki van e toltve mindenhol a kezdo es a veg ertek, vagy egyik sincs*/
+    var gapOk = false;
+    var vmi = listViewItem.find('table[id*="tblEntries"] > tbody > tr');
+
+    $.each(vmi, function (index) {
+        if (index != 0) {
+            var from = $(this).find('input[id*="txtPercentFrom"]');
+            var to = $(this).find('input[id*="txtPercentTo"]');
+
+            gapOk = from.val() != '' && to.val() != '' || from.val() == '' && to.val() == '';
+            if (!gapOk) {
+                return false;
+            }
+        }
+    });
+
+    /*0-100 koze esik e minden ertek*/
+    var rangeok = false;
+    $.each(textboxes, function (index) {
+        if ($(this).val() != '') {
+            rangeok = (parseInt($(this).val()) >= 0 && parseInt($(this).val()) <= 100) || $(this).val() == '';
+            if (!rangeok) {
+                return false;
+            }
+        }
+    });
+
+    // barmilyen sorrendben vannak megadva az intervallumok, megnezem, h hiany nelkul megvan-e 0-100-ig
+    var intervalOk = false;
+    var percents = new Array();
+
+    $.each(listViewItem.find('table[id*="tblEntries"] > tbody > tr'), function (index) {
+        // ha mar nem a tabla fejlecenel vagyok
+        if (index != 0) {
+            var from = $(this).find('input[id*="txtPercentFrom"]');
+            var to = $(this).find('input[id*="txtPercentTo"]');
+
+            if (from.val() != '' && to.val() != '') {
+                if (parseInt(to.val()) >= parseInt(from.val())) {
+                    var i = parseInt(from.val());
+                    var j = parseInt(to.val());
+                    for (szlo = i; szlo <= j; szlo++) {
+                        // ha meg nincs benne a listaban
+                        if (percents.indexOf(szlo) == -1)
+                            percents.push(szlo);
+                    }
+                }
+            }
+        }
+    });
+
+    // ha van 101 kiskutya :), akkor 0-100-ig mindent megadott
+    if (percents.length == 101) {
+        intervalOk = true;
+    }
+
+    args.IsValid = ok0 && ok100 && rangeok && intervalOk && gapOk;
+}
+
+
+function onSubmit2(sender, args) {
+    var listViewItem = $(sender).closest('table').children('tbody');
+
+    /* -az alapertelmezettet megadta-e? */
+    var defaultOk = false;
+
+    /*-jó intervallumnál adta-e meg?*/
+    var defaultSelectedOk = false;
+
+    var radioButtons = listViewItem.find('table[id*="tblEntries"] > tbody > tr');
+
+    $.each(radioButtons, function (index) {
+        if (index != 0) {
+            var radio = $(this).find('input[type = "radio"][id*="rbDefault"]')[0];
+            var from = $(this).find('input[id*="txtPercentFrom"]');
+            var to = $(this).find('input[id*="txtPercentTo"]');
+
+            //var radio = //radioButtons[index];
+            if (radio.checked) {
+                defaultOk = true;
+
+                /* a default-ot ott kell megadni, ahol intervallum is van megadva */
+                if (from.val() != '' && to.val() != '')
+                    defaultSelectedOk = true;
+                //return;
+            }
+        }
+    });
+
+    args.IsValid = defaultOk && defaultSelectedOk;
+}
+
+
+function OpenCampus() {
+    ActivateAlertDiv('progress', "block");
+    $.ajax({
+        type: "POST",
+        url: "main.aspx/GotoCampus",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        async: false,
+        success: function (data) {
+            InitializeTimer();
+            ActivateAlertDiv('progress', "none");
+
+             OpenCampusWindow(data); // ez valo ide
+             //CallCampusErrorMessage(); // ez tesztelesre
+        },
+        complete: function (data) {
+        },
+        error: function (data) {
+            InitializeTimer();
+            ActivateAlertDiv('progress', "none");
+            CallCampusErrorMessage();
+        }
+    });
+}
+
+
+
+function PasswordChanged(txt) {
+    $(txt).prev().val($(txt).val());
+}
+
+function ShowPasswordFromHidden(gridClientID) {
+    var $tds = $('#' + gridClientID + '_gridtopdiv').find("td[n='EExamPassword'] input.passwordtext");
+    $tds.each(function () {
+        var txtPassword = $(this);
+
+        var hiddenPassword = $(this).parent().find("input.passwordhidden");
+        var chkShowedPassword = $(this).parent().find("input.chkshowpasswordhidden");
+            
+        //console.error(chkShowedPassword.val());
+
+        if (chkShowedPassword.val() == '1') {        
+            // elrejtem
+            chkShowedPassword.val(0);
+            hiddenPassword.val(txtPassword.val());
+            if (txtPassword.val().length > 0) {
+                var lngth = hiddenPassword.val().length;
+                var psswd = '';
+                for (i = 0; i < lngth; i++) { psswd += "*"; }
+                txtPassword.val(psswd);                
+            }
+
+            txtPassword.attr("style", "display:block;");
+        } else { // megmutatom
+            txtPassword.val(hiddenPassword.val());
+            chkShowedPassword.val(1);
+        };
+    });
+};
+
+function ShowPassword(txtUniPasswordID, chkGroupPasswordID, hiddenPasswordID)
+{
+    var txtPassword = $('#' + txtUniPasswordID);
+    var hiddenPassword = $('#' + hiddenPasswordID);
+
+    if ($('#' + chkGroupPasswordID).is(':checked')) {
+        // ekkor megmutatom a password-ot
+        txtPassword.val(hiddenPassword.val());
+    }
+    else {   // ekkor meg elrejtem
+        hiddenPassword.val(txtPassword.val());
+        if (txtPassword.val().length > 0) {
+            var lngth = hiddenPassword.val().length;
+            var psswd = '';
+            for (i = 0; i < lngth; i++) { psswd += "*"; }
+            txtPassword.val(psswd);
+        }
+    }
+}
+
+function CancelPress(event) {
+    if (event != null) {
+        event.returnValue = false;
+        event.cancelBubble = true;
+        if (event.preventDefault) event.preventDefault();
+        if (event.stopPropagation) event.stopPropagation();
+    }
+}
+
+function PasswordPress(event, txtUniPasswordID, hiddenPasswordID, chkGroupPasswordID,
+                        which, keyCode, ctrlKey, Code)
+{
+    var _which, _keyCode, _ctrlKey, charCode, charStr, _code;
+
+    if (event == null) {        
+        _which = which;
+        _keyCode = keyCode;
+        _ctrlKey = ctrlKey;
+        charCode = _which || _keyCode;
+        _code = Code;
+    }
+    else
+    {
+        event = event || window.event;
+        charCode = event.which || event.keyCode;
+        _ctrlKey = event.ctrlKey;
+        _code = event.code;
+    }
+
+    var charStr = String.fromCharCode(charCode);    
+    var txtPassword = $('#' + txtUniPasswordID);
+    var hiddenPassword = $('#' + hiddenPasswordID);
+    var selStart = txtPassword[0].selectionStart;
+    var selEnd = txtPassword[0].selectionEnd;
+    var showpasswd = false;
+
+    if (chkGroupPasswordID.startsWith("hChkShowPassword"))
+        showpasswd = $('#' + chkGroupPasswordID).val() == '1';
+    else
+        showpasswd = $('#' + chkGroupPasswordID).is(':checked');
+
+    //if (event.key == 'Alt') {
+    //    //CancelPress(event);
+    //    //return;
+    //}
+
+    if (_ctrlKey == true) {
+        if (charCode == 118) // v
+        {
+            // ha FF es ha nem jeloltem ki semmit es nincs megjelenitve 
+            if ((selStart == selEnd) && !showpasswd)
+            {                
+                return;
+            }
+            else
+            {
+                // frissitse a hidden-t
+                hiddenPassword.val(txtPassword.val());
+                return;
+            }
+        }
+        else // ha ctrl van, akkor viszlat
+            //if (charCode == 99 || charCode == 120 || charCode == 88) // c, x            
+        {
+            CancelPress(event);
+            return;
+        }
+    }
+    
+    var cancelKeypress = /^(8|9|12|13|16|17|18|19|20|32|33|34|35|36|37|38|39|40|42|43|45|46|96|144)$/.test("" + charCode);
+    if (!cancelKeypress) { // ha mehet a karakter    
+        var vanSelect = txtPassword[0].selectionStart != txtPassword[0].selectionEnd;
+
+        var selStart = txtPassword[0].selectionStart; 
+        var selEnd = txtPassword[0].selectionEnd;        
+        var hVal = hiddenPassword.val();
+        var position = -1;
+        var eventKey = charStr;
+
+        hiddenPassword.val(hVal.substr(0, selStart) + eventKey + hVal.substr(selEnd, hVal.length - selEnd));
+        //console.log(eventKey + ' - ' + hiddenPassword.val() + ' ---- ' + txtPassword[0].selectionStart + ' - ' + txtPassword[0].selectionEnd);
+
+        // ha van kijeloles, akkor azt kitorlom
+        if (vanSelect) {
+            txtPassword.val(hiddenPassword.val());
+            txtPassword[0].selectionStart = selStart + 1;
+            txtPassword[0].selectionEnd = selStart + 1;
+        }
+
+        /*itt volt*/
+
+        // ha nincs select, akkor atirom a jelszot *-ra
+        if (showpasswd == false) {
+
+            var lngth = txtPassword.val().length;
+            var ps = '';
+            for (i = 0; i < lngth; i++) {
+                ps += '*';
+            }
+
+            txtPassword.val(ps + (vanSelect ? '' : '*'));
+
+            // pozicionalom a txt-ben, kuloben a vegere kerulne
+            if (position != -1)
+                txtPassword[0].setSelectionRange(position, position);
+
+            // teszteleshez
+            //console.error(hiddenPassword.val());
+
+            CancelPress(event);            
+        }
+        else if (vanSelect) {   // ha volt select, majd leutottem valamit helyette, akkor az automatikus is betenne azt a karakter, pedig en mar manualisan megtettem
+            CancelPress(event);            
+        }        
+    }
+    else { // ha tiltott karakterek es torles
+
+        var cancelKeypress2 = /^(8|46)$/.test("" + charCode);
+        if (cancelKeypress2 && (_code == "Delete" || _code == "Backspace")) {
+            // ekkor torlok
+            var hVal = hiddenPassword.val();
+            var tVal = txtPassword.val();                       
+
+            // ha nem jeloltem ki semmit
+            if (selStart == selEnd) {
+                // ha a stringben vagyok
+                if (selStart > 0 || selStart < hVal.length - 1) {
+                    if (charCode == 8) // backspace
+                        hiddenPassword.val(hVal.substr(0, selStart - 1) + hVal.substring(selEnd, hVal.length));
+                    else if (charCode == 46) // delete
+                        hiddenPassword.val(hVal.substr(0, selStart) + hVal.substring(selEnd + 1, hVal.length));
+                }
+                else if (selStart == 0 || selStart == hVal.length - 1) // ha a string elejen/vegen vagyok
+                {
+                    if (txtPassword.length == 1)
+                        hiddenPassword.val('');
+                    else
+                        hiddenPassword.val(hVal.substr(selStart, 1));
+                }
+            }
+            else // ha kijeloltem 
+                hiddenPassword.val(hVal.substr(0, selStart) + hVal.substr(selEnd, hVal.length - selEnd));
+        }
+        else // ekkor NEM kell semmit tenni
+        {
+            //console.error(charCode);
+            //var cancelKeypress3 = /^(32|39|42|43|45|48|96|106|107|108|109|110|111|122|126|144)$/.test("" + charCode);
+            var cancelKeypress3 = /^(35|36|37|38|39|40)$/.test("" + charCode);
+            if (!cancelKeypress3) {
+                CancelPress(event);
+            }
+        }
+    }
+} 
+
+function PasswordKeyDown(event, txtUniPasswordID, hiddenPasswordID, chkGroupPasswordID) {
+    event = event || window.event;
+    var charCode = event.which || event.keyCode;
+    var charStr = String.fromCharCode(charCode);    
+    var shiftAndValidChars = /^(35|36|37|38|39|40)$/.test("" + charCode);// end, home, left arrow, right arrow, up, down
+    var cancelSpecChars = /^(110|188|190|222)$/.test("" + charCode);// decimal point, commma, period, single quote
+    
+    if (event.ctrlKey && (charCode == 88 /*x*/ || charCode == 67 /*c*/ /*|| charCode == 86 /*v */) ||        
+        (charCode > 111 && charCode < 127) /*F1-F15*/ ||
+        cancelSpecChars ||
+        event.altKey ||
+        event.shiftKey && !(shiftAndValidChars || (charCode >= 65 && charCode <= 90)))
+    {        
+        CancelPress(event);        
+    }
+    else {        
+        // ekkor manualisan meghivom a press-t backspace es del eseten
+        if (BrowserDetect.browser == "Chrome" || BrowserDetect.browser == "Explorer") {
+            // ha backspace vagy del, akkor meghivom keypress-t, mert kulonben IE-n, Chrome-on nem menne
+            var cancelKeypress2 = /^(8|46)$/.test("" + charCode);
+            if (cancelKeypress2 || (cancelKeypress2 && event.shiftKey)) {
+                var charCodeParam = (charCode == 46 ? 'Delete' : 'Backspace');
+                PasswordPress(null, txtUniPasswordID, hiddenPasswordID, chkGroupPasswordID,
+                                event.which, event.keyCode, event.ctrlKey, charCodeParam);
+            }
+        }
+    }
+}
+
+var clickedControlClientID = '';
+function OnDropDownClick(clientID)
+{
+    try{
+        clickedControlClientID = clientID;
+    }
+    catch(err){}
+}
+
+function CKEDITOROnBlur(CKEDITOR) {
+    
+    try {
+
+        if (document.activeElement != null && document.activeElement != undefined)
+            if (clickedControlClientID != '')
+            {
+                if (clickedControlClientID != document.activeElement.id)
+                {
+                    $('#' + clickedControlClientID)[0].focus();
+                    clickedControlClientID = '';
+                    //console.error('blur-CKEDITOROnBlur - focused on combo');
+                }
+            }
+    }
+    catch (abc) { }
+}
+
+function loaddefaultpage()
+{
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    var param = 'divNeptunLogo_';
+    prm._doPostBack(param, null);    
+}

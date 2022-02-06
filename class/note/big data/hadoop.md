@@ -248,7 +248,7 @@ etc/hadoop/hdfs-site.xml:（配置副本， 设置保险的目录防止nn，dn�
 </configuration>
 ```
 
-etc/hadoop/slaves 
+etc/hadoop/workers
 
 ```xml
 node01

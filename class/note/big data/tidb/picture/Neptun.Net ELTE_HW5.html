@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<!-- saved from url=(0069)https://hallgato5.neptun.elte.hu/main.aspx?ismenuclick=true&ctrl=0203 -->
+<html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Neptun.Net ELTE_HW5</title><meta http-equiv="X-UA-Compatible" content="IE=edge"><link id="Link1" rel="shortcut icon" href="https://hallgato5.neptun.elte.hu/favicon.ico" type="image/x-icon"><link id="Link2" rel="icon" href="https://hallgato5.neptun.elte.hu/favicon.ico" type="image/ico">
+<style type="text/css">*{outline:none;}</style>
+<link href="./Neptun.Net ELTE_HW5_files/dailog.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/calendar.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/dp.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/alert.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/main.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/jquery.fileupload-ui.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/bootstrap.min.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/jquery.contextMenu.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/jHtmlArea.ColorPickerMenu.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/jHtmlArea.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/fullcalendar.min.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/fullcalendar.print.min.css" rel="stylesheet" media="print" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/fullcalendar.customstyles.css" rel="stylesheet" type="text/css"><link href="./Neptun.Net ELTE_HW5_files/font-awesome.min.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+* { outline: none; }
+.style1
+{
+width: 81px;
+}
+.print_table
+{
+position: absolute;
+left: -9999px;
+}
+</style>
+<link href="./Neptun.Net ELTE_HW5_files/jquery.datepicker.css" type="text/css" rel="stylesheet"><link href="./Neptun.Net ELTE_HW5_files/jquery.widget.css" type="text/css" rel="stylesheet"><link href="./Neptun.Net ELTE_HW5_files/jquery-ui.css" type="text/css" rel="stylesheet"><link href="./Neptun.Net ELTE_HW5_files/neptun-modern.css" type="text/css" rel="stylesheet"><link href="./Neptun.Net ELTE_HW5_files/skin_neptun_gfx.css" type="text/css" rel="stylesheet"><link href="./Neptun.Net ELTE_HW5_files/WebResource.axd" type="text/css" rel="stylesheet"><style>.cke{visibility:hidden;}</style></head>
+<body onunload="javascript:Unload();">
+<form method="post" action="https://hallgato5.neptun.elte.hu/main.aspx?ismenuclick=true&amp;ctrl=0203" id="form1" autocomplete="off">
+<div class="aspNetHidden">
+<input type="hidden" name="ToolkitScriptManager1_HiddenField" id="ToolkitScriptManager1_HiddenField" value="">
+
+
+
+<input type="hidden" name="c_common_timetable_tabOrarend_ClientState" id="c_common_timetable_tabOrarend_ClientState" value="{&quot;ActiveTabIndex&quot;:0,&quot;TabEnabledState&quot;:[true,false],&quot;TabWasLoadedOnceState&quot;:[true,false]}">
+
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="./Neptun.Net ELTE_HW5_files/WebResource(1).axd" type="text/javascript"></script>
+
+                    <script type="text/javascript">                                  var i18n = new Object();            i18n =             {                        datepicker:                         {                            dateformat:                             {                                "fulldayvalue": "d/M/yyyy",                                "separator": "/",                                "year_index": 2,                                "month_index": 1,                                "day_index": 0,                                "sun": "Sun",                                "mon": "Mon",                                "tue": "Tue",                                "wed": "Wed",                                "thu": "Thu",                                "fri": "Fri",                                "sat": "Sat",                                "jan": "Jan",                                "feb": "Feb",                                "mar": "Mar",                                "apr": "Apr",                                "may": "May",                                "jun": "Jun",                                "jul": "Jul",                                "aug": "Aug",                                "sep": "Sep",                                "oct": "Oct",                                "nov": "Nov",                                "dec": "Dec",                                "postfix": ""                            },                            ok: "Ok",                            cancel: "Cancel",                            today: "Today",                            prev_month_title: "Previous month",                            next_month_title: "Next month",                    },                xgcalendar:                 {                dateformat:                 {                    "fulldaykey": "ddMMyyyy",                    "fulldayshow": "yyyy L d",                    "fulldayvalue": "d/M/yyyy",                    "Md": "W M/d",                    "Md3": "L d",                    "separator": "/",                    "year_index": 2,                    "month_index": 1,                    "day_index": 0,                    "day": "Day",                    "sun": "Sunday",                    "mon": "Monday",                    "tue": "Tuesday",                    "wed": "Wednesday",                    "thu": "Thursday",                    "fri": "Friday",                    "sat": "Saturday",                    "jan": "January",                    "feb": "February",                    "mar": "March",                    "apr": "April",                    "may": "May",                    "jun": "June",                    "jul": "July",                    "aug": "August",                    "sep": "September",                    "oct": "October",                    "nov": "November",                    "dec": "December"                },                "no_implemented": "Not yet, implemented<br/> ",                "to_date_view": "Go to the current date",                "i_undefined": "Undefined",                "allday_event": "All-day event",                "repeat_event": "Recurring event",                "time": "Time",                "event": "Event",                "location": "Place",                "participant": "Participators",                "get_data_exception": "Error during data entry",                "new_event": "New event",                "confirm_delete_event": "Are you sure you delete this event? ",                "confrim_delete_event_or_all": "Do you want to delete all recurring events, or just this event? -With OK you just delete this event, -with Cancel you delete all of them.",                "data_format_error": "Data formatting error! ",                "invalid_title": "Event name cannot be empty or may not contain the following characters:($)",                "view_no_ready": "The view is not yet ready.",                "example": "e.g. Meeting in the Conference Room 1",                "content": "Description",                "create_event": "New meeting",                "update_detail": "Edit",                "click_to_detail": "View",                "i_delete": "Delete",                "day_plural": "Days",                "others": "Even more: ",                "item": "",                "new_appointment_buttons": [{ "eventtype": 3, "label": "Add new meeting"  }],                "no_data_in_month": "There is no class schedule data in this period.",                "faculty": "Mode"            }        };              var isNewEventEnable;        </script>
+<script src="./Neptun.Net ELTE_HW5_files/WebResource(2).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource.axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(1).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(2).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.min.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.ui.min.sda.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.ui.min.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.dialogextend.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.tmpl.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/neptun.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/neptun2.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/SDAModal.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/webkit.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.inputmask.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery-autocomplete_combobox.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/SDAWebTab.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.contextMenu.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.ui.position.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jHtmlArea-0.7.5.min.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jHtmlArea.ColorPickerMenu-0.7.0.min.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.mousewheel.min.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery-jtemplates.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/tile-drag.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.multiselect.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ckeditor.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.fixedheadertable.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/common.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/index.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/MasterPass.client.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/jquery.charactercounter.js.下载" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(3).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(4).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(5).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(6).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(7).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(8).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(9).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(10).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(11).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(12).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(13).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(14).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(15).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(16).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(17).axd" type="text/javascript"></script>
+<script src="./Neptun.Net ELTE_HW5_files/ScriptResource(18).axd" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+var PageMethods = function() {
+PageMethods.initializeBase(this);
+this._timeout = 0;
+this._userContext = null;
+this._succeeded = null;
+this._failed = null;
+}
+PageMethods.prototype = {
+_get_path:function() {
+ var p = this.get_path();
+ if (p) return p;
+ else return PageMethods._staticInstance.get_path();},
+GotoCampus:function(succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'GotoCampus',false,{},succeededCallback,failedCallback,userContext); },
+GetStringFromJS:function(ID,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'GetStringFromJS',false,{ID:ID},succeededCallback,failedCallback,userContext); },
+SetSearchPanelState:function(searchpanelclientid,panelstate,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SetSearchPanelState',false,{searchpanelclientid:searchpanelclientid,panelstate:panelstate},succeededCallback,failedCallback,userContext); },
+SetGadgetSortedList:function(clientid,gadgetid,col,row,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SetGadgetSortedList',false,{clientid:clientid,gadgetid:gadgetid,col:col,row:row},succeededCallback,failedCallback,userContext); },
+SetGadgetSkinState:function(gadgetid,skin,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SetGadgetSkinState',false,{gadgetid:gadgetid,skin:skin},succeededCallback,failedCallback,userContext); },
+LogOutFromJS:function(link,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'LogOutFromJS',false,{link:link},succeededCallback,failedCallback,userContext); },
+GetICS:function(ID,fromDate,toDate,trainingId,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'GetICS',false,{ID:ID,fromDate:fromDate,toDate:toDate,trainingId:trainingId},succeededCallback,failedCallback,userContext); },
+GetExcel:function(ID,fromDate,toDate,trainingId,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'GetExcel',false,{ID:ID,fromDate:fromDate,toDate:toDate,trainingId:trainingId},succeededCallback,failedCallback,userContext); },
+SavePanelState:function(data,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SavePanelState',false,{data:data},succeededCallback,failedCallback,userContext); },
+SaveLeftBoxState:function(visible,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveLeftBoxState',false,{visible:visible},succeededCallback,failedCallback,userContext); },
+SaveModernListViewState:function(visible,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveModernListViewState',false,{visible:visible},succeededCallback,failedCallback,userContext); },
+SaveHeaderState:function(visible,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveHeaderState',false,{visible:visible},succeededCallback,failedCallback,userContext); },
+Ping:function(succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'Ping',false,{},succeededCallback,failedCallback,userContext); },
+SavePopupState:function(state,PopupID,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SavePopupState',false,{state:state,PopupID:PopupID},succeededCallback,failedCallback,userContext); },
+ClearPopupState:function(succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'ClearPopupState',false,{},succeededCallback,failedCallback,userContext); },
+SaveCollapsiblePanelState:function(succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveCollapsiblePanelState',false,{},succeededCallback,failedCallback,userContext); },
+SaveThesisOrderByStudent:function(IDs,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveThesisOrderByStudent',false,{IDs:IDs},succeededCallback,failedCallback,userContext); },
+SaveErasmusjelentkezesSorrend:function(IDs,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'SaveErasmusjelentkezesSorrend',false,{IDs:IDs},succeededCallback,failedCallback,userContext); },
+IsExistKervenyMellekletFileName:function(KervenyID,FileName,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'IsExistKervenyMellekletFileName',false,{KervenyID:KervenyID,FileName:FileName},succeededCallback,failedCallback,userContext); },
+CheckMessageRecivingUserPermission:function(NeptunCodes,NeptunCodesBCC,ClientID,strIsBCC,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'CheckMessageRecivingUserPermission',false,{NeptunCodes:NeptunCodes,NeptunCodesBCC:NeptunCodesBCC,ClientID:ClientID,strIsBCC:strIsBCC},succeededCallback,failedCallback,userContext); }}
+PageMethods.registerClass('PageMethods',Sys.Net.WebServiceProxy);
+PageMethods._staticInstance = new PageMethods();
+PageMethods.set_path = function(value) { PageMethods._staticInstance.set_path(value); }
+PageMethods.get_path = function() { return PageMethods._staticInstance.get_path(); }
+PageMethods.set_timeout = function(value) { PageMethods._staticInstance.set_timeout(value); }
+PageMethods.get_timeout = function() { return PageMethods._staticInstance.get_timeout(); }
+PageMethods.set_defaultUserContext = function(value) { PageMethods._staticInstance.set_defaultUserContext(value); }
+PageMethods.get_defaultUserContext = function() { return PageMethods._staticInstance.get_defaultUserContext(); }
+PageMethods.set_defaultSucceededCallback = function(value) { PageMethods._staticInstance.set_defaultSucceededCallback(value); }
+PageMethods.get_defaultSucceededCallback = function() { return PageMethods._staticInstance.get_defaultSucceededCallback(); }
+PageMethods.set_defaultFailedCallback = function(value) { PageMethods._staticInstance.set_defaultFailedCallback(value); }
+PageMethods.get_defaultFailedCallback = function() { return PageMethods._staticInstance.get_defaultFailedCallback(); }
+PageMethods.set_enableJsonp = function(value) { PageMethods._staticInstance.set_enableJsonp(value); }
+PageMethods.get_enableJsonp = function() { return PageMethods._staticInstance.get_enableJsonp(); }
+PageMethods.set_jsonpCallbackParameter = function(value) { PageMethods._staticInstance.set_jsonpCallbackParameter(value); }
+PageMethods.get_jsonpCallbackParameter = function() { return PageMethods._staticInstance.get_jsonpCallbackParameter(); }
+PageMethods.set_path("main.aspx");
+PageMethods.GotoCampus= function(onSuccess,onFailed,userContext) {PageMethods._staticInstance.GotoCampus(onSuccess,onFailed,userContext); }
+PageMethods.GetStringFromJS= function(ID,onSuccess,onFailed,userContext) {PageMethods._staticInstance.GetStringFromJS(ID,onSuccess,onFailed,userContext); }
+PageMethods.SetSearchPanelState= function(searchpanelclientid,panelstate,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SetSearchPanelState(searchpanelclientid,panelstate,onSuccess,onFailed,userContext); }
+PageMethods.SetGadgetSortedList= function(clientid,gadgetid,col,row,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SetGadgetSortedList(clientid,gadgetid,col,row,onSuccess,onFailed,userContext); }
+PageMethods.SetGadgetSkinState= function(gadgetid,skin,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SetGadgetSkinState(gadgetid,skin,onSuccess,onFailed,userContext); }
+PageMethods.LogOutFromJS= function(link,onSuccess,onFailed,userContext) {PageMethods._staticInstance.LogOutFromJS(link,onSuccess,onFailed,userContext); }
+PageMethods.GetICS= function(ID,fromDate,toDate,trainingId,onSuccess,onFailed,userContext) {PageMethods._staticInstance.GetICS(ID,fromDate,toDate,trainingId,onSuccess,onFailed,userContext); }
+PageMethods.GetExcel= function(ID,fromDate,toDate,trainingId,onSuccess,onFailed,userContext) {PageMethods._staticInstance.GetExcel(ID,fromDate,toDate,trainingId,onSuccess,onFailed,userContext); }
+PageMethods.SavePanelState= function(data,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SavePanelState(data,onSuccess,onFailed,userContext); }
+PageMethods.SaveLeftBoxState= function(visible,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveLeftBoxState(visible,onSuccess,onFailed,userContext); }
+PageMethods.SaveModernListViewState= function(visible,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveModernListViewState(visible,onSuccess,onFailed,userContext); }
+PageMethods.SaveHeaderState= function(visible,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveHeaderState(visible,onSuccess,onFailed,userContext); }
+PageMethods.Ping= function(onSuccess,onFailed,userContext) {PageMethods._staticInstance.Ping(onSuccess,onFailed,userContext); }
+PageMethods.SavePopupState= function(state,PopupID,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SavePopupState(state,PopupID,onSuccess,onFailed,userContext); }
+PageMethods.ClearPopupState= function(onSuccess,onFailed,userContext) {PageMethods._staticInstance.ClearPopupState(onSuccess,onFailed,userContext); }
+PageMethods.SaveCollapsiblePanelState= function(onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveCollapsiblePanelState(onSuccess,onFailed,userContext); }
+PageMethods.SaveThesisOrderByStudent= function(IDs,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveThesisOrderByStudent(IDs,onSuccess,onFailed,userContext); }
+PageMethods.SaveErasmusjelentkezesSorrend= function(IDs,onSuccess,onFailed,userContext) {PageMethods._staticInstance.SaveErasmusjelentkezesSorrend(IDs,onSuccess,onFailed,userContext); }
+PageMethods.IsExistKervenyMellekletFileName= function(KervenyID,FileName,onSuccess,onFailed,userContext) {PageMethods._staticInstance.IsExistKervenyMellekletFileName(KervenyID,FileName,onSuccess,onFailed,userContext); }
+PageMethods.CheckMessageRecivingUserPermission= function(NeptunCodes,NeptunCodesBCC,ClientID,strIsBCC,onSuccess,onFailed,userContext) {PageMethods._staticInstance.CheckMessageRecivingUserPermission(NeptunCodes,NeptunCodesBCC,ClientID,strIsBCC,onSuccess,onFailed,userContext); }
+//]]>
+</script>
+
+<div class="aspNetHidden">
+
+	
+	
+</div>
+<fieldset>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table style="height: 100%;" cellpadding="0" cellspacing="0" class="main_function_table">
+<tbody><tr>
+
+
+<td class="function">
+
+
+<table class="function_table" role="main">
+<tbody>
+
+
+
+
+<tr class="no_style">
+<td id="function_table_leftside" class="FunctionLeftSide"></td>
+
+<td id="function_table_body" class="no_style" style="padding-top: 5px;">
+<div id="upFunction">
+	
+
+<div id="upFunction_c_common_timetable_upPrint">
+		
+
+	</div>
+<div id="upFunction_c_common_timetable_upPreinit">
+		
+<div style="display: none">
+<div id="upFunction_c_common_timetable_upPreinit_PrePrint">
+</div>
+</div>
+
+	</div>
+<div id="upFunction_c_common_timetable_upParent">
+		
+<div id="c_common_timetable_tabOrarend" class="sda ajax__tab_container ajax__tab_default" betoltve_0="true" betoltve_1="false" enableautopostbackalgorythm_0="False" enableautopostbackalgorythm_1="False" style="width: 100%; visibility: visible;" role="document">
+			<div id="c_common_timetable_tabOrarend_header" class="ajax__tab_header" role="tablist">
+				<span id="c_common_timetable_ctl00_tab" class="ajax__tab_active"></span><span id="c_common_timetable_ctl01_tab" class="ajax__tab_disabled"><span class="ajax__tab_outer"><span class="ajax__tab_inner"><a class="ajax__tab_tab" id="__tab_c_common_timetable_ctl01" href="https://hallgato5.neptun.elte.hu/main.aspx?ismenuclick=true&amp;ctrl=0203#" style="text-decoration:none;" role="tab" tabindex="-1" aria-selected="false"><span>Institution class schedule</span></a></span></span></span>
+			</div><div id="c_common_timetable_tabOrarend_body" class="ajax__tab_body ajax__scroll_none" style="height:100%;display:block;">
+				<div id="c_common_timetable_ctl00" class="ajax__tab_panel" role="tabpanel" tabindex="0" aria-hidden="false" aria-labelledby="__tab_c_common_timetable_ctl00" style="visibility: visible;">
+					
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson">
+						
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit">
+							
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upFilter">
+
+</div>
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upTimeTable">
+								
+<span id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upTimeTable_TimeTable1" style="font-size: 90%;"><div><div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upTimeTable_TimeTable1_upBlindPanel"><div><table class="print_table"><tbody><tr><th><strong>Dates</strong></th><th><strong>Types</strong></th><th><strong>Events</strong></th><th><strong>Rooms</strong></th></tr><tr><td>2022. 02. 07. 12:00 (Monday) - 2022. 02. 07. 14:00 (Monday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282284537,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1259433684,&quot;enddate&quot;:&quot;\/Date(1644242400000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282284537,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644235200000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1230906156,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Foundations of Data Science Pr. (IPM-21fmiFDSG)  - 1   Every week (Lóczi Lajos Mihály) (0-820 Hunfalvy János terem (LD-0-820))</a></td><td>0-820 Hunfalvy János terem (LD-0-820)</td></tr><tr><td>2022. 02. 07. 14:00 (Monday) - 2022. 02. 07. 16:00 (Monday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1274439911,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1253317329,&quot;enddate&quot;:&quot;\/Date(1644249600000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1274439911,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644242400000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:837032228,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Academic Writing and Presentation Skills (USPV:2)  - 1   Every week (Dóczi Brigitta) (2.201 kutatói kémiai labor (LK-2-201))</a></td><td>2.201 kutatói kémiai labor (LK-2-201)</td></tr><tr><td>2022. 02. 08. 8:00 (Tuesday) - 2022. 02. 08. 10:00 (Tuesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300051,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1271164138,&quot;enddate&quot;:&quot;\/Date(1644314400000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300051,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644307200000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1261264249,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Computational Intelligence (IPM-21fmiCIEG)  - 90   Every week (Domonkos Márk;Botzheim János Dr.) (0-818 Soó Rezso terem (k) (LD-0-818))</a></td><td>0-818 Soó Rezso terem (k) (LD-0-818)</td></tr><tr><td>2022. 02. 08. 14:00 (Tuesday) - 2022. 02. 08. 16:00 (Tuesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300172,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1271164321,&quot;enddate&quot;:&quot;\/Date(1644336000000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300172,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644328800000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1261264249,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Computational Intelligence (IPM-21fmiCIEG)  - 1   Every week (Domonkos Márk;Botzheim János Dr.) (1-820 Hajós György terem (LD-1-820))</a></td><td>1-820 Hajós György terem (LD-1-820)</td></tr><tr><td>2022. 02. 08. 17:45 (Tuesday) - 2022. 02. 08. 19:15 (Tuesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282298046,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1256867574,&quot;enddate&quot;:&quot;\/Date(1644347700000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282298046,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644342300000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:978503001,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Game theory L+Pr. (IPM-19fmiGTEG)  - 90   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))</a></td><td>0-822 Mogyoródi József terem (LD-0-822)</td></tr><tr><td>2022. 02. 08. 19:30 (Tuesday) - 2022. 02. 08. 21:00 (Tuesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282298189,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1256867592,&quot;enddate&quot;:&quot;\/Date(1644354000000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282298189,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644348600000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:978503001,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Game theory L+Pr. (IPM-19fmiGTEG)  - 1   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))</a></td><td>0-822 Mogyoródi József terem (LD-0-822)</td></tr><tr><td>2022. 02. 09. 8:00 (Wednesday) - 2022. 02. 09. 10:00 (Wednesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300690,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1271165683,&quot;enddate&quot;:&quot;\/Date(1644400800000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300690,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644393600000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1261266407,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Societal Intelligence (IPM-21fmiSIEG)  - 90   Every week (Domonkos Márk;Gulyás László Dr.) (2-502 (LD-2-502))</a></td><td>2-502 (LD-2-502)</td></tr><tr><td>2022. 02. 09. 10:00 (Wednesday) - 2022. 02. 09. 12:00 (Wednesday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300851,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1271165799,&quot;enddate&quot;:&quot;\/Date(1644408000000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300851,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644400800000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1261266407,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Societal Intelligence (IPM-21fmiSIEG)  - 1   Every week (Domonkos Márk;Gulyás László Dr.) (0-803 Szabó József eloadó (LD-0-803))</a></td><td>0-803 Szabó József eloadó (LD-0-803)</td></tr><tr><td>2022. 02. 11. 10:00 (Friday) - 2022. 02. 11. 12:00 (Friday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1274425304,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1269856917,&quot;enddate&quot;:&quot;\/Date(1644580800000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1274425304,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644573600000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:973664177,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Academic Writing (IRM15)  - 1   Every week (Tábor Áron) (202 (módszertan) (LK-2-202))</a></td><td>202 (módszertan) (LK-2-202)</td></tr><tr><td>2022. 02. 11. 14:00 (Friday) - 2022. 02. 11. 16:00 (Friday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282284428,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1259433538,&quot;enddate&quot;:&quot;\/Date(1644595200000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282284428,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644588000000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1230905166,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Foundations of Data Science L. (IPM-21fmiFDSE)  - 1   Every week (Lóczi Lajos Mihály) (00-718 Erdos Pál terem (LD-00-718))</a></td><td>00-718 Erdos Pál terem (LD-00-718)</td></tr><tr><td>2022. 02. 11. 16:00 (Friday) - 2022. 02. 11. 17:30 (Friday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300291,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1270961019,&quot;enddate&quot;:&quot;\/Date(1644600600000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300291,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644595200000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1270957517,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Deep Network Developments (IPM-21fmiDNDEG)  - 90   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))</a></td><td>0-805 Fejér Lipót terem (LD-0-805)</td></tr><tr><td>2022. 02. 11. 17:45 (Friday) - 2022. 02. 11. 19:15 (Friday)</td><td> Class </td><td><a role="link" onclick="__doPostBack(&#39;gomb1&#39;, &#39;{&quot;classinstanceid&quot;:1282300487,&quot;consultationappointmentid&quot;:null,&quot;consultationid&quot;:null,&quot;courseid&quot;:1270961091,&quot;enddate&quot;:&quot;\/Date(1644606900000)\/&quot;,&quot;events&quot;:null,&quot;examid&quot;:0,&quot;id&quot;:1282300487,&quot;islighter&quot;:false,&quot;meetingid&quot;:null,&quot;menuindex&quot;:0,&quot;midtermtaskid&quot;:null,&quot;ownername&quot;:&quot;&quot;,&quot;startdate&quot;:&quot;\/Date(1644601500000)\/&quot;,&quot;studenttraningid&quot;:1223195869,&quot;subjectid&quot;:1270957517,&quot;taldontesrevar&quot;:false,&quot;termid&quot;:70623,&quot;type&quot;:0}&#39;);"> Deep Network Developments (IPM-21fmiDNDEG)  - 1   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))</a></td><td>0-805 Fejér Lipót terem (LD-0-805)</td></tr></tbody></table></div></div><div>
+            <div id="calhead" style="padding-left:1px;padding-right:1px;">          
+                                
+            <div id="caltoolbar" class="ctoolbar">
+            <table style="width:100%;">
+            </table>
+            <div class="clear"></div>
+            </div>
+            </div>
+            <div style="padding:1px;">
+                <div class="t1 chromeColor">
+                    &nbsp;</div>
+                <div class="t2 chromeColor">
+                    &nbsp;</div>
+                <div id="dvCalMain" class="calmain printborder" aria-hidden="True" style="height: 800px;">
+                    <div id="gridcontainer" style="overflow-y: visible; height: 531px;"><div id="dvwkcontaienr" class="wktopcontainer"><table class="wk-top" border="0" cellpadding="0" cellspacing="0"><tbody><tr><th width="60" rowspan="3">&nbsp;</th><th abbr="7/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Monday</span></div></th><th abbr="8/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Tuesday</span></div></th><th abbr="9/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Wednesday</span></div></th><th abbr="10/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Thursday</span></div></th><th abbr="11/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Friday</span></div></th><th abbr="12/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Saturday</span></div></th><th abbr="13/2/2022" class="gcweekname" scope="col"><div title="Go to the current date" class="wk-dayname"><span class="wk-daylink">Sunday</span></div></th><th width="16" rowspan="3">&nbsp;</th></tr><tr><td class="wk-allday" colspan="7"><div id="weekViewAllDaywk"><table class="st-grid" cellpadding="0" cellspacing="0"><tbody><tr><td class="st-c st-s" ch="qkadd" abbr="2022-2-7" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-8" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-9" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-10" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-11" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-12" axis="00:00">&nbsp;</td><td class="st-c st-s" ch="qkadd" abbr="2022-2-13" axis="00:00">&nbsp;</td></tr></tbody></table></div></td></tr><tr><td style="height: 5px;" colspan="7"></td></tr></tbody></table></div><div id="dvtec" class="scolltimeevent" scrolltop="NaN" style="height: 758px;"><table style="table-layout: fixed;width:100%" cellspacing="0" cellpadding="0"><tbody><tr><td><table style="height:756px" id="tgTable" class="tg-timedevents" cellspacing="0" cellpadding="0"><tbody><tr><td style="width:60px;"></td><td colspan="7"><div id="tgspanningwrapper" class="tg-spanningwrapper"><div style="font-size: 26px" class="tg-hourmarkers"><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div><div class="tg-dualmarker"></div></div></div></td></tr><tr><td style="width: 60px" class="tg-times"><div style="height: 53px" class="tg-time">08:00</div><div style="height: 53px" class="tg-time">09:00</div><div style="height: 53px" class="tg-time">10:00</div><div style="height: 53px" class="tg-time">11:00</div><div style="height: 53px" class="tg-time">12:00</div><div style="height: 53px" class="tg-time">13:00</div><div style="height: 53px" class="tg-time">14:00</div><div style="height: 53px" class="tg-time">15:00</div><div style="height: 53px" class="tg-time">16:00</div><div style="height: 53px" class="tg-time">17:00</div><div style="height: 53px" class="tg-time">18:00</div><div style="height: 53px" class="tg-time">19:00</div><div style="height: 53px" class="tg-time">20:00</div><div style="height: 53px" class="tg-time">21:00</div></td><td class="tg-col" ch="qkadd" abbr="7/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol0" class="tg-col-eventwrapper"><div style="WIDTH:100%;top:216px;left:0%;" title="Time:2022 February 7 (Monday) 12:00 -  14:00
+Event:[Class] Foundations of Data Science Pr. (IPM-21fmiFDSG)  - 1   Every week (Lóczi Lajos Mihály) (0-820 Hunfalvy János terem (LD-0-820))
+Place:0-820 Hunfalvy János terem (LD-0-820)" class="chip chip0 "><div class="dhdV" style="display:none">0$$0$Mon Feb 07 2022 14:00:00 GMT+0800 (中国标准时间)$1282284537$false$0-820 Hunfalvy János terem (LD-0-820)$0$[object Object]$0$Mon Feb 07 2022 12:00:00 GMT+0800 (中国标准时间)$2$[Class] Foundations of Data Science Pr. (IPM-21fmiFDSG)  - 1   Every week (Lóczi Lajos Mihály) (0-820 Hunfalvy János terem (LD-0-820))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">12:00 - 14:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Foundations of Data Science Pr. (IPM-21fmiFDSG)  - 1   Every week (Lóczi Lajos Mihály) (0-820 Hunfalvy János terem (LD-0-820))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:324px;left:0%;" title="Time:2022 February 7 (Monday) 14:00 -  16:00
+Event:[Class] Academic Writing and Presentation Skills (USPV:2)  - 1   Every week (Dóczi Brigitta) (2.201 kutatói kémiai labor (LK-2-201))
+Place:2.201 kutatói kémiai labor (LK-2-201)" class="chip chip1 "><div class="dhdV" style="display:none">0$$0$Mon Feb 07 2022 16:00:00 GMT+0800 (中国标准时间)$1274439911$false$2.201 kutatói kémiai labor (LK-2-201)$0$[object Object]$0$Mon Feb 07 2022 14:00:00 GMT+0800 (中国标准时间)$2$[Class] Academic Writing and Presentation Skills (USPV:2)  - 1   Every week (Dóczi Brigitta) (2.201 kutatói kémiai labor (LK-2-201))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">14:00 - 16:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Academic Writing and Presentation Skills (USPV:2)  - 1   Every week (Dóczi Brigitta) (2.201 kutatói kémiai labor (LK-2-201))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div></div><div class="tg-col-overlaywrapper" id="tgOver0"></div></td><td class="tg-col" ch="qkadd" abbr="8/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol1" class="tg-col-eventwrapper"><div style="WIDTH:100%;top:0px;left:0%;" title="Time:2022 February 8 (Tuesday) 08:00 -  10:00
+Event:[Class] Computational Intelligence (IPM-21fmiCIEG)  - 90   Every week (Domonkos Márk;Botzheim János Dr.) (0-818 Soó Rezso terem (k) (LD-0-818))
+Place:0-818 Soó Rezso terem (k) (LD-0-818)" class="chip chip0 "><div class="dhdV" style="display:none">0$$0$Tue Feb 08 2022 10:00:00 GMT+0800 (中国标准时间)$1282300051$false$0-818 Soó Rezso terem (k) (LD-0-818)$0$[object Object]$0$Tue Feb 08 2022 08:00:00 GMT+0800 (中国标准时间)$2$[Class] Computational Intelligence (IPM-21fmiCIEG)  - 90   Every week (Domonkos Márk;Botzheim János Dr.) (0-818 Soó Rezso terem (k) (LD-0-818))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">08:00 - 10:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Computational Intelligence (IPM-21fmiCIEG)  - 90   Every week (Domonkos Márk;Botzheim János Dr.) (0-818 Soó Rezso terem (k) (LD-0-818))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:324px;left:0%;" title="Time:2022 February 8 (Tuesday) 14:00 -  16:00
+Event:[Class] Computational Intelligence (IPM-21fmiCIEG)  - 1   Every week (Domonkos Márk;Botzheim János Dr.) (1-820 Hajós György terem (LD-1-820))
+Place:1-820 Hajós György terem (LD-1-820)" class="chip chip1 "><div class="dhdV" style="display:none">0$$0$Tue Feb 08 2022 16:00:00 GMT+0800 (中国标准时间)$1282300172$false$1-820 Hajós György terem (LD-1-820)$0$[object Object]$0$Tue Feb 08 2022 14:00:00 GMT+0800 (中国标准时间)$2$[Class] Computational Intelligence (IPM-21fmiCIEG)  - 1   Every week (Domonkos Márk;Botzheim János Dr.) (1-820 Hajós György terem (LD-1-820))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">14:00 - 16:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Computational Intelligence (IPM-21fmiCIEG)  - 1   Every week (Domonkos Márk;Botzheim János Dr.) (1-820 Hajós György terem (LD-1-820))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:526px;left:0%;" title="Time:2022 February 8 (Tuesday) 17:45 -  19:15
+Event:[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 90   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))
+Place:0-822 Mogyoródi József terem (LD-0-822)" class="chip chip2 "><div class="dhdV" style="display:none">0$$0$Tue Feb 08 2022 19:15:00 GMT+0800 (中国标准时间)$1282298046$false$0-822 Mogyoródi József terem (LD-0-822)$0$[object Object]$0$Tue Feb 08 2022 17:45:00 GMT+0800 (中国标准时间)$2$[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 90   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 77px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">17:45 - 19:15 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 90   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:621px;left:0%;" title="Time:2022 February 8 (Tuesday) 19:30 -  21:00
+Event:[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 1   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))
+Place:0-822 Mogyoródi József terem (LD-0-822)" class="chip chip3 "><div class="dhdV" style="display:none">0$$0$Tue Feb 08 2022 21:00:00 GMT+0800 (中国标准时间)$1282298189$false$0-822 Mogyoródi József terem (LD-0-822)$0$[object Object]$0$Tue Feb 08 2022 19:30:00 GMT+0800 (中国标准时间)$2$[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 1   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 77px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">19:30 - 21:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Game theory L+Pr. (IPM-19fmiGTEG)  - 1   Every week (Domonkos Márk;Berec Eszter;Szidarovszky Ferenc Dr.) (0-822 Mogyoródi József terem (LD-0-822))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div></div><div class="tg-col-overlaywrapper" id="tgOver1"></div></td><td class="tg-col" ch="qkadd" abbr="9/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol2" class="tg-col-eventwrapper"><div style="WIDTH:100%;top:0px;left:0%;" title="Time:2022 February 9 (Wednesday) 08:00 -  10:00
+Event:[Class] Societal Intelligence (IPM-21fmiSIEG)  - 90   Every week (Domonkos Márk;Gulyás László Dr.) (2-502 (LD-2-502))
+Place:2-502 (LD-2-502)" class="chip chip0 "><div class="dhdV" style="display:none">0$$0$Wed Feb 09 2022 10:00:00 GMT+0800 (中国标准时间)$1282300690$false$2-502 (LD-2-502)$0$[object Object]$0$Wed Feb 09 2022 08:00:00 GMT+0800 (中国标准时间)$2$[Class] Societal Intelligence (IPM-21fmiSIEG)  - 90   Every week (Domonkos Márk;Gulyás László Dr.) (2-502 (LD-2-502))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">08:00 - 10:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Societal Intelligence (IPM-21fmiSIEG)  - 90   Every week (Domonkos Márk;Gulyás László Dr.) (2-502 (LD-2-502))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:108px;left:0%;" title="Time:2022 February 9 (Wednesday) 10:00 -  12:00
+Event:[Class] Societal Intelligence (IPM-21fmiSIEG)  - 1   Every week (Domonkos Márk;Gulyás László Dr.) (0-803 Szabó József eloadó (LD-0-803))
+Place:0-803 Szabó József eloadó (LD-0-803)" class="chip chip1 "><div class="dhdV" style="display:none">0$$0$Wed Feb 09 2022 12:00:00 GMT+0800 (中国标准时间)$1282300851$false$0-803 Szabó József eloadó (LD-0-803)$0$[object Object]$0$Wed Feb 09 2022 10:00:00 GMT+0800 (中国标准时间)$2$[Class] Societal Intelligence (IPM-21fmiSIEG)  - 1   Every week (Domonkos Márk;Gulyás László Dr.) (0-803 Szabó József eloadó (LD-0-803))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">10:00 - 12:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Societal Intelligence (IPM-21fmiSIEG)  - 1   Every week (Domonkos Márk;Gulyás László Dr.) (0-803 Szabó József eloadó (LD-0-803))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div></div><div class="tg-col-overlaywrapper" id="tgOver2"></div></td><td class="tg-col" ch="qkadd" abbr="10/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol3" class="tg-col-eventwrapper"></div><div class="tg-col-overlaywrapper" id="tgOver3"></div></td><td class="tg-col" ch="qkadd" abbr="11/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol4" class="tg-col-eventwrapper"><div style="WIDTH:100%;top:108px;left:0%;" title="Time:2022 February 11 (Friday) 10:00 -  12:00
+Event:[Class] Academic Writing (IRM15)  - 1   Every week (Tábor Áron) (202 (módszertan) (LK-2-202))
+Place:202 (módszertan) (LK-2-202)" class="chip chip0 "><div class="dhdV" style="display:none">0$$0$Fri Feb 11 2022 12:00:00 GMT+0800 (中国标准时间)$1274425304$false$202 (módszertan) (LK-2-202)$0$[object Object]$0$Fri Feb 11 2022 10:00:00 GMT+0800 (中国标准时间)$2$[Class] Academic Writing (IRM15)  - 1   Every week (Tábor Áron) (202 (módszertan) (LK-2-202))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">10:00 - 12:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Academic Writing (IRM15)  - 1   Every week (Tábor Áron) (202 (módszertan) (LK-2-202))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:324px;left:0%;" title="Time:2022 February 11 (Friday) 14:00 -  16:00
+Event:[Class] Foundations of Data Science L. (IPM-21fmiFDSE)  - 1   Every week (Lóczi Lajos Mihály) (00-718 Erdos Pál terem (LD-00-718))
+Place:00-718 Erdos Pál terem (LD-00-718)" class="chip chip1 "><div class="dhdV" style="display:none">0$$0$Fri Feb 11 2022 16:00:00 GMT+0800 (中国标准时间)$1282284428$false$00-718 Erdos Pál terem (LD-00-718)$0$[object Object]$0$Fri Feb 11 2022 14:00:00 GMT+0800 (中国标准时间)$2$[Class] Foundations of Data Science L. (IPM-21fmiFDSE)  - 1   Every week (Lóczi Lajos Mihály) (00-718 Erdos Pál terem (LD-00-718))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 104px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">14:00 - 16:00 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Foundations of Data Science L. (IPM-21fmiFDSE)  - 1   Every week (Lóczi Lajos Mihály) (00-718 Erdos Pál terem (LD-00-718))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:432px;left:0%;" title="Time:2022 February 11 (Friday) 16:00 -  17:30
+Event:[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 90   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))
+Place:0-805 Fejér Lipót terem (LD-0-805)" class="chip chip2 "><div class="dhdV" style="display:none">0$$0$Fri Feb 11 2022 17:30:00 GMT+0800 (中国标准时间)$1282300291$false$0-805 Fejér Lipót terem (LD-0-805)$0$[object Object]$0$Fri Feb 11 2022 16:00:00 GMT+0800 (中国标准时间)$2$[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 90   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 77px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">16:00 - 17:30 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 90   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div><div style="WIDTH:100%;top:526px;left:0%;" title="Time:2022 February 11 (Friday) 17:45 -  19:15
+Event:[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 1   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))
+Place:0-805 Fejér Lipót terem (LD-0-805)" class="chip chip3 "><div class="dhdV" style="display:none">0$$0$Fri Feb 11 2022 19:15:00 GMT+0800 (中国标准时间)$1282300487$false$0-805 Fejér Lipót terem (LD-0-805)$0$[object Object]$0$Fri Feb 11 2022 17:45:00 GMT+0800 (中国标准时间)$2$[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 1   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))$$</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6" class="ct">&nbsp;</div><dl style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; HEIGHT: 77px; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6;"><dt style="BACKGROUND-COLOR:#9BB6E6">17:45 - 19:15 <i class="cic cic-tmr">&nbsp;</i></dt><dd><span>[Class] Deep Network Developments (IPM-21fmiDNDEG)  - 1   Every week (Baranyi Gábor;Fóthi Áron;Lőrincz András;Dos Santos Melicio Bruno Carlos;Varga Viktor) (0-805 Fejér Lipót terem (LD-0-805))</span></dd><div class="resizer" style="display:none"><div class="rszr_icon">&nbsp;</div></div></dl><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BACKGROUND-COLOR:#B3C5E3; BORDER-TOP-COLOR: #9BB6E6; BORDER-RIGHT-COLOR: #9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb1">&nbsp;</div><div style="BORDER-BOTTOM-COLOR:#9BB6E6; BORDER-TOP-COLOR:#9BB6E6; BORDER-RIGHT-COLOR:#9BB6E6; BORDER-LEFT-COLOR:#9BB6E6" class="cb2">&nbsp;</div></div></div><div class="tg-col-overlaywrapper" id="tgOver4"></div></td><td class="tg-col" ch="qkadd" abbr="12/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol5" class="tg-col-eventwrapper"></div><div class="tg-col-overlaywrapper" id="tgOver5"></div></td><td class="tg-col" ch="qkadd" abbr="13/2/2022"><div style="margin-bottom: -1008px; height: 1008px" id="tgCol6" class="tg-col-eventwrapper"></div><div class="tg-col-overlaywrapper" id="tgOver6"></div></td></tr></tbody></table></td></tr></tbody></table></div></div> </div>
+                <div class="t2 chromeColor">
+                    &nbsp;</div>
+                <div class="t1 chromeColor">
+                    &nbsp;
+                </div>   
+                </div></div></div></span>
+
+							</div>
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_ctl00">
+								
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+							</div>
+
+
+						</div>
+
+					</div>
+
+				</div><div id="c_common_timetable_ctl01" disabled="disabled" class="aspNetDisabled" style="display:none;visibility:hidden;">
+					
+<div id="upFunction_c_common_timetable_upParent_tabOrarend_ctl01_up_timeTableOrg">
+
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+
+</div>
+</td>
+
+<td id="function_table_rightside" class="FunctionRightSide"></td>
+
+<td id="function_table_space" class="right_side_space"></td>
+
+</tr>
+<tr id="function_tablefooter" class="no_style">
+	<td class="FunctionFooterLeftCorner"></td>
+	<td class="FunctionFooter"></td>
+	<td class="FunctionFooterRightCorner"></td>
+	<td class="right_side_space"></td>
+</tr>
+
+</tbody></table>
+</td>
+</tr>
+</tbody></table>
+
+<div id="upPwdExpiredWarning">
+	
+
+
+
+
+</div>
+
+<div id="upPasswordChangerMsg">
+	
+
+
+
+</div>
+<div id="upEVOPUserApproval">
+	
+
+
+</div>
+<div id="upEVOPUserApprovalMsg">
+	
+
+
+
+</div>
+<div id="upRequiredMessageReader">
+	
+
+
+</div>
+<div id="upReadMessageModal">
+	
+
+
+</div>
+<div id="upExternalMessages">
+	
+
+
+</div>
+<div id="upNickNameModal">
+	
+
+
+</div>
+<div id="TrainingUpdatePanel1">
+	
+
+
+</div>
+<div id="RoleUpdatePanel1">
+	
+
+
+</div>
+<div id="upSystemParams">
+	
+
+
+
+</div>
+<div id="upOutlookExport">
+	
+
+
+</div>
+<div id="upEditLabel">
+	
+
+
+</div>
+<div id="upRoleRequestComment">
+	
+
+
+</div>
+<div id="upOktatoiVelemenyezes">
+	
+
+
+</div>
+<div id="panelSessionEndBackGround" class="modalBackground" style="display: none; width: 2495px; height: 1313px; position: absolute; top: 0px; left: 0px;">
+</div>
+<div id="panelSPGridBackGround" class="modalSPGridBackground" style="display: none;">
+</div>
+<div id="modalpanelAttentionSessionEnd" style="display: none; position: absolute; left: 982.5px; top: 556.5px;">
+<table class="modaltableSessionTimeout" border="0">
+<tbody>
+<tr>
+<td class="modalheaderleftcorner">&nbsp;
+</td>
+<td class="modalheadercell">
+<div style="width: 100%;" id="upFunction_c_messages_upModal_titleupFunction_c_messages_upModal_modalextenderAddMessage">
+<table class="modalpanel_header_NoMove" border="0">
+<tbody>
+<tr>
+<td id="upFunction_c_messages_upModal_titleupFunction_c_messages_upModal_modalextenderAddMessage__coltitle" class="modalpanel_header_caption"></td>
+<td class="modalpanel_header_closeimage pointer"></td>
+<td class="modalpanel_header_fullscreenimage pointer"></td>
+<td class="modalpanel_header_closeimage pointer">
+<label for="modalpopup_close" class="hiddenforlabel">
+Figyelmeztetés bezárás</label>
+<input type="image" src="./Neptun.Net ELTE_HW5_files/modalpopup_close.gif" onclick="javascript: DoCloseModalPopup(false); return false;" style="border-right-width: 0px; border-top-width: 0px; border-bottom-width: 0px; border-left-width: 0px" value="" alt="Figyelmeztetés bezárás" id="modalpopup_close">
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</td>
+<td class="modalheaderrightcorner"></td>
+</tr>
+<tr>
+<td class="modalbodyleft"></td>
+<td class="modalbody">
+<div id="modalpanelcontentupFunction" class="modalpanelcontent_noscrollbar_noheight">
+<div>
+<div id="userctrlupFunction">
+<div class="containerpanel">
+<div style="padding: 10px;">
+
+<div style="position: relative; padding-top: 10px; padding-bottom: 5px; text-align: center;
+border: solid black 0px;">
+<span id="attentionSessionEnd_lblMessage">Warning! The available session will expire in </span>
+<span id="attentionSessionEnd_lblCountDown" class="lblCountDownTimerNumber" style="color: Red; font-weight: bold;"> 894 </span>
+<span id="attentionSessionEnd_lblMessage2"> seconds. If you want to start it again, please click on the OK button.</span>
+</div>
+<div class="containerpanel" style="position: relative; padding-top: 10px; text-align: center;
+border: solid black 0px; width: 100%;">
+<table class="containerpaneltable" align="center">
+<tbody><tr>
+<td align="center">
+<table style="width:180px;">
+<tbody><tr>
+<td>
+<input type="button" class="button" onclick="javascript:DoCloseModalPopup(true);return false;" value="OK">
+</td>
+<td>
+<input type="button" class="button" onclick="javascript:DoCloseModalPopup(false);return false;" value="Back">
+</td>
+</tr>
+</tbody></table>
+</td>
+</tr>
+</tbody></table>
+</div>
+<!-- ESC gombra szintén session-t hosszabbít-->
+<script language="javascript" type="text/javascript">
+$(document).keydown(function(e) {
+if (e.keyCode == 27) { DoCloseModalPopup(true); return false; }
+});
+</script>
+</div>
+</div>
+</div>
+</div>
+</div>
+</td>
+<td class="modalbodyright"></td>
+</tr>
+<tr>
+<td class="modalfooterleftcorner"></td>
+<td class="modalfooter"></td>
+<td class="modalfooterrightcorner_NoResize"></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div id="progress" class="modalBckgroundMain" style="display: none; z-index: 10000000; height: 1369px;">
+<div id="imgdiv" class="progressimagediv" style="z-index: 10000001; position: absolute; left: 1240px; top: 685px;">
+<img id="Image2" alt="Folyamatban" src="./Neptun.Net ELTE_HW5_files/loading.gif">
+</div>
+</div>
+<div id="customtextprogress" class="modalBckgroundMain" style="display: none">
+<div id="customtextprogressdiv">
+<img id="SDAImage2" alt="Folyamatban" src="./Neptun.Net ELTE_HW5_files/loading.gif"><br>
+<br>
+<span id="lbCustomTextProgress"></span>
+</div>
+</div>
+<div id="transparentprogress" class="transparentBg" style="display: none; z-index: 10000000; height: 1369px;">
+<div id="transparentprogressdiv" style="z-index: 10000001;">
+</div>
+<div id="upDetail">
+
+</div>
+<div id="filedownload">
+	
+<label></label><a id="filedownload_lbnDocumentDownload" title="&amp;nbsp;" href="javascript:__doPostBack(&#39;filedownload$lbnDocumentDownload&#39;,&#39;&#39;)"></a><input type="hidden" name="filedownload$hfDocumentId" id="filedownload_hfDocumentId">
+
+</div>
+</div></fieldset>
+
+
+<script type="text/javascript">
+//<![CDATA[
+Sys.Application.add_load(RebindAll);
+                                   function RebindAll() {
+                                    var tabpanel1 = new tabpanel('c_common_timetable_tabOrarend');
+                                    Sys.Application.remove_load(RebindAll);
+                                   }  function OnActiveTabChanged(sender,e) {               
+                                      SDAWebTabClick(sender);
+                                  }function OpenHelp(url){window.open(url, '_blank');}var menu1 = new menubar('mb1', false);function CallCampusErrorMessage(){DialogConfirmation('Warning!','This service is not available! </br> Please contact the registrar’s department!','Ok','Cancel','btnGoToCampus2','warning.png','Ok','null');}function OpenCampusWindow() {window.open('https://campus.rufusz.hu/microsoftdownload/Links.aspx?s=kc102vvhqflih0kixjgbypxo', '_blank');}function OpenUnipollWindow() {window.open('https://unipoll.hu/Survey.aspx?surveyid=133913591&lng=hu-HU&myparam=/+aPson5dtYLqT8YO5sxOQT8+6WEAAehV7KUQmPHFt+VA+yi53SqgR9ckt0CAzPDik5F4FrYkb8/mcIBPTXJ7w==', '_blank');}//]]>
+</script>
+<script type="text/javascript">var ariaobject = new AriaObject('calendar_chkTime', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkExam', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkAppointment', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkTask', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkRegisterList', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkKonzultacio', false, null);</script><script type="text/javascript">var ariaobject = new AriaObject('calendar_chkIdopontFoglalas', false, null);</script>
+<script type="text/javascript">
+//<![CDATA[
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.SDAGadget, {"BodyID":"upBoxes_upRSS_gdgRSS_gdgRSS_body","ChooseColorID":"upBoxes_upRSS_gdgRSS_gdgRSS_ColorBtn","CloseButtonID":"upBoxes_upRSS_gdgRSS_gdgRSS_CloseBtn","DivChooseColorID":"upBoxes_upRSS_gdgRSS_gdgRSS_divChooseColor","GadgetContainerUniqueID":null,"GadgetID":"upBoxes_upRSS_gdgRSS_gdgRSS","GadgetTableID":"upBoxes_upRSS_gdgRSS_ctl20","GadgetType":"Nincs_beallitva","IsRefresh":false}, null, null, $get("upBoxes_upRSS_gdgRSS"));
+});
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.SDAGadget, {"BodyID":"upBoxes_upMessage_gdgMessage_gdgMessage_body","ChooseColorID":"upBoxes_upMessage_gdgMessage_gdgMessage_ColorBtn","CloseButtonID":"upBoxes_upMessage_gdgMessage_gdgMessage_CloseBtn","DivChooseColorID":"upBoxes_upMessage_gdgMessage_gdgMessage_divChooseColor","GadgetContainerUniqueID":null,"GadgetID":"upBoxes_upMessage_gdgMessage_gdgMessage","GadgetTableID":"upBoxes_upMessage_gdgMessage_ctl20","GadgetType":"Nincs_beallitva","IsRefresh":false}, null, null, $get("upBoxes_upMessage_gdgMessage"));
+});
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.SDAGadget, {"BodyID":"upBoxes_upfavorites_gdgFavorite_gdgFavorite_body","ChooseColorID":"upBoxes_upfavorites_gdgFavorite_gdgFavorite_ColorBtn","CloseButtonID":"upBoxes_upfavorites_gdgFavorite_gdgFavorite_CloseBtn","DivChooseColorID":"upBoxes_upfavorites_gdgFavorite_gdgFavorite_divChooseColor","GadgetContainerUniqueID":null,"GadgetID":"upBoxes_upfavorites_gdgFavorite_gdgFavorite","GadgetTableID":"upBoxes_upfavorites_gdgFavorite_ctl20","GadgetType":"Nincs_beallitva","IsRefresh":false}, null, null, $get("upBoxes_upfavorites_gdgFavorite"));
+});
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.SDAGadget, {"BodyID":"upBoxes_upCalendar_gdgCalendar_gdgCalendar_body","ChooseColorID":"upBoxes_upCalendar_gdgCalendar_gdgCalendar_ColorBtn","CloseButtonID":"upBoxes_upCalendar_gdgCalendar_gdgCalendar_CloseBtn","DivChooseColorID":"upBoxes_upCalendar_gdgCalendar_gdgCalendar_divChooseColor","GadgetContainerUniqueID":null,"GadgetID":"upBoxes_upCalendar_gdgCalendar_gdgCalendar","GadgetTableID":"upBoxes_upCalendar_gdgCalendar_ctl20","GadgetType":"Nincs_beallitva","IsRefresh":false}, null, null, $get("upBoxes_upCalendar_gdgCalendar"));
+});
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.SDAGadget, {"BodyID":"upBoxes_upForum_gdgForum_upParent_gadget_gadget_body","ChooseColorID":"gdgForum_ColorBtn","CloseButtonID":"gdgForum_CloseBtn","DivChooseColorID":"upBoxes_upForum_gdgForum_upParent_gadget_gadget_divChooseColor","GadgetContainerUniqueID":null,"GadgetID":"upBoxes_upForum_gdgForum_upParent_gadget_gadget","GadgetTableID":"upBoxes_upForum_gdgForum_upParent_gadget_ctl20","GadgetType":"Forum","IsRefresh":false}, null, null, $get("upBoxes_upForum_gdgForum_upParent_gadget"));
+});
+Sys.Application.add_init(function() {
+    $create(SDA.Neptun.WebControls.TimeTable, {"TimeTableFunctionMode":0,"isBlind":true,"isNewEventEnabled":true,"uniqueID":"upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upTimeTable_TimeTable1"}, null, null, $get("upFunction_c_common_timetable_upParent_tabOrarend_ctl00_up_timeTablePerson_upMaxLimit_personTimetable_upTimeTable_TimeTable1"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.TabPanel, {"headerTab":$get("__tab_c_common_timetable_ctl00"),"ownerID":"c_common_timetable_tabOrarend","wasLoadedOnce":false}, null, {"owner":"c_common_timetable_tabOrarend"}, $get("c_common_timetable_ctl00"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.TabPanel, {"enabled":false,"headerTab":$get("__tab_c_common_timetable_ctl01"),"ownerID":"c_common_timetable_tabOrarend","wasLoadedOnce":false}, null, {"owner":"c_common_timetable_tabOrarend"}, $get("c_common_timetable_ctl01"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.TabContainer, {"activeTabIndex":0,"autoPostBackId":"upFunction$c_common_timetable$upParent$tabOrarend","clientStateField":$get("c_common_timetable_tabOrarend_ClientState"),"onDemand":false,"tabStripPlacement":0,"useVerticalStripPlacement":false}, {"activeTabChanged":SDAWebTabClick}, null, $get("c_common_timetable_tabOrarend"));
+});
+//]]>
+</script>
+<span style="display: none !important;"><input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value=""></span><span style="display: none !important;"><input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value=""></span><span style="display: none !important;"><input type="hidden" name="__LASTFOCUS" id="__LASTFOCUS" value=""></span><span style="display: none !important;"><input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPaA8FDzhkOWU3ZmU0NTExYWEwNxgDBR5fX0NvbnRyb2xzUmVxdWlyZVBvc3RCYWNrS2V5X18WKAV8dXBGdW5jdGlvbiRjX2NvbW1vbl90aW1ldGFibGUkdXBQYXJlbnQkdGFiT3JhcmVuZCRjdGwwMCR1cF90aW1lVGFibGVQZXJzb24kdXBNYXhMaW1pdCRwZXJzb25UaW1ldGFibGUkdXBUaW1lVGFibGUkVGltZVRhYmxlMQUJYnRuTGFuZ18wBQlidG5MYW5nXzEFCWJ0bkxhbmdfMgULYnRuc2tpblBpbmsFC2J0bnNraW5CbHVlBQxidG5za2luR3JlZW4FDWJ0bnNraW5PcmFuZ2UFDmJ0bnNraW5UZWFjaGVyBQ1idG5za2luUHVycGxlBR5pbWdTa2luQ2hvb3NlclBhcnRpYWxseVNpZ2h0ZWQFHXVwQm94ZXMkdXBCb3hlc0J1dHRvbnMkYnRuUnNzBSF1cEJveGVzJHVwQm94ZXNCdXR0b25zJGJ0bk1lc3NhZ2UFInVwQm94ZXMkdXBCb3hlc0J1dHRvbnMkYnRuRmF2b3JpdGUFInVwQm94ZXMkdXBCb3hlc0J1dHRvbnMkYnRuQ2FsZW5kYXIFH3VwQm94ZXMkdXBCb3hlc0J1dHRvbnMkYnRuRm9ydW0FJnVwQm94ZXMkdXBSU1MkZ2RnUlNTJGdkZ1JTU19SZWZyZXNoQnRuBSR1cEJveGVzJHVwUlNTJGdkZ1JTUyRnZGdSU1NfQ2xvc2VCdG4FMnVwQm94ZXMkdXBNZXNzYWdlJGdkZ01lc3NhZ2UkZ2RnTWVzc2FnZV9SZWZyZXNoQnRuBTB1cEJveGVzJHVwTWVzc2FnZSRnZGdNZXNzYWdlJGdkZ01lc3NhZ2VfQ2xvc2VCdG4FNnVwQm94ZXMkdXBmYXZvcml0ZXMkZ2RnRmF2b3JpdGUkZ2RnRmF2b3JpdGVfUmVmcmVzaEJ0bgU0dXBCb3hlcyR1cGZhdm9yaXRlcyRnZGdGYXZvcml0ZSRnZGdGYXZvcml0ZV9DbG9zZUJ0bgU1dXBCb3hlcyR1cENhbGVuZGFyJGdkZ0NhbGVuZGFyJGdkZ0NhbGVuZGFyX1JlZnJlc2hCdG4FM3VwQm94ZXMkdXBDYWxlbmRhciRnZGdDYWxlbmRhciRnZGdDYWxlbmRhcl9DbG9zZUJ0bgU6dXBCb3hlcyR1cEZvcnVtJGdkZ0ZvcnVtJHVwUGFyZW50JGdhZGdldCRnYWRnZXRfUmVmcmVzaEJ0bgU4dXBCb3hlcyR1cEZvcnVtJGdkZ0ZvcnVtJHVwUGFyZW50JGdhZGdldCRnYWRnZXRfQ2xvc2VCdG4FMXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQFggF1cEZ1bmN0aW9uJGNfY29tbW9uX3RpbWV0YWJsZSR1cFBhcmVudCR0YWJPcmFyZW5kJGN0bDAwJHVwX3RpbWVUYWJsZVBlcnNvbiR1cE1heExpbWl0JHBlcnNvblRpbWV0YWJsZSR1cEZpbHRlciRjaGtsVGltZXRhYmxlVHlwZSQwBYIBdXBGdW5jdGlvbiRjX2NvbW1vbl90aW1ldGFibGUkdXBQYXJlbnQkdGFiT3JhcmVuZCRjdGwwMCR1cF90aW1lVGFibGVQZXJzb24kdXBNYXhMaW1pdCRwZXJzb25UaW1ldGFibGUkdXBGaWx0ZXIkY2hrbFRpbWV0YWJsZVR5cGUkMQWCAXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQkY3RsMDAkdXBfdGltZVRhYmxlUGVyc29uJHVwTWF4TGltaXQkcGVyc29uVGltZXRhYmxlJHVwRmlsdGVyJGNoa2xUaW1ldGFibGVUeXBlJDIFggF1cEZ1bmN0aW9uJGNfY29tbW9uX3RpbWV0YWJsZSR1cFBhcmVudCR0YWJPcmFyZW5kJGN0bDAwJHVwX3RpbWVUYWJsZVBlcnNvbiR1cE1heExpbWl0JHBlcnNvblRpbWV0YWJsZSR1cEZpbHRlciRjaGtsVGltZXRhYmxlVHlwZSQzBYIBdXBGdW5jdGlvbiRjX2NvbW1vbl90aW1ldGFibGUkdXBQYXJlbnQkdGFiT3JhcmVuZCRjdGwwMCR1cF90aW1lVGFibGVQZXJzb24kdXBNYXhMaW1pdCRwZXJzb25UaW1ldGFibGUkdXBGaWx0ZXIkY2hrbFRpbWV0YWJsZVR5cGUkNAWCAXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQkY3RsMDAkdXBfdGltZVRhYmxlUGVyc29uJHVwTWF4TGltaXQkcGVyc29uVGltZXRhYmxlJHVwRmlsdGVyJGNoa2xUaW1ldGFibGVUeXBlJDUFggF1cEZ1bmN0aW9uJGNfY29tbW9uX3RpbWV0YWJsZSR1cFBhcmVudCR0YWJPcmFyZW5kJGN0bDAwJHVwX3RpbWVUYWJsZVBlcnNvbiR1cE1heExpbWl0JHBlcnNvblRpbWV0YWJsZSR1cEZpbHRlciRjaGtsVGltZXRhYmxlVHlwZSQ2BYIBdXBGdW5jdGlvbiRjX2NvbW1vbl90aW1ldGFibGUkdXBQYXJlbnQkdGFiT3JhcmVuZCRjdGwwMCR1cF90aW1lVGFibGVQZXJzb24kdXBNYXhMaW1pdCRwZXJzb25UaW1ldGFibGUkdXBGaWx0ZXIkY2hrbFRpbWV0YWJsZVR5cGUkNwWCAXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQkY3RsMDAkdXBfdGltZVRhYmxlUGVyc29uJHVwTWF4TGltaXQkcGVyc29uVGltZXRhYmxlJHVwRmlsdGVyJGNoa2xUaW1ldGFibGVUeXBlJDgFggF1cEZ1bmN0aW9uJGNfY29tbW9uX3RpbWV0YWJsZSR1cFBhcmVudCR0YWJPcmFyZW5kJGN0bDAwJHVwX3RpbWVUYWJsZVBlcnNvbiR1cE1heExpbWl0JHBlcnNvblRpbWV0YWJsZSR1cEZpbHRlciRjaGtsVGltZXRhYmxlVHlwZSQ5BYMBdXBGdW5jdGlvbiRjX2NvbW1vbl90aW1ldGFibGUkdXBQYXJlbnQkdGFiT3JhcmVuZCRjdGwwMCR1cF90aW1lVGFibGVQZXJzb24kdXBNYXhMaW1pdCRwZXJzb25UaW1ldGFibGUkdXBGaWx0ZXIkY2hrbFRpbWV0YWJsZVR5cGUkMTAFgwF1cEZ1bmN0aW9uJGNfY29tbW9uX3RpbWV0YWJsZSR1cFBhcmVudCR0YWJPcmFyZW5kJGN0bDAwJHVwX3RpbWVUYWJsZVBlcnNvbiR1cE1heExpbWl0JHBlcnNvblRpbWV0YWJsZSR1cEZpbHRlciRjaGtsVGltZXRhYmxlVHlwZSQxMQWDAXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQkY3RsMDAkdXBfdGltZVRhYmxlUGVyc29uJHVwTWF4TGltaXQkcGVyc29uVGltZXRhYmxlJHVwRmlsdGVyJGNoa2xUaW1ldGFibGVUeXBlJDExBVd1cEJveGVzJHVwRm9ydW0kZ2RnRm9ydW0kdXBQYXJlbnQkZ2FkZ2V0JGN0bDM1JFZTX0Zhdm91cml0ZVRvcGljc19nYWRTbWFsbDEkbHZGYXZUb3BpY3MPPCsADgMIZgxmDQL/////D2QFMXVwRnVuY3Rpb24kY19jb21tb25fdGltZXRhYmxlJHVwUGFyZW50JHRhYk9yYXJlbmQPD2RmZKvLO8A7d3//01n/p0AoRTreK59J3i4HdAWsua53jhiq"></span><span style="display: none !important;"><input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="202EA31B"></span><span style="display: none !important;"><input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAG5Fs8su6tDs4qz1xXxLuCIWPDCaPJoEjfecDi9+jCMpOmyPtOBtpkTuhpTwlqHooX98U8Mn26tkxt8TvQ7lrkcsgu8tbxyyBWLhoQ3Zy32z6Mi7blxK8NvsXmgXV9O9zxipOpaJcaL6n6ftVilg0hp3fAAim3H3RRLzgbbOoBfC1BtagapAGDoab+mVmind6qEqv2S/USQfrpOszeG3Qcj/Jc6MS5hC1iIimI561FYinJwDI0p6T88psYR970kkj7XA3QZ+kePY4GpEKtRlOXEskJFtdy6Ac1xsjDL3cTAvnYwsrL1N2xDinEVBw3dlYxdFxYqwTdu8a1Qt7LEKV/q86hrivYgE6Ypl1mt9dckFTwZTl53CLKXwbrQ20/pVxpxslOM8zpFH7vNYMpH/5QPtCKuzhwOBvuvjnlG3hskYqJ2biF/oTF5bOsUIGWarQOXlyn4Jl8FocSEL6rM8zjIYL91EYRqodPLvy/nUCQhaaDrBUG5kNgIvaHiasRdFDKXaGV7SJ1dGyEBcLqN4coo+vooDV3dCtWeNiGdwyaIrbmYMFzFVPonuy3qjN0yZXIjCyczYzm752n/hMD3zSBKIHl8If4luAnaogv2O4iwx10wAWJRCFXZV0+yj4AxtGFy+NyF9zupYekPLA1PX/hJZmhhVS5GqDLQAl4r+FK4E4B6aAzyQ+A6aFDhehlhQrI+Lzu7FB24ZXc/4i7RgmrkjCftZ6M2fbrWegsBi04kptCj+FiHSEyiKnYLyxIrueMWsPnizKyjl1QCtzrcVhDIWXSliojvXWgN2H7lylcghPPJTJ2hSNZrtd5+s60QqAk8UvbPpQAB4T1eyVYnO/IBnQU9PgdxqHHMt2dJShmAcGEfiKOp7K5A3sLcEx09sdqkPRG6lFbc2sp7xLYu95d33Tv6CEQaP2cgowvNbQj0ldWhG0Hk9LxOorrkdfYUpE0SDjdVhTtPwbwfgQbeBwU+KNyf/46jRSuDC1c8U0pgbbMz51517FpbmfCoN4t/CCNzgq+aSLXRK8/1zct2FawQ7pHBuCq79G5Us24IOlCwfjs+39I7RdDMf76XXql+AOBHsuQrb4HyqirQYmNpDhN157mvbizOQsLxK/kGfISlecL/FLeMDSt5Mpf1XpG7U10Cx6ZTsKQydj1iEBLrtXLG5r/GlZ7si7jpFL+CLOdeT3gqORZ8CNMm0Z9ursIfElP136RukIdoBRNCKIqcnImUI7NG1qOKtWBcXTdTuGtugFLON87XRENnypOX8BPmqsGKbxnG98hrcwGZfNASka4auP2VaIG3qH9IaXxmAJtjIZw3CM+uBm8xHu9Gx27Pbw5ttzbYlMAuPMb24E2iuPVtCPt5Dy5P8PEueWYzpTf38JQbSDvpiWLmAMmXaIojcgXGrC8viNaVesDkALZ6myd27VTCUq3lW0THLcREjzXFZLlu/XCXTsFj8AE0/NTqNoZVQpNqy/6A1IDsAzlUefLl1BaaqEpRkiOa4UC01FTHHZyonswkjKarSDXBPAiolBuyvbp77pra0XcC574emHC72hw6u4o8U8FsNLaOdjB8g4Myuiqr/74gBjYAKX85QAmx2NaMbL2xlxDIrIBSyHG91/q45P3Sf2up4HZzDZk4gpp23dTzy/7tvqsoxr/wjvpPMek0hracyD9CP7nWmwLPMp8D53ITmbmCBnWldLAFBAqDW80z9kuZcRCfDXAmWPR6yNKfVnYWsoZ/9u3zrEpmtsnNP3w+LZFsN9urB/tjOEgV0sCwDIiegmllK66F6YcO2tki8mFy5bqRLb84P4tFbe4+d150Yfb+c/LmHJG3tg4Za7R+qj5uGew68JQcMnr+MWJS+SIaTs445ZxOF+ecPCxJrjrz1wwIbE6rg52tBp110AZKGx+vQA1rSH9TDqN0nYaocoOfw13Y+t7AFJBMt6SyEmocN+A5N0WcC9bqR4dPKHuzk6mpV2EXqTaqFjF2ys5Wmr+k/zy5UXtw4orazLXceqPAED6bAXeoN/abABcAszWyd5j9EXqItrXyoP5mxtcj+UUGkjyNXqwP68TseooSteMQjf6snhCOnYNd1DCL1j3f2Oibj1oQsWjM42qaJmjDXTAxryqh0whqvcOCD/vygBEO0QKCHbsDUPxWCb0uj5iO3YFxDr/gzKPz6YJ8tGZOnFKR1ZoCVYw9noWcURjmbH4z1l/0YPbhZ0IeCRLiJltCzK3c9iK3Qu+E1zb3xrdZnNmHOcyXSlCiKuJDuIVzNOo6CuE5J1fFNDEFNnOFQ3iA3dFSF7rmBKWi20aKtqcHiWa0rhXIO0zt1BprOKKR/fd6tRDt3KcgbU3X9M0lzcgIYBLIdKMV+9HcJrD6IGrM/EPgHGb5HE0QManus"></span></form>
+
+
+<div id="gridEvent" style="display:none;"></div><div id="BBIT_DP_CONTAINER" class="bbit-dp" style="width:175px;z-index:999;"><table class="dp-maintable" cellspacing="0" cellpadding="0" style="width:175px;"><tbody><tr><td><table class="bbit-dp-top" cellspacing="0"><tbody><tr><td class="bbit-dp-top-left"> <a id="BBIT_DP_LEFTBTN" href="javascript:void(0);" title="Previous month">&nbsp;</a></td><td class="bbit-dp-top-center" align="center"><em><button id="BBIT_DP_YMBTN"></button></em></td><td class="bbit-dp-top-right"><a id="BBIT_DP_RIGHTBTN" href="javascript:void(0);" title="Next month">&nbsp;</a></td></tr></tbody></table></td></tr><tr><td><table id="BBIT_DP_INNER" class="bbit-dp-inner" cellspacing="0"><thead><tr><th><span>Mon</span></th><th><span>Tue</span></th><th><span>Wed</span></th><th><span>Thu</span></th><th><span>Fri</span></th><th><span>Sat</span></th><th><span>Sun</span></th></tr></thead><tbody></tbody></table></td></tr><tr><td class="bbit-dp-bottom" align="center"><button id="BBIT-DP-TODAY">Today</button></td></tr></tbody></table><div id="BBIT-DP-MP" class="bbit-dp-mp" style="z-index:auto;"><table id="BBIT-DP-T" style="width: 175px; height: 193px" border="0" cellspacing="0"><tbody><tr><td class="bbit-dp-mp-month" xmonth="0"><a href="javascript:void(0);">Jan</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="6"><a href="javascript:void(0);">Jul</a></td><td class="bbit-dp-mp-ybtn" align="middle"><a id="BBIT-DP-MP-PREV" class="bbit-dp-mp-prev"></a></td><td class="bbit-dp-mp-ybtn" align="middle"><a id="BBIT-DP-MP-NEXT" class="bbit-dp-mp-next"></a></td></tr><tr><td class="bbit-dp-mp-month" xmonth="1"><a href="javascript:void(0);">Feb</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="7"><a href="javascript:void(0);">Aug</a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td></tr><tr><td class="bbit-dp-mp-month" xmonth="2"><a href="javascript:void(0);">Mar</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="8"><a href="javascript:void(0);">Sep</a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td></tr><tr><td class="bbit-dp-mp-month" xmonth="3"><a href="javascript:void(0);">Apr</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="9"><a href="javascript:void(0);">Oct</a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td></tr><tr><td class="bbit-dp-mp-month" xmonth="4"><a href="javascript:void(0);">May</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="10"><a href="javascript:void(0);">Nov</a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td></tr><tr><td class="bbit-dp-mp-month" xmonth="5"><a href="javascript:void(0);">Jun</a></td><td class="bbit-dp-mp-month bbit-dp-mp-sep" xmonth="11"><a href="javascript:void(0);">Dec</a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td><td class="bbit-dp-mp-year"><a href="javascript:void(0);"></a></td></tr><tr class="bbit-dp-mp-btns"><td colspan="4"><button id="BBIT-DP-MP-OKBTN" class="bbit-dp-mp-ok">Ok</button><button id="BBIT-DP-MP-CANCELBTN" class="bbit-dp-mp-cancel">Cancel</button></td></tr></tbody></table></div></div><div class="xl-chrome-ext-bar" id="xl_chrome_ext_{4DB361DE-01F7-4376-B494-639E489D19ED}" style="display: none;">
+      <div class="xl-chrome-ext-bar__logo"></div>
+
+      <a id="xl_chrome_ext_download" href="javascript:;" class="xl-chrome-ext-bar__option">下载视频</a>
+      <a id="xl_chrome_ext_close" href="javascript:;" class="xl-chrome-ext-bar__close"></a>
+    </div><div id="bbit-cal-buddle" style="z-index: 180; width: 400px; visibility: hidden; left: 1700.59px; top: 645.51px;" class="bubble">    <table class="bubble-table" cellspacing="0" cellpadding="0">        <tbody>            <tr>                <td class="bubble-cell-side">                    <div id="tl1" class="bubble-corner">                        <div class="bubble-sprite bubble-tl">                        </div>                    </div>                </td>                <td class="bubble-cell-main">                    <div class="bubble-top"></div>                </td>                <td class="bubble-cell-side">                    <div id="tr1" class="bubble-corner">                        <div class="bubble-sprite bubble-tr"></div>                    </div>                </td>            </tr>            <tr>                <td class="bubble-mid" colspan="3">                    <div style="overflow: hidden" id="bubbleContent1">                        <div>                            <div></div>                                <div class="cb-root">                                    <table class="cb-table" cellspacing="0" cellpadding="0">                                        <tbody>                                            <tr>                                                <th class="cb-key">                                                  Time                                                </th>                                                <td class="cb-value">                                                    <div id="bbit-cal-buddle-timeshow">2022 February 12 (Saturday) 21:30 -  22:30</div>                                                </td>                                            </tr>                                        </tbody>                                    </table>                                    <input class="bbit-cal-quickAddBTN" style="width:100%;margin:2px 0;" data-eventtype="3" value="Add new meeting" type="button">                                    </div>                            </div>                        </div>                                    </td>            </tr>            <tr>                <td>                    <div id="bl1" class="bubble-corner"><div class="bubble-sprite bubble-bl"></div>                </div>                </td><td>                    <div class="bubble-bottom"></div>                </td><td>                    <div id="br1" class="bubble-corner">                        <div class="bubble-sprite bubble-br"></div>                    </div>                </td>            </tr>        </tbody>    </table>    <input id="bbit-cal-start" type="hidden" value="12/2/2022 21:30">    <input id="bbit-cal-end" type="hidden" value="12/2/2022 22:30">    <input id="bbit-cal-allday" type="hidden" value="0">    <div id="bubbleClose1" class="bubble-closebutton"></div>    <div id="prong2" class="prong">        <div class="bubble-sprite"></div>    </div></div></body></html>

@@ -1,0 +1,533 @@
+﻿
+function keyCodes() {
+    // Define values for keycodes
+    this.enter = 13;
+    this.esc = 27;
+    this.space = 32;
+    this.pageup = 33;
+    this.pagedown = 34;
+    this.end = 35;
+    this.home = 36;
+    this.left = 37;
+    this.up = 38;
+    this.right = 39;
+    this.down = 40;
+    this.tab = 9;
+} // end keyCodes
+
+function tabpanel(id) {
+    this.panel_id = id;
+    this.contanier = "";
+    this.$panel = $('#' + id);
+    this.keys = new keyCodes();
+    this.$tabs = this.$panel.find('.ajax__tab_tab');
+    this.$panels = this.$panel.find('.ajax__tab_panel');
+    this.$header = this.$panel.find('.ajax__tab_header');
+    this.bindHandlers();
+    // Initialize the tab panel
+    this.init();
+}
+tabpanel.prototype.init = function () {
+
+    var $actualtab;
+    this.$panel.attr('role', 'document');
+    this.$header.attr('role', 'tablist');
+    this.$tabs.attr('role', 'tab');
+    this.$tabs.attr('tabindex', '-1');
+    this.$tabs.attr('aria-selected', 'false');
+
+    this.$panels.attr('role', 'tabpanel');
+    this.$panels.attr('tabindex', '0');
+    this.$panels.attr('aria-hidden', 'true');
+    this.container = $find(this.panel_id);
+
+    var panelIds = $.map(this.$panels, function (n, i) {
+        return n.id;
+    });
+    var tabIds = $.map(this.$tabs, function (n, i) {
+        return n.id;
+    });
+    this.$tabs.each(function (index, value) {
+
+        $(this).attr('aria-controls', panelIds[index]);
+    });
+    this.$panels.each(function (index, value) {
+
+        $(this).attr('aria-labelledby', tabIds[index]);
+    });
+
+
+    if ($actualtab == undefined) {
+        if (this.container == null) {
+            return;
+        }
+        var tabindex = this.container.get_activeTabIndex();
+        $actualtab = this.$tabs.eq(tabindex);
+        $actualtab.attr('tabindex', '0');
+        $actualtab.attr('aria-selected', 'true');
+        $actualtab.attr('aria-hidden', 'false');
+
+    }
+    this.$panel.find('#' + $actualtab.attr('aria-controls')).show().attr('aria-hidden', 'false');
+};                 // end init()
+tabpanel.prototype.bindHandlers = function () {
+
+    var thisObj = this; // Store the this pointer for reference
+
+    //////////////////////////////
+    // Bind handlers for the tabs / accordian headers
+
+    // bind a tab keydown handler
+    this.$tabs.keydown(function (e) {
+        return thisObj.handleTabKeyDown($(this), e);
+    });
+
+    // bind a tab keypress handler
+    this.$tabs.keypress(function (e) {
+        return thisObj.handleTabKeyPress($(this), e);
+    });
+
+    // bind a tab click handler
+    this.$tabs.click(function (e) {
+        return thisObj.handleTabClick($(this), e);
+    });
+
+    // bind a tab focus handler
+    this.$tabs.focus(function (e) {
+        return thisObj.handleTabFocus($(this), e);
+    });
+
+    // bind a tab blur handler
+    this.$tabs.blur(function (e) {
+        return thisObj.handleTabBlur($(this), e);
+    });
+
+    /////////////////////////////
+    // Bind handlers for the panels
+
+    // bind a keydown handlers for the panel focusable elements
+    this.$panels.keydown(function (e) {
+        return thisObj.handlePanelKeyDown($(this), e);
+    });
+
+    // bind a keypress handler for the panel
+    this.$panels.keypress(function (e) {
+        return thisObj.handlePanelKeyPress($(this), e);
+    });
+
+};  // end bindHandlers()
+tabpanel.prototype.handleTabKeyDown = function ($tab, e) {
+    if (e.altKey) {
+        // do nothing
+        return true;
+    }
+    switch (e.keyCode) {
+        case this.keys.enter:
+        case this.keys.space:
+            {
+                this.togglePanel($tab);
+                e.stopPropagation();
+                return true;
+            }
+        case this.keys.left:
+        case this.keys.up:
+            {
+                var $newTab; // the new tab to switch to
+
+                if (e.ctrlKey) {
+                    // Ctrl+arrow moves focus from panel content to the open
+                    // tab/accordian header.
+
+                }
+                else {
+                    var curNdx = this.$tabs.index($tab);
+
+                    if (curNdx == 0) {
+                        // tab is the first one:
+                        // set newTab to last tab
+                        $newTab = this.$tabs.last();
+                    }
+                    else {
+                        // set newTab to previous
+                        $newTab = this.$tabs.eq(curNdx - 1);
+                    }
+
+                    // switch to the new tab
+                    if (this.goToPrevTab()) {
+                        this.switchTabs($tab, $newTab);
+                    }
+                }
+
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.right:
+        case this.keys.down:
+            {
+                var $newTab; // the new tab to switch to
+
+                var curNdx = this.$tabs.index($tab);
+
+                if (curNdx == this.$tabs.length - 1) {
+                    // tab is the last one:
+                    // set newTab to first tab
+                    $newTab = this.$tabs.first();
+                }
+                else {
+                    // set newTab to next tab
+                    $newTab = this.$tabs.eq(curNdx + 1);
+                }
+
+                // switch to the new tab
+
+                if (this.goToNextTab()) {
+                    this.switchTabs($tab, $newTab);
+                }
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.home:
+            {
+                // switch to the first tab
+                if (this.goToFirstTab()) {
+                    this.switchTabs($tab, this.$tabs.first());
+                }
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.end:
+            {
+                // switch to the last tab
+                if (this.goToLastTab()) {
+                    this.switchTabs($tab, this.$tabs.last());
+                }
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.pageup:
+            {
+                var $newTab;
+                if (!e.ctrlKey) {
+                    // do not process
+                    return true;
+                }
+                // var $tab = this.$tabs.filter('.selected');
+                var contanier = $find(this.panel_id);
+                // get the index of the tab in the tab list
+                var curNdx = contanier.get_activeTabIndex();
+                // get the jQuery object of the tab
+                var $tab = this.$tabs.eq(curNdx);
+                if (curNdx == 0) {
+                    // this is the first tab, set focus on the last one
+                    $newTab = this.$tabs.last();
+                }
+                else {
+                    // set focus on the previous tab
+                    $newTab = this.$tabs.eq(curNdx - 1);
+                }
+                // switch to the new tab
+                if (this.goToPrevTab()) {
+                    this.switchTabs($tab, $newTab);
+                }
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+            }
+        case this.keys.pagedown:
+            {
+                var $newTab;
+
+                if (!e.ctrlKey) {
+                    // do not process
+                    return true;
+                }
+                // get the index of the tab in the tab list
+                var curNdx = this.$tabs.index($tab);
+
+                if (curNdx == this.$tabs.length - 1) {
+                    // this is the last tab, set focus on the first one
+                    $newTab = this.$tabs.first();
+                }
+                else {
+                    // set focus on the next tab
+                    $newTab = this.$tabs.eq(curNdx + 1);
+                }
+
+                // switch to the new tab
+
+
+                if (this.goToNextTab()) {
+                    this.switchTabs($tab, $newTab);
+                }
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+            }
+    }
+};
+tabpanel.prototype.handleTabKeyPress = function ($tab, e) {
+
+    if (e.altKey) {
+        // do nothing
+        return true;
+    }
+    switch (e.keyCode) {
+        case this.keys.enter:
+        case this.keys.space:
+        case this.keys.left:
+        case this.keys.up:
+        case this.keys.right:
+        case this.keys.down:
+        case this.keys.home:
+        case this.keys.end:
+            {
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.pageup:
+        case this.keys.pagedown:
+            {
+
+                // The tab keypress handler must consume pageup and pagedown
+                // keypresses to prevent Firefox from switching tabs
+                // on ctrl+pageup and ctrl+pagedown
+                if (!e.ctrlKey) {
+                    return true;
+                }
+
+                e.stopPropagation();
+                return false;
+            }
+    }
+    return true;
+};
+tabpanel.prototype.handleTabClick = function ($tab, e) {
+    // remove all tabs from the tab order and reset their aria-selected attribute
+    this.$tabs.attr('tabindex', '-1').attr('aria-selected', 'false');
+    // Highlight the clicked tab and update its aria-selected attribute
+    $tab.attr('aria-selected', 'true');
+    // make clicked tab navigable
+    $tab.attr('tabindex', '0');
+    // give the tab focus
+    var context = this;
+    // window.setTimeout(function () { context.focus.apply(context, [this.contanier]); }, 500);
+    return true;
+};
+tabpanel.prototype.handleTabFocus = function ($tab, e) {
+    return true;
+};
+tabpanel.prototype.handleTabBlur = function ($tab, e) {
+    return true;
+};
+tabpanel.prototype.handlePanelKeyDown = function ($elem, e) {
+    if (e.altKey) {
+        // do nothing
+        return true;
+    }
+    switch (e.keyCode) {
+
+        //case this.keys.left:
+        case this.keys.up:
+            {
+
+                if (!e.ctrlKey) {
+                    // do not process
+                    return true;
+                }
+
+                // get the jQuery object of the tab
+                var $tab = $('#' + $elem.attr('aria-labelledby'));
+
+                // Move focus to the tab
+                $tab.focus();
+
+                e.stopPropagation();
+                return false;
+            }
+        case this.keys.pageup:
+            {
+                var $newTab;
+                if (!e.ctrlKey) {
+                    // do not process
+                    return true;
+                }
+
+
+                // var $tab = this.$tabs.filter('.selected');
+                var contanier = $find(this.panel_id);
+                // get the index of the tab in the tab list
+                var curNdx = contanier.get_activeTabIndex();
+                // get the jQuery object of the tab
+                var $tab = this.$tabs.eq(curNdx);
+                if (curNdx == 0) {
+                    // this is the first tab, set focus on the last one
+                    $newTab = this.$tabs.last();
+                }
+                else {
+                    // set focus on the previous tab
+                    $newTab = this.$tabs.eq(curNdx - 1);
+                }
+
+                // switch to the new tab
+                this.goToLastTab();
+                this.switchTabs($tab, $newTab);
+
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+            }
+        case this.keys.pagedown:
+            {
+
+                var $newTab;
+
+                if (!e.ctrlKey) {
+                    // do not process
+                    return true;
+                }
+
+                // get the jQuery object of the tab
+                var $tab = $('#' + $elem.attr('aria-labelledby'));
+
+                // get the index of the tab in the tab list
+                var curNdx = this.$tabs.index($tab);
+
+                if (curNdx == this.$tabs.length - 1) {
+                    // this is the last tab, set focus on the first one
+                    $newTab = this.$tabs.first();
+                }
+                else {
+                    // set focus on the next tab
+                    $newTab = this.$tabs.eq(curNdx + 1);
+                }
+
+                // switch to the new tab
+                this.goToFirstTab();
+                this.switchTabs($tab, $newTab);
+
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+            }
+    }
+    return true;
+};
+tabpanel.prototype.handlePanelKeyPress = function ($elem, e) {
+    if (e.altKey) {
+        // do nothing
+        return true;
+    }
+    if (e.ctrlKey && (e.keyCode == this.keys.pageup || e.keyCode == this.keys.pagedown)) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+    }
+
+    switch (e.keyCode) {
+        case this.keys.esc:
+            {
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+            }
+    }
+    return true;
+};
+tabpanel.prototype.switchTabs = function ($curTab, $newTab) {
+    //aktuális tab attreibutumainak beállítása
+    $curTab.attr('tabindex', '-1').attr('aria-selected', 'false');
+    $curTab.attr('aria-hidden', 'true');
+
+    this.$panel.find('#' + $curTab.attr('aria-controls')).attr('aria-hidden', 'true');
+
+    // show the new tab panel and set aria-hidden to false
+    this.$panel.find('#' + $newTab.attr('aria-controls')).attr('aria-hidden', 'false');
+    //Az új tab attributumainak beállítása
+    $newTab.attr('aria-selected', 'true');
+    $newTab.attr('tabindex', '0');
+
+
+    var context = this;
+    // window.setTimeout(function () { context.focus.apply(context, [this.contanier]); }, 500);
+};
+tabpanel.prototype.focus = function (sender) {
+    $panel = $('#' + this.panel_id);
+    $tabs = $panel.find('.ajax__tab_tab');
+    var context = $find(this.panel_id);
+    var tabindex = context.get_activeTabIndex();
+    $actualtab = $tabs.eq(tabindex);
+    //$actualtab.focus();
+};
+tabpanel.prototype.goToPrevTab = function () {
+
+    var prevtab = this.container.getPreviousTab(false);
+    if (prevtab !== null) {
+        //this.container.set_activeTab(prevtab);
+        return true;
+    }
+    return false;
+};
+tabpanel.prototype.goToNextTab = function () {
+
+    var nexttab = this.container.getNextTab(false);
+    if (nexttab !== null) {
+        //this.container.set_activeTab(nexttab);
+        return true;
+    }
+    return false;
+};
+tabpanel.prototype.goToFirstTab = function () {
+    var tab = this.container.getFirstTab(false);
+    if (tab !== null) {
+        //this.container.set_activeTab(tab);
+        return true;
+    }
+    return false;
+
+};
+tabpanel.prototype.goToLastTab = function () {
+    var tab = this.container.getLastTab(false);
+    if (tab !== null) {
+        //this.container.set_activeTab(tab);
+        return true;
+    }
+    return false;
+};
+tabpanel.prototype.togglePanel = function ($tab) {
+    $panel = this.$panel.find('#' + $tab.attr('aria-controls'));
+    if ($panel.attr('aria-hidden') == 'true') {
+        $panel.attr('aria-hidden', 'false');
+    }
+    else {
+        $panel.attr('aria-hidden', 'true');
+    }
+}
+function SDAWebTabClick(tab) {
+    // letörlöm a validálásból maradt popupot, ha van
+    selectedtabforvalidator(false, null, null, tab._activeTabIndex);
+
+    var activeTabIndex = tab._activeTabIndex;
+
+    // csak akkor toltodjon be a tabitem legeloszor, ha az adott tabitemhez a enableautopostbackalgorythm valtozo be van allitva
+    var enableautopostbackalgorythm = false;
+    if (tab._element.attributes['enableautopostbackalgorythm_' + activeTabIndex] != null)
+        enableautopostbackalgorythm = tab._element.attributes['enableautopostbackalgorythm_' + activeTabIndex].value;
+
+    if (enableautopostbackalgorythm == 'False')
+        return;
+
+    var betoltve = 'false';
+    if (tab._element.attributes['betoltve_' + activeTabIndex] != null) {
+        betoltve = tab._element.attributes['betoltve_' + activeTabIndex].value;
+    }
+
+    if (betoltve == 'true') {
+        if (tab._autoPostBackId != '')  // ha kiveszem az autoPostBackId-t, akkor nem megy le a szerverre
+            tab._oldautoPostBackId = activeTabIndex;
+        tab._autoPostBackId = '';
+    }
+    else if (tab._oldautoPostBackId != null) {
+        tab._autoPostBackId = tab._oldautoPostBackId;
+    }
+    tab._element.setAttribute('betoltve_' + activeTabIndex, 'true');
+}
