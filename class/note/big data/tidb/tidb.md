@@ -145,7 +145,7 @@ DDL语句，MVCC版本控制的老数据删除
 
 行式存储
 
-分布式且支持事务的KV存储引擎，数据持久化，算子下推，自身副本高可用和强一致性（multi-raft）
+分布式且支持事务的KV存储引擎，数据持久化（database和table的元信息持久化），算子下推，自身副本高可用和强一致性（multi-raft）
 
 > 负责存储数据，从外部看 TiKV 是一个分布式的提供事务的 Key-Value 存储引擎。
 >
@@ -154,6 +154,35 @@ DDL语句，MVCC版本控制的老数据删除
 > TiKV 的 API 在 KV 键值对层面提供对分布式事务的原生支持，默认提供了 SI (Snapshot Isolation) 的隔离级别，这也是 TiDB 在 SQL 层面支持分布式事务的核心。
 >
 > TiDB 的 SQL 层做完 SQL 解析后，会将 SQL 的执行计划转换为对 TiKV API 的实际调用。所以，数据都存储在 TiKV 中。另外，TiKV 中的数据都会自动维护多副本（默认为三副本），天然支持高可用和自动故障转移。
+
+**映射算法**
+
+> 普通映射
+>
+> ```text
+> Key:   tablePrefix{TableID}_recordPrefixSep{RowID}
+> Value: [col1, col2, col3, col4]
+> ```
+> 主键索引映射
+>
+> ```text
+> Key:   tablePrefix{tableID}_indexPrefixSep{indexID}_indexedColumnsValue
+> Value: RowID
+> ```
+> 
+> 二级索引映射
+>
+> ```text
+> Key:   tablePrefix{TableID}_indexPrefixSep{IndexID}_{indexedColumnsValue}_{RowID}
+> Value: null
+> ```
+>tablePrefix     = []byte{'t'}
+recordPrefixSep = []byte{'r'}
+indexPrefixSep  = []byte{'i'} 
+
+**database、table元数据映射**
+
+每个 `Database`/`Table` 都被分配了一个唯一的 ID，这个 ID 作为唯一标识，并且在编码为 Key-Value 时，这个 ID 都会编码到 Key 中，再加上 `m_` 前缀。这样可以构造出一个 Key，Value 中存储的是序列化后的元信息
 
 ##### TiFlash
 
@@ -208,7 +237,7 @@ KeyN_Version1 -> Value
 
 6.ACID
 
-
+7.计算向数据移动
 
 
 #### TiSpark（辅助解决复杂OLAP）
@@ -288,4 +317,31 @@ rpo：恢复点目标（数据容灾相关）
 5.开源（社区支持）
 
 ![1643467302(1)](picture/1643467302(1).png)
+
+## TiKV心跳包都发了啥？
+
+TiKV 节点信息和 Region 信息：
+
+**TiKV 节点信息**
+
+- 总磁盘容量
+- 可用磁盘容量
+- 承载的 Region 数量
+- 数据写入/读取速度
+- 发送/接受的 Snapshot 数量（副本之间可能会通过 Snapshot 同步数据）
+- 是否过载
+- labels 标签信息（标签是具备层级关系的一系列 Tag，能够[感知拓扑信息](https://docs.pingcap.com/zh/tidb/v4.0/schedule-replicas-by-topology-labels)）
+
+**Region 信息**
+
+- Leader 的位置
+- Followers 的位置
+- 掉线副本的个数
+- 数据写入/读取的速度
+
+## PD调度策略？
+
+**一个 Region 的副本数量不正确**
+
+比对当前心跳包中的region数量和实际不相符，需要通过 Add/Remove Replica 操作调整副本数量
 
