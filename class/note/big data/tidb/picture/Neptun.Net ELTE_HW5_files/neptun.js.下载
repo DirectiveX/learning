@@ -1,0 +1,3284 @@
+﻿// JScript File
+/// <reference name="MicrosoftAjax.js" />
+/// <reference path="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.js"/>
+/// <reference path="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.6/jquery-ui.js"/>
+
+var pageisdirty = false;
+var modalisdirty = false;
+var beforeleavestring = ''; // tartalmazza nyelvesitve azt a szoveget, amit a mentendo mezok ele fog betenni
+var beforeleavemodalstring = ''; // tartalmazza azon szoveget, amit a modal bezarasakor a mentendo mezok ele fog betenni
+var progressalerttypediv = 'progress';  // folyamatjelző div elem id
+function On_Leave(sender) {
+    if (pageisdirty) {
+        return GetConfirmText(null);
+    }
+    return;
+}
+
+function ResetDirty(ismodal) {
+    if (ismodal)
+        modalisdirty = false;
+    else
+        pageisdirty = false;
+}
+
+function GetConfirmText(selecteddivid) {
+    PageMethods.RaiseLeaveEvent();
+
+    var sdactrls = null;
+    if (selecteddivid != null)
+        sdactrls = $('#' + selecteddivid + ' :input[isdirty=true]');
+    else
+        sdactrls = $('input[isdirty=true]');
+    var szovegek = beforeleavestring + ' ';
+    if (sdactrls.length > 0) {
+        for (var i = 0; i < sdactrls.length; i++) {
+            if (sdactrls[i].clientifentifiername) {
+                szovegek += sdactrls[i].clientifentifiername + ', ';
+            }
+        }
+    }
+    return szovegek;
+}
+
+function OnChangedIsDirty(sender) {
+    // megkeresem az osszes SDAModalPopup2-ot es megnezem, hogy ez a control a gyereke-e
+    var contains = $('div[sdamodal=true] :input[id=' + sender + ']');
+    var iscontain = contains.length > 0;
+
+    if (iscontain == false)
+        pageisdirty = true;
+    else
+        modalisdirty = true;
+
+    var ctrl = $get(sender);
+    if (ctrl)
+        ctrl.isdirty = true;
+}
+
+
+//function InitializeDateChanger() {
+//    
+//        //        $("#datepicker").datepicker({ inline: true });
+
+//        var datesArray = ['11/13/2012', '11/14/2012', '11/15/2012'];
+
+//        $('.turn-me-into-datepicker')
+//        //.datepicker({ inline: true, changeMonth:true, changeYear:true })
+//            .datepicker({ showStatus: true,
+//                autoSize: true,
+//                showOn: 'both',
+//                buttonImageOnly: true,
+//                changeMonth: true,
+//                changeYear: true,
+//                showButtonPanel: true,
+//                showOtherMonths: true,
+//                beforeShowDay: function (date) {
+//var theday = (date.getMonth()+1) +'/'+ 
+//date.getDate()+ '/' + 
+//date.getFullYear();
+//return [true,$.inArray(theday, datesArray) >=0?"specialDate":''];},
+
+//                onSelect: function (dateText, inst) {
+
+//                    $("#hiddenDate").val(dateText);
+//                    var prm = Sys.WebForms.PageRequestManager.getInstance();
+//                    prm._doPostBack('changedate', dateText);
+//                    
+
+//                    //PageMethods.SelectDate(inst, ResultMethod);
+//                    //                $.ajax({
+//                    //                    type: "POST",
+//                    //                    url: "/main.aspx/ClearPopupState",
+//                    //                    contentType: "application/json; charset=utf-8",
+//                    //                    dataType: "json",
+//                    //                    async: false,
+//                    //                    success: function (data) { },
+//                    //                    complete: function (data) { },
+//                    //                    error: function (data) { }
+//                    //                });
+//                }
+
+//            })
+//        //		.bind('dateSelected',
+//        //			function (e, selectedDate, $td) {
+//        //			    console.log('You selected ' + selectedDate);
+//        //			})
+//                    
+//            ;
+//            //alert('hehe');
+
+//            $(".turn-me-into-datepicker").datepicker("setDate", $('#hiddenDate').val());
+//    };
+
+//function ResultMethod(result) {
+
+//}
+
+var notSetTransparentLayer = false;
+
+function pageLoad(sender, args) {
+    //azert hivom meg innen, mert minden esetben frissiteni kell az session timeout-ot
+    InitializeTimer();
+    //Teszteléshez: ShowHideLanguageChooser();
+
+    //if ($('#divSRD[display!=none]').length > 0) {
+    //    var user = $('#user');
+    //    if (user.length > 0)
+    //        user.focus();
+
+    //    var newsDetails = $('#upNewsDetails_upmodal_NewsDetails_divpopup');
+    //    if (newsDetails.length > 0)
+    //        newsDetails.focus();
+
+    //    $('#divSRD').css('display', 'none');
+    //}
+
+    if (!args.get_isPartialLoad()) {
+
+        //  add our handler to the document's
+        //  keydown event
+        $addHandler(document, "keydown", onKeyDown);
+        $addHandler(document, "keyup", onKeyUp);
+        // $addHandler(window, "resize", setBodyHeightToContentHeight);
+
+        //        Sys.Net.WebRequestManager.add_invokingRequest(beginRequestHandler);
+        //        Sys.Net.WebRequestManager.add_completedRequest(endRequestHandler);
+
+        Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(On_InvokeRequest);
+        Sys.WebForms.PageRequestManager.getInstance().add_endRequest(On_CompleteRequest);
+
+        // skin valaszto image
+        SetAriaHiddenAttributeToSkinChooserImages(state);
+        $('#imgSkinChooser').click(ShowHideThemeChooser);
+        $('#imgLanguageChooser').click(ShowHideLanguageChooser);
+        //$('#imgSkinChooser').enterKey(ShowHideThemeChooser);
+
+        $('#imgLanguageChooser').attr("role", "button");
+        $('#imgLanguageChooser').attr("aria-hidden", "false");
+
+        $('#imgSkinChooser').attr("role", "button");
+        $('#imgSkinChooser').attr("aria-hidden", "false");
+
+        $('#imgSkinChooserPartiallySighted').attr("role", "button");
+        $('#imgSkinChooserPartiallySighted').attr("aria-hidden", "false");
+
+        //$('#imgSkinChooserPartiallySighted').click({ skinName: 'PartiallySighted' }, SkinChoose);
+        // $('#imgSkinChooserPartiallySighted').enterKey({ skinName: 'PartiallySighted' }, SkinChoose);
+    }
+
+
+
+    //    $('#cal_monthsTable div').click(function (e) { 
+    //        var monthIndex = e.currentTarget['month'];
+    //        //PageMethods.SelectedMonth(monthIndex);        
+
+    //        /* var cal = $('#upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar');
+    //        cal._visibleDate = e.currentTarget.date;
+    //        cal.set_selectedDate(e.currentTarget.date);
+    //        cal._switchMonth(e.currentTarget.date);
+    //        cal._blur.post(true); 
+    //        cal.raiseDateSelectionChanged();*/
+    //        //$('#upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar')
+    //        __doPostBack('upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar', 'V4018');
+    //    });
+
+    //    $('#upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar').click(function (e) {    
+    //    //var tegst = ;
+    //    //$('#' + <%=GetCalendarClientID()%>).click(function (e) {    
+    //        var x = e.pageX - $(upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar).position().left - this.offsetLeft;
+    //        var y = e.pageY - $(upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar).position().top - this.offsetTop;
+
+    //        if (x > 56 && 142 > x && y < 20 && y > 5) {
+    //            $('#div_Calendar').attr("class", "div_Calendar_show");
+    //            $('#div_Calendar').removeAttr("style");
+    //        }
+    //    }).mouseenter(function (e) {
+    //        var x = e.pageX - $(upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar).position().left - this.offsetLeft;
+    //        var y = e.pageY - $(upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar).position().top - this.offsetTop;
+
+    //        if (x > 56 && 142 > x && y < 25) {
+    //           // $('#upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar').attr('style', 'pointer');
+    //        }
+    //    }).mouseleave(function (e) {
+    //        if (!(x > 56 && 142 > x && y < 25)) {
+    //           // $('#upBoxes_upCalendar_gdgCalendar_ctl15_calendar_upPanel_calendar').attr('style', 'calendar');
+    //        }
+    //    });
+
+    //    $('#div_Calendar').click(function (e) {
+    //        var x = e.pageX - $(div_Calendar).position().left - this.offsetLeft;
+    //        var y = e.pageY - $(div_Calendar).position().top - this.offsetTop;
+
+    //        $('#div_Calendar').attr('class', 'div_Calendar_hide');
+    //        $('#div_Calendar').attr("style", 'display:none;');
+    // }); 
+
+    // Web request invoked handler
+    function On_InvokeRequest(sender, eventArgs) {
+        // Display the window
+        if (TimeoutID != null) {
+            window.clearTimeout(TimeoutID);
+            TimeoutID = null;
+            return;
+        }
+
+        //visszaszamlaló alaphelyzetbe állítása
+        if (timerID != null) {
+            window.clearTimeout(timerID);
+            timerID = null;
+        }
+        if (timerID2 != null) {
+            window.clearTimeout(timerID2);
+            timerID2 = null;
+        }
+
+        // folyamtjelző beállítása
+        if ($('#progressalerttype').val() != "progress") {
+            progressalerttypediv = $('#progressalerttype').val();
+        }
+        // Az egyedi folyamatjelző csak akkor jelenik meg, ha searchpanel-ből jön a request. Ha azon kívül, akkor az alapértelmezettre állítjuk.
+        if (progressalerttypediv != 'progress' && typeof (upFilter) != 'undefined') {
+            if ($(eventArgs._postBackElement).closest([upFilter]).length == 0)
+                progressalerttypediv = "progress";
+        }
+        //kivétel
+        if (notSetTransparentLayer == false) {
+            SetTransparentLayer('block');
+            TimeoutID = window.setTimeout('ActivateAlertDiv("' + progressalerttypediv + '", "block")', 500); // csak fel sec mulva jelenjen meg az ablak
+        }
+
+        //ActivateAlertDiv("progress", "block");
+        //alert('On_InvokeRequest');        
+    }
+
+    // Web Request complete handler
+    function On_CompleteRequest(executor, eventArgs) {
+        notSetTransparentLayer = false;
+
+        if (eventArgs.get_error() && eventArgs.get_error().name === 'Sys.WebForms.PageRequestManagerServerErrorException') {
+            var errors = eventArgs.get_error();
+            eventArgs.set_errorHandled(true);
+            if (errors.message.search('unknown error') == -1) {
+                PageMethods.GetStringFromJS(1000004/*Hiba történt a művelet végrehajtása közben.*/, function (msg) {
+                    alert(msg);
+                });
+            }
+            SetTransparentLayer('none');
+            ActivateAlertDiv(progressalerttypediv, "none");
+        }
+        else if (_modalpanel == null || (_modalpanel != null && (_modalpanel._runCounter > 0 ||
+            (_modalpanel._runCounter == 0 && _modalpanel.id == 'upModalSessionEnd_modal_SessionEnd')))) {
+            SetTransparentLayer('none');
+            ActivateAlertDiv(progressalerttypediv, "none");
+        }
+
+        //InitializeDateChanger();      
+
+        try {
+            // Ha h_template-ből jövünk, ki van generálva, különben nincs...:)
+            if (typeof TemplateSuccessmodalPositioner !== 'undefined') {
+                TemplateSuccessmodalPositioner();
+            }
+        }
+        catch (err) { }
+    }
+
+    // setBodyHeightToContentHeight();
+    // Sys.WebForms.PageRequestManager.getInstance().add_endRequest(EndRequestHandler);
+
+    // SDAWebPanel esemenyek inicializalasa
+    var sdawebpanelek = $('div [sdawebpanel]');
+    for (var i = 0; i < sdawebpanelek.length; i++) {
+        if (sdawebpanelek[i].attributes['sdawebpanel'] != null) {
+            var sdawebpanelbehaviorid = sdawebpanelek[i].attributes['sdawebpanel'].value;
+            AddPanelEvents(sdawebpanelbehaviorid);
+        }
+    }
+}
+
+// a legkisebb timeout millisecond-ban
+var secs;
+
+// a secs-et hozzaadva a session vegenek datuma
+var sessionEndDate = null;
+
+var timerID = null;
+var timerRunning = false;
+var delay = 1000;
+
+// A session timeout-ot inicializalja.
+function InitializeTimer() {
+    // kiveszem a szerverbol a session idejet
+    var hfCountDownTime = $get('hfCountDownTime');
+
+    // ha meg a login.aspx-en vagyunk, nincs számlálóra szükség
+    if (hfCountDownTime == null)
+        return;
+
+    secs = hfCountDownTime.value;
+
+    // az ajaxos frissites miatt kell, mert a nullerteket figyelem egy masik fuggvenyben
+    sessionEndDate = null;
+    sessionEndDate = new Date();
+
+    // kiveszem az aktualis idot, és hozzáadom a sessiontimeout-ot milliseconds-ban
+    var millisecs = sessionEndDate.getTime();
+    millisecs += secs * 1000;
+
+    // a kerekitesek miatt ketto masodperccel kevesebb idot kap a user
+    //if (millisecs > 2000)
+    //  millisecs -= 2000;
+
+    // generalok a ekkor fog lejárni a timeout
+    sessionEndDate = new Date(millisecs);
+
+    // a sessionend előtt 1 perc-el figyelmeztetem a user-t
+    if (timerID != null) {
+        window.clearTimeout(timerID);
+        timerID = null;
+    }
+
+    // ha a visszaszamlalo figyelmezteto modal-t cancel-elem, majd tolok egy postback-et (pl. sorrendezem a gridet),
+    // akkor resetelnem kell a szamlalot
+    if (timerID2 != null) {
+        window.clearTimeout(timerID2);
+        timerID2 = null;
+    }
+    countdown = secs;
+    CountDown();
+
+    timerID = window.setTimeout("ShowModal()", (secs - 60) * 1000); // 118 - tesztre - 60 - hasznalatra
+    //InitializeDateChanger();
+    //OnLoadNode();
+}
+
+function AccessibilityChecker(val) {
+    PageMethods.HasScreenReader(val, AccessibilityCheckerRet);
+}
+function AccessibilityCheckerRet(result) { }
+
+$(window).resize(function () {
+    ResizeSessionEndModal();
+});
+
+function ResizeSessionEndModal() {
+    var winH = $(window).height();
+    var docH = $(document).height();
+    var winW = $(window).width();
+    var top = (winH - 200) / 2;
+    var left = (winW - 530) / 2;
+    var modal = $("#modalpanelAttentionSessionEnd");
+    var modalBackGround = $("#panelSessionEndBackGround");
+
+    $(modal).css({
+        position: 'absolute',
+        /*zIndex: 5000,*/
+        left: left,
+        top: top
+    });
+
+    $(modalBackGround).css({
+        position: 'absolute',
+        /*zIndex: 5000,*/
+        width: winW,
+        height: docH
+    });
+}
+
+
+// megjeleniti a modal-t
+function ShowModal() {
+    //StayAlive();
+    var modal = $get('modalpanelAttentionSessionEnd');
+
+    // ha lejart az ido, akkor kikapcsolom a timeout-ot
+    if (timerID != null) {
+        window.clearTimeout(timerID);
+        timerID = null;
+    }
+
+    if (modal) {
+        ResizeSessionEndModal();
+
+        $("#panelSessionEndBackGround").css({
+            display: 'block',
+            zIndex: 150
+        });
+
+        $("#modalpanelAttentionSessionEnd").css({
+            display: 'block',
+            zIndex: 151,
+            top: $(window).scrollTop() + Math.floor($(window).innerHeight() / 2) - 90
+        });
+
+        if ($("#progress").length > 0 && $("#progress")[0].style.display == 'block') {
+            var ujzIndex = $("#progress")[0].style.zIndex + 1;
+            $("#modalpanelAttentionSessionEnd").css({
+                zIndex: ujzIndex
+            });
+        }
+
+        countdown = 60; //12 - tesztre, 60 - hasznalatra
+
+        // inditok egy perces visszaszamlalot
+        // CountDown();           
+    }
+}
+
+function CountDown() {
+    if (timerID2 != null) {
+        window.clearTimeout(timerID2);
+        timerID2 = null;
+    }
+
+    if (countdown == 0) {
+        DoLogOut(0);
+    }
+    else {
+        countdown = countdown - 1;
+
+        var secCounter = Math.floor(countdown % 60);
+        var minCounter = Math.floor(countdown / 60);
+        zeroseconds = '';
+        zerominute = '';
+        // lekezelem az egy számjegyű számokat
+        if (secCounter.toString().length == 1) {
+            zeroseconds = '0';
+        }
+        // lekezelem az egy számjegyű számokat
+        if (minCounter.toString().length == 1) {
+            zerominute = '0';
+        }
+
+
+        var lblCountDown = $get('attentionSessionEnd_lblCountDown');
+        lblCountDown.innerHTML = ' ' + zeroseconds + countdown + ' ';
+        //fenti visszaszamlalo beallitasa
+        $('#upTraining_lblRemainingTime').html(zerominute + minCounter + ':' + zeroseconds + secCounter);
+        $('#upTraining_lblRemainingTime').attr("aria-live", "off");
+        $('#upTraining_lblRemainingTime').attr("role", "timer");
+
+        timerID2 = window.setTimeout("CountDown()", 1000);
+    }
+}
+
+function DoLogOut(zero) {
+    var logoutlink = 'Login.aspx?timeout=';
+
+    // ha automatikus timeout kilepes van, ami a login-on levo piros uzenet szabályozása miatt kell
+    if (zero == 0) {
+        //Kivettem a timeout jelzésének linkjét, mert ha több fül van megnyitva és egyiken lejár, de a másikon dolgozik akkor hibásan jelenik meg a kiírás.
+        LogOutRedirect('Login.aspx');
+    }
+    else {
+        // ha meg el a session, ki kell lőni, mert a login-ban a kovetkezo bejelentkezes csak masodjara sikerul (ez pedig egy ido utan baromi zavaro tud lenni. :( )
+        PageMethods.LogOutFromJS(logoutlink, LogOutRedirect);
+    }
+}
+
+function LogOutRedirect(link) {
+    // kijelentkezek    
+    window.location.assign(link);
+}
+
+var zerominute = '';
+var zeroseconds = '';
+var countdown = 60;
+var timerID2 = null;
+
+function DoCloseModalPopup(ok) {
+    //session hosszabbitasa
+    if (ok) {
+        StayAlive();
+        InitializeTimer();
+    }
+
+    $("#panelSessionEndBackGround").css({ display: 'none' });
+    $("#modalpanelAttentionSessionEnd").css({ display: 'none' });
+}
+
+
+// megallitja a szamlalot
+function StopTheClock() {
+    if (timerRunning)
+        window.clearTimeout(timerID);
+    timerRunning = false;
+}
+
+function GetConfirmString() {
+    return PageMethods.GetStringFromJS(4731, DoGetConfirmString);
+}
+
+function DoGetConfirmString(result) {
+    var okay = confirm(result/*1 perc múlva lejár a munkamenete. Az ok gombra kattintva újraindíthatja.*/);
+
+    if (okay == true) {
+        // ha akarja a felhasználó, akkor frissitem a session-t, hogy ne jarjon le                
+        StayAlive();
+        showalert = true;
+    }
+    else {
+        // beallitom, hogy az egy percre csak egyszer figyelmeztessen
+        showalert = false;
+    }
+}
+
+// átlátszó, nem kattintható réteg megjelenítése/eltüntetése a progress előtti 0-500ms-ban
+function SetTransparentLayer(disp) {
+    var adiv = $get('transparentprogress');
+    if (adiv != null) {
+        adiv.style.display = disp;
+        adiv.style.zIndex = 10000000;
+        adiv.style.height = getFullClientSize().height.toString() + 'px';
+
+        $get('transparentprogressdiv').style.zIndex = 10000001;
+    }
+}
+
+var showalert = true;
+
+// Display or hide the alert box div
+var TimeoutID = null;
+function ActivateAlertDiv(elem, disp) {
+    if (TimeoutID != null) {
+        window.clearTimeout(TimeoutID);
+        TimeoutID = null;
+    }
+    // ha az ajaxgriden, vagy a searchpanelen van egy prögő cucc, akkor nem rakjuk ki az egész oldalra
+    if ($get("panelSPGridBackGround")) {
+        if ($get("panelSPGridBackGround").style.display == "block" && disp == "block") {
+            return;
+        }
+    }
+    var adiv = $get(elem);
+    adiv.style.display = disp;
+    adiv.style.zIndex = 10000000;
+    adiv.style.height = getFullClientSize().height.toString() + 'px';
+
+    var innerDiv;
+    var textWidth = 0;
+    if (elem == 'progress') {
+        innerDiv = $get('imgdiv');
+    } else {
+        innerDiv = $get(elem + 'div');
+        if ($get('lbCustomTextProgress') != null && $get('lbCustomTextProgress').offsetWidth > 0)
+            textWidth = $get('lbCustomTextProgress').offsetWidth;
+    }
+
+    innerDiv.style.zIndex = 10000001;
+    var x = Math.round((getClientBounds().width) / 2) - Math.round(textWidth / 2);
+    var y = getClientCenterLocation(innerDiv).y;
+    Sys.UI.DomElement.setLocation(innerDiv, x, y);
+}
+
+function getClientCenterLocation(ctrl) {
+    var ctrlwidth = ctrl.clientWidth;
+    var ctrlheight = ctrl.clientHeight;
+
+    var x = Math.round((getClientBounds().width - ctrlwidth) / 2);
+    var scrollTop = (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+    var foregroundelementheight = ctrl.offsetHeight ? ctrl.offsetHeight : ctrl.scrollHeight;
+    var y = Math.round((getClientBounds().height - foregroundelementheight) / 2);
+
+    return new Sys.UI.Point(x, y + scrollTop);
+}
+
+function getFullClientSize() {
+    var width = getClientBounds().width;
+    var scrollTop = (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+    var height = getClientBounds().height + scrollTop;
+
+    return new Sys.UI.Bounds(0, 0, width, height);
+}
+
+function setOpacity(obj, value) {
+    obj.style.opacity = value / 10;
+    obj.style.filter = 'alpha(opacity=' + value * 10 + ')';
+}
+
+
+// visszaadja az adott lathato kepmeret szelesseget es magassagat (bongeszotol fuggoen)
+function getClientBounds() {
+    /// <summary>
+    /// Gets the width and height of the browser client window (excluding scrollbars)
+    /// </summary>
+    /// <returns type="Sys.UI.Bounds">
+    /// Browser's client width and height
+    /// </returns>
+    var clientWidth;
+    var clientHeight;
+    switch (Sys.Browser.agent) {
+        case Sys.Browser.InternetExplorer:
+            if (document.documentElement && document.documentElement.clientWidth)
+                clientWidth = document.documentElement.clientWidth;
+            else if (document.body)
+                clientWidth = document.body.clientWidth;
+            if (document.documentElement && document.documentElement.clientHeight)
+                clientHeight = document.documentElement.clientHeight;
+            else if (document.body)
+                clientHeight = document.body.clientHeight;
+            break;
+        case Sys.Browser.Safari:
+            clientWidth = window.innerWidth;
+            clientHeight = window.innerHeight;
+            break;
+        case Sys.Browser.Opera:
+            clientWidth = Math.min(window.innerWidth, document.body.clientWidth);
+            clientHeight = Math.min(window.innerHeight, document.body.clientHeight);
+            break;
+        default:  // Sys.Browser.Firefox, etc.
+            clientWidth = Math.min(window.innerWidth, document.documentElement.clientWidth);
+            clientHeight = Math.min(window.innerHeight, document.documentElement.clientHeight);
+            break;
+    }
+    return new Sys.UI.Bounds(0, 0, clientWidth, clientHeight);
+}
+
+
+function EndRequestHandler(sender, args) {
+    if (args.get_error() != undefined) {
+        var errorMessage;
+        if (args.get_response().get_statusCode() == '200') {
+            errorMessage = args.get_error().message;
+        }
+        else {
+            // Error occurred somewhere other than the server page.
+            errorMessage = 'An unspecified error occurred. ';
+        }
+        args.set_errorHandled(true);
+        //ToggleAlertDiv('visible');
+        //$get(messageElem).innerHTML = errorMessage;
+    }
+}
+
+function pageUnload(sender, args) {
+    if (typeof ($) != 'undefined') {
+        $("DIV[id$='_backgroundElement']").parent().children().css("display", "none");
+    }
+}
+
+//function setBodyHeightToContentHeight() {
+//    var ContentHeight = document.documentElement.scrollHeight;
+//    if (document.getElementById("tableTop") != null)
+//        ContentHeight = parseInt(document.getElementById("tableTop").clientHeight) + parseInt(document.getElementById("tableContent").clientHeight);
+//    document.body.style.height = Math.max(document.documentElement.clientHeight, ContentHeight) - 22 + "px";
+//}
+
+// nyomtatas megoldasa a print.aspx oldalon
+function ShowPrint(gridClientID, TimeTableParam) {
+    var li = document.getElementById('GridContent'); // a print.aspx oldalon egy DIV elem elérése
+    var tmp = document.getElementById('tmpGridContent');
+    if (gridClientID == 'TimeTable') {
+        li.innerHTML = window.opener.document.getElementById('dvCalMain').innerHTML;
+    }
+    else if (TimeTableParam == 'TimeTableList') {
+        // li.innerHTML = window.opener.document.getElementById(gridClientID).innerHTML;
+    }
+    else {
+        var grid = window.opener.document.getElementById(gridClientID);  // a hívó formról a grid elérése
+        if (grid != null) {
+
+            // mivel firefox/opera nem ismeri az outerHTML-t, ezért a hívó formon lévő grid parent elemének 
+            // az innerHTML-jét kell a DIV-be beletenni (biztosítani kell, hogy legyen szülő eleme, aminek csak 
+            // egy gyerek control-ja van)
+            tmp.innerHTML = grid.parentNode.innerHTML;
+            RemovePrintLinks(tmp);
+            li.innerHTML = tmp.innerHTML;
+            tmp.parentNode.removeChild(tmp);
+            // a létező linkeket kiszedi a htmlből
+
+        }
+    }
+}
+
+// linkeket kiszedő rekurzív metódus (a nyomtatáshoz kell)
+function RemovePrintLinks(ctrl) {
+    // végigmegy a megadott control összes elemén, és ha van href-je, vagyis link típusú, akkor 
+    // kiszedi a link szövegét és ha van, akkor megadja a felette lévő control innerHTML-nek az adott szöveget.
+    for (var i = 0; i < ctrl.childNodes.length; i++) {
+        var childctrl = ctrl.childNodes[i];
+        var nodename = childctrl.nodeName.toUpperCase();
+        if (childctrl.href != null && childctrl.href != '' && childctrl.childNodes.length > 0
+            && childctrl.childNodes[0].nodeName.toUpperCase() != 'IMG') {
+            ctrl.innerHTML = childctrl.innerHTML;
+        }
+        if (childctrl.nodeName.toUpperCase() == 'IMG') {
+            if (ctrl.innerText != null && ctrl.innerText != undefined && ctrl.innerText != '') {
+                ctrl.innerHTML = ctrl.innerText;
+            }
+            else if (ctrl.textContent != null && ctrl.textContent != undefined && ctrl.textContent != '') {
+                ctrl.innerHTML = ctrl.textContent;
+            }
+            else {
+                ctrl.innerHTML = '';
+            }
+        }
+
+        if (childctrl.attributes != null) {
+            if (childctrl.attributes['onclick'] != null
+                && childctrl.attributes['onclick'].nodeValue != null) {
+                childctrl.attributes.removeNamedItem('onclick');
+
+                if (childctrl.className == 'pointer')
+                    childctrl.attributes.removeNamedItem('class');
+
+                if (childctrl.className == 'gridSelfLink')
+                    childctrl.style.display = 'none';
+            }
+            if (childctrl.attributes['onmouseout'] != null) {
+                childctrl.attributes.removeNamedItem('onmouseout');
+            }
+            if (childctrl.attributes['onmousemove'] != null) {
+                childctrl.attributes.removeNamedItem('onmousemove');
+            }
+            if (childctrl.attributes['onmousedown'] != null) {
+                childctrl.attributes.removeNamedItem('onmousedown');
+            }
+            if (childctrl.attributes['onmouseover'] != null) {
+                childctrl.attributes.removeNamedItem('onmouseover');
+            }
+            if (childctrl.attributes['onmouseup'] != null) {
+                childctrl.attributes.removeNamedItem('onmouseup');
+            }
+            if (childctrl.attributes['onkeyup'] != null) {
+                childctrl.attributes.removeNamedItem('onkeyup');
+            }
+            if (childctrl.attributes['onkeypress'] != null) {
+                childctrl.attributes.removeNamedItem('onkeypress');
+            }
+            if (childctrl.attributes['onkeydown'] != null) {
+                childctrl.attributes.removeNamedItem('onkeydown');
+            }
+        }
+        //nem nyomtatja az overflow-t jól a firefox
+        if (nodename == 'SPAN') {
+            if (childctrl.style != null) {
+                childctrl.style.removeProperty('display');
+            }
+        }
+
+        if (nodename == 'SELECT') {
+            var ertek;
+            for (i = 0; i < childctrl.options.length; i++) {
+                if (childctrl.options[i].selected == true)
+                    ertek = childctrl.options[i].text;
+            }
+            // ha combo
+            childctrl.innerHTML = '';
+            var parent = childctrl.parentNode;
+            childctrl.parentNode.removeChild(childctrl);
+            var ertekElement = document.createElement('span');
+            ertekElement.innerHTML = ertek;
+            if (ertek)
+                parent.appendChild(ertekElement);
+            i--;
+        }
+        if (nodename == 'INPUT') {
+            var parent = childctrl.parentNode;
+            if (childctrl.type == 'radio' && (childctrl.parentNode.children != null)) {
+                //a nem kijelölt radio labeljeinek takarítása
+                var labelcontrol = childctrl.parentNode.children[1];
+                childctrl.parentNode.removeChild(childctrl);
+                if (childctrl.checked != true) {
+                    parent.removeChild(labelcontrol);
+                }
+            }
+            else
+                childctrl.parentNode.removeChild(childctrl);
+            i--;
+        }
+
+        if (childctrl.childNodes.length > 0) {
+            RemovePrintLinks(childctrl);
+        }
+    }
+}
+
+// linkeket kiszedő rekurzív metódus (a gridhez kell)
+function RemoveGridLinks(gridid, ctrl) {
+    var grid = $get(gridid);
+
+    if (grid == null)
+        return;
+    if (ctrl == null && grid.childNodes.length > 0)
+        ctrl = grid;
+    else if (ctrl == null)
+        return;
+
+    //    // végigmegy a megadott control összes elemén, és ha van href-je, vagyis link típusú, akkor 
+    // kiszedi a link szövegét és ha van, akkor megadja a felette lévő control innerHTML-nek az adott szöveget.
+    for (var i = 0; i < ctrl.childNodes.length; i++) {
+        var childctrl = ctrl.childNodes[i];
+        if (childctrl.href != null && childctrl.href != '') {
+            if (ctrl.nodeName == "TD" && ctrl.attributes['onclick'] != null
+                && ctrl.attributes['onclick'].nodeValue != null) {
+                ctrl.innerHTML = childctrl.innerHTML;
+            }
+        }
+        else if (childctrl.isDisabled != ctrl.isDisabled) {
+            ctrl.disabled = childctrl.isDisabled;
+        }
+
+
+        if (childctrl.childNodes.length > 0) {
+            RemoveGridLinks(gridid, childctrl);
+        }
+    }
+}
+
+/* Firefox nyomtatás - linuxon futtatva gond lehet ezzel */
+if (navigator.userAgent.indexOf("Firefox") > -1) {
+    var _emptyTags =
+        {
+            "IMG": true,
+            "BR": true,
+            "INPUT": true,
+            "META": true,
+            "LINK": true,
+            "PARAM": true,
+            "HR": true
+        };
+
+    HTMLElement.prototype.__defineGetter__("outerHTML", function () {
+        var attrs = this.attributes;
+        var str = "<" + this.tagName;
+        for (var i = 0; i < attrs.length; i++)
+            str += " " + attrs[i].name + "=\"" + attrs[i].value + "\"";
+
+        if (_emptyTags[this.tagName])
+            return str + ">";
+
+        return str + ">" + this.innerHTML + "</" + this.tagName + ">";
+    });
+}
+
+
+function getPrintHTML(Header, Data, Footer) {
+    var pp = window.open();
+    //Adding HTML opening tag with <HEAD> … </HEAD> portion 
+    pp.document.writeln('<HTML><HEAD><title>Print Preview</title>');
+    pp.document.writeln('<LINK href=App_Themes/Skin_Neptun_Orange/Skin_Neptun_Orange.css type=\"text/css\" rel=\"stylesheet\">');
+    pp.document.writeln('<base target=\"_self\"></HEAD>');
+    //Adding Body Tag
+    pp.document.writeln('<body MS_POSITIONING=\"GridLayout\" bottomMargin=\"0\"');
+    pp.document.writeln(' leftMargin=\"0\" topMargin=\"0\" rightMargin=\"0\">');
+    //Adding form Tag
+    pp.document.writeln('<form method=\"post\">');
+    //Creating two buttons Print and Close within a HTML table
+    pp.document.writeln('<TABLE width=100%><TR><TD></TD></TR><TR><TD align=right>');
+    pp.document.writeln('<INPUT ID=\"PRINT\" type=\"button\" value=\"Print\" ');
+    pp.document.writeln('onclick=\"javascript:location.reload(true);window.print();\">');
+    pp.document.writeln('<INPUT ID=\"CLOSE\" type=\"button\" value=\"Close\" onclick=\"window.close();\">');
+    pp.document.writeln('</TD></TR><TR><TD></TD></TR></TABLE>');
+    //Writing print area of the calling page
+    pp.document.write(Header);
+    pp.document.writeln('<P></P>');
+
+    pp.document.write(Data);
+
+    //Ending Tag of </form>, </body> and </HTML>
+    pp.document.writeln('<P></P>');
+    pp.document.write(Footer);
+    pp.document.writeln('</form></body></HTML>');
+    pp.document.close();
+}
+
+function DisplayInvoice(invoicetype, invoiceid, Func) {
+    location.href = 'common_controls/SaveFileDialog.aspx?Type=' + invoicetype + '&id=' + invoiceid + '&Func=' + Func;
+}
+
+/*************************region Logout**************************************/
+var your_message = "Ön elhagyja a Neptun.Net rendszert!\r\nBiztonsági okokból kérem jelentkezzen ki.\r\nKilépéshez kattintson az 'OK' gombra.";
+function onleave() {
+
+    var leave = confirm(your_message);
+    if (leave) {
+        self.location = 'main.aspx?ctrl=logout'
+        location = self.location;
+        // count++;
+    }
+}
+/*************************endregion Logout**************************************/
+
+function DoValidate() {
+    if (typeof (Page_Validators) != "undefined") {
+        var isvalid = Page_ClientValidate();
+    }
+}
+function ConvertHarmfulCode(ctrl) {
+    // kicserelem a veszelyes karaktereket
+    for (var j = 0; j < ctrl.childNodes.length; j++) {
+        var childctrl = ctrl.childNodes[j];
+
+        if (childctrl.type == "text" || childctrl.type == "textarea") {
+            childctrl.value = childctrl.value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        if (childctrl.childNodes.length > 0)
+            ConvertHarmfulCode(childctrl);
+    }
+}
+
+//ValidationGroupra hiv kliens oldali validalast
+//ModalPopup-oknal hivjuk a btn ClientClickre
+function DoValidateGroup(validationGroup) {
+    //overwrites the original Page_ClientValidate
+    Page_InvalidControlToBeFocused = null;
+    if (typeof (Page_Validators) != "undefined") {
+        var i;
+        for (i = 0; i < Page_Validators.length; i++) {
+            // fokuszalas
+            ValidatorValidate(Page_Validators[i], validationGroup, null);
+
+            try {
+                // ha esetleg kilog a kepbol, akkor odascrollozas
+                if (!Page_Validators[i].isvalid && Page_InvalidControlToBeFocused == null) {
+
+                    // 200 pixellel lejjebb tolom a hibauzenetet, hogy szemre-alljon
+                    var offst = ($(Page_Validators[i]).parent()[0].offsetTop);
+
+                    // csak positive ertek legyen, vagy teljesen a window teteje
+                    if (offst < 0)
+                        offst = 0;
+
+                    // csak az elso hibas kontrollra scrollozok fel, ha nincs még képben
+                    if ($(window).scrollTop() > offst) {
+                        // hogy szemre essen
+                        $(window).scrollTop(offst - 150);
+                    }
+                }
+            } catch (e) { }
+
+            //                if (Page_Validators[i].validationGroup == validationGroup)
+            //                {
+            //                    ValidatorEnable(Page_Validators[i], true);
+            //                }
+        }
+        ValidatorUpdateIsValid();
+        ValidationSummaryOnSubmit(validationGroup);
+        Page_BlockSubmit = !Page_IsValid;
+        //this is to correct a little bug in ASP
+        if (!Page_IsValid)
+            __defaultFired = false;
+        else
+            ConvertHarmfulCode(document.body);
+        return Page_IsValid;
+    }
+    return true;
+}
+
+function HideModalDialogWithoutValidation(modalid, isBlind) {
+    var x = $find(modalid);
+    if (x != null) {
+        x.hide();
+        submitCount = 0;
+    }
+    if (isBlind != undefined && isBlind != null && isBlind.toLowerCase() == "true")
+        modalBezarasFocus();
+    //return false;
+}
+
+function DefaultBankAccountIsAlready(chkbtnID, Message) {
+    var NodeChkBox = document.getElementById(chkbtnID);
+    if (NodeChkBox.checked == true && DefaultBankAccountIsAlready.Number > 0 && !DefaultBankAccountIsAlready.ThisIsDefault && DefaultBankAccountIsAlready.IsDefault) {
+        return confirm(Message);
+    }
+}
+/*Funkcio Help*/
+function ShowHideFunctionHelp(ctrl) {
+    var x = document.getElementById(ctrl);
+    if (x.style.display == 'block' || x.style.display == '') {
+        x.style.display = 'none';
+
+    }
+    else {
+        x.style.display = 'block';
+        Sys.UI.DomElement.setLocation(x, 270, 200);
+    }
+    return false;
+}
+
+function SetModalZindex(modalId, ZIndex, fn) {
+    var modal = $find(modalId);
+    var modalObject = null;
+    if (modal != null)
+        modalObject = modal._foregroundElement;
+    var Background = $get(modalId + '_backgroundElement');
+    if (modalObject != null) {
+        modalObject.style.zIndex = ZIndex + 1;
+        Background.style.zIndex = ZIndex;
+    }
+    Sys.Application.remove_load(fn);
+}
+
+var isCtrlVakok = false;
+var isAltVakok = false;
+var isShiftVakok = false;
+var jquerydialogclosed = false;
+
+function onKeyDown(e) {
+    /// <summary> Az onKeyDown esemény hatására le van kezelve, ha talál megjelenített modalpopup-t
+    /// a felületen, akkor azt bezárja. </summary>
+    if (e && e.keyCode == Sys.UI.Key.esc) {
+        // if the key pressed is the escape key, dismiss the dialog
+        // hekk - jquery dialog escape-es becsukásakor jquerydialogclosed baállítódik true-ra. 
+        // Ekkor azért, h a modál ne tűnjön el, itt átugrom a modál becsukást. Viszont következő escape-et
+        // már úgy kezeli a modál, ahogy eddig.
+        if (jquerydialogclosed) {
+            jquerydialogclosed = false;
+        }
+        else {
+            CloseModalPopup(false);
+            InitializeTimer();
+            modalElozoFocus.push();
+
+            if (modallevel > 0)
+                if ($('.behaviorupNewsDetails_modal_NewsDetails').length > 0)
+                    if ($('.behaviorupNewsDetails_modal_NewsDetails').is(':visible')) // == display:block
+                        $('.behaviorupNewsDetails_modal_NewsDetails').dialog('close');
+
+            return;
+        }
+    }
+
+    if (e.keyCode == 16)
+        isShiftVakok = true;
+    if (e.keyCode == 17)
+        isCtrlVakok = true;
+    if (e.keyCode == 18)
+        isAltVakok = true;
+    if (isCtrlVakok && (isAltVakok || isShiftVakok) && e.keyCode == 77 && $('.modalBackground:visible').length == 0) // ctrl+alt/shift+m a menühöz
+        menu1.doMenu(e);
+
+    //var $focused = $(':focus');
+    //if (($focused) == $('#user') || ($focused) == $('#pwd'))
+
+    // login oldal miatt
+    if (e.keyCode == 13)
+        if ($(document.activeElement).attr('id') == "user" || $(document.activeElement).attr('id') == "pwd") {
+            TieButton(e, 'btnSubmit');
+        }
+}
+
+function onKeyUp(e) {
+    if (e.keyCode == 16)
+        isShiftVakok = false;
+    if (e.keyCode == 17)
+        isCtrlVakok = false;
+    if (e.keyCode == 18)
+        isAltVakok = false;
+}
+
+function CloseModalPopup(NeedCloseChildModalPopup) {
+
+    /// <summary> Bezárja a modalpopupokat, ha meg vannak jelenítve. 
+    /// Ha egy parent és egy child modal van nyitva, akkor először mindig a childot zárja be és a parentet nem. </summary>
+    var result = false;
+    if (!NeedCloseChildModalPopup)
+        result = CloseModalPopup(true);
+    if (result)
+        return;
+
+    var componentArray = Sys.Application.getComponents();
+    for (var i = 0; i < componentArray.length; i++) {
+        if (Object.getType(componentArray[i]).getName() == 'SDA.Neptun.WebControls.ModalPopupBehavior') {
+            var modalpopup = componentArray[i];
+            if (modalpopup._id == "popup_PwdChanger" || !(modalpopup._enableEscapeClose))
+                continue;
+            var modalpopupstyle = $get(modalpopup.get_id() + '_backgroundElement').style;
+            if (NeedCloseChildModalPopup && modalpopupstyle.display == "" && modalpopupstyle.zIndex == 110000) {
+                modalpopup.hide();
+                result = true;
+            }
+            else if (!NeedCloseChildModalPopup && modalpopupstyle.display == "" && modalpopupstyle.zIndex == 10000) {
+                modalpopup.hide();
+            }
+            else if (!NeedCloseChildModalPopup && modalpopupstyle.display == "" && modalpopupstyle.zIndex >= 200000) {
+                modalpopup.hide();
+            }
+        }
+    }
+
+    return result;
+}
+
+
+// This function performs a GET Web request 
+// to retrieve  information from the Url specified in 
+// the query string. 
+function GetWebRequest(oWebPanel, oEvent) {
+    //alert("Performing Get Web request.");
+    var getpage = 'main.aspx';
+    if (document.location.search == "")
+        getpage += '?';
+    else
+        getpage += document.location.search + '&';
+    getpage += 'callback=ajax';
+    if (oWebPanel.getExpanded() == true) {
+        if (oWebPanel.getID() == "panelFavorites") {
+            getpage = getpage + "&favorites=expanded";
+        }
+        else if (oWebPanel.getID() == "panelMessages") {
+            getpage = getpage + "&messages=expanded";
+        }
+        else {
+            getpage = getpage + "&info=expanded";
+        }
+    }
+    else {
+        if (oWebPanel.getID() == "panelFavorites") {
+            getpage = getpage + "&favorites=collapsed";
+        }
+        else if (oWebPanel.getID() == "panelMessages") {
+            getpage = getpage + "&messages=collapsed";
+        }
+        else {
+            getpage = getpage + "&info=collapsed";
+        }
+    }
+    // Instantiate the WebRequest object.
+    var wRequest = new Sys.Net.WebRequest();
+
+    // Set the request Url.  
+    wRequest.set_url(getpage);
+
+    // Set the request verb.
+    wRequest.set_httpVerb("GET");
+
+    // Set user's context
+    wRequest.set_userContext("12345");
+
+    // Set the web request completed event handler,
+    // for processing return data.
+    wRequest.add_completed(OnWebRequestCompleted);
+
+
+    // Clear the results page element.
+    //displayElement.innerHTML = "";
+
+    // Execute the request.
+    wRequest.invoke();
+}
+//siman behiv a szerver oldali kodba es nem fut le a page_load
+//vegulis egy webservice hivas
+//Toolscriptmanagerben EnablePageMethod-ot engedelyezni kell a mukodeshez
+function InvokeServerFunction(oWebPanel, oEvent) {
+    if (oWebPanel.getExpanded() == true) {
+        PageMethods.SavePanelState(oWebPanel.getID() + ',expanded', null);
+    }
+    else {
+        PageMethods.SavePanelState(oWebPanel.getID() + ',collapsed', null);
+    }
+}
+
+function AddPanelEvents(behaviorid) {
+    var panel = $find(behaviorid);
+    if (panel) {
+        panel.add_expandComplete(PanelExpandedCompleted);
+        panel.add_collapseComplete(PanelCollapsedCompleted);
+    }
+}
+
+function PanelExpandedCompleted(sender, args) {
+    PageMethods.SavePanelState(sender._id + ',expanded', null);
+}
+
+function PanelCollapsedCompleted(sender, args) {
+    PageMethods.SavePanelState(sender._id + ',collapsed', null);
+}
+
+
+
+function SetModalZIndex(modalbehaviorid, ZIndex) {
+    var ModalForeground = $get(modalbehaviorid + '_foregroundElement');
+    var ModalBackground = $get(modalbehaviorid + '_backgroundElement');
+    ModalForeground.style.zIndex = ZIndex + 1;
+    ModalBackground.style.zIndex = ZIndex;
+}
+
+function isMaxLength(txtBox, mlength) {
+    if (txtBox) {
+        if (txtBox.getAttribute && txtBox.value.length > mlength)
+            txtBox.value = txtBox.value.substring(0, mlength);
+        return (txtBox.value.length <= mlength);
+    }
+}
+
+var IsPopupVisible = null;
+
+//var visibleids = new Array();
+/*Modalpopupextender Show*/
+//function OnPopupShow(popupid, modalclientid, kellatmeretezes, behaviourid) {
+
+//    // eltuntetem a tooltip-et, ha látszik, hogy feleslegesen már ne legyen látható
+//    var toolTip = $('#GridTooltip');
+//    if (toolTip != null) {
+//        toolTip.html('').css('display', 'none');
+//    }
+
+//    PageMethods.SavePopupState('visible', modalclientid);
+
+//    if (Array.contains(visibleids, popupid) == false)
+//        Array.add(visibleids, popupid);
+
+//    if (kellatmeretezes) {
+//        // csak ha kell atmeretezes
+//        _modalpanel = $get(modalclientid);
+
+//        // modal megjelenitese utan beallitjuk a modal meretet
+//        SetModalPanelSize();
+
+//        _modalpanel._pnlmodal.style.filter = '';
+//        _modalpanel.style.filter = '';
+//        _modalpanel._modalpopuptitle.style.filter = '';
+
+//        _modalpanel._pnlmodal.style.MozOpacity = '';
+//        _modalpanel.style.MozOpacity = '';
+//        _modalpanel._modalpopuptitle.style.MozOpacity = '';
+//    }
+//    var popup = $find(behaviourid);
+//    if (popup != null) {
+//        if (Array.contains(ModalCollection, _modalpanel) == false) {
+//            Array.add(ModalCollection, _modalpanel);
+//        }
+//        popup.set_ClientState('true');
+
+//        popup._layout();
+//    }
+
+//    // popup userctrl nev
+//    var modalpopuptitle = $('#' + _modalpanel.id + ' .modalpanel_header_caption');
+//    if (modalpopuptitle) {
+//        var userctrlcaption = modalpopuptitle.attr('puctrl');
+
+//        if (userctrlcaption) {
+//            // a modalban levo usercontrol idjat kiteszem fentre
+//            var destination = $('#upTraining_lblPageInfoText');
+//            if (destination) {
+//                var divModalUserCtrl = destination.find('#divModalUserCtrl');
+//                if (divModalUserCtrl.length == 0)
+//                    destination.html(destination.html() + ' <div id="divModalUserCtrl" style="position:absolute; z-index:10001;"><strong>' + userctrlcaption + '</strong></div>');
+//                else
+//                    divModalUserCtrl.text(userctrlcaption);
+//            }
+//        }
+//    }
+
+//    ActivateAlertDiv(progressalerttypediv, 'none');
+//}
+/*Modalpopupextender Hide*/
+
+
+function OnSaveCollapsiblePanelState() {
+    PageMethods.SaveCollapsiblePanelState();
+
+    var panelBalOldal = $get('panelBalOldal');
+    if (panelBalOldal) {
+        var panelBalOldalDiv = panelBalOldal.childNodes[0];
+        if (panelBalOldalDiv) {
+            panelBalOldalDiv.style['display'] = 'block';
+        }
+    }
+}
+
+var PopupHideCallback;
+function OnPopupHide(popupid, modalclientid, behaviorid, callback) {
+    PopupHideCallback = callback;
+    // ha mentes kell legyen egy modalon, akkor eloszor megkerdezi, hogy becsukhatja-e az ablakot
+    if (modalisdirty) {
+        var confirmtext = GetConfirmText(modalclientid);
+        if (confirmtext != null && !confirm(beforeleavemodalstring + confirmtext)) {
+            var modal = $find(behaviorid);
+            if (modal)
+                modal.show();
+            return false;
+        }
+    }
+    var popup = $find(behaviorid);
+    if (popup != null)
+        popup.set_ClientState('false');
+    PageMethods.SavePopupState('hidden', modalclientid, OnPopupHideCallBack);
+    //if (Array.contains(visibleids, popupid) == true)
+    //    Array.remove(visibleids, popupid);
+    DoValidateGroup('none');
+    submitCount = 0;
+
+
+    _modalpanel = $get(modalclientid);
+    if (_modalpanel) {
+        _oldboundsarray[_modalpanel.id + '_modalsize'] = null;
+        _oldboundsarray[_modalpanel.id + '_modallocation'] = null;
+        _oldboundsarray[_modalpanel.id + '_modalminsize'] = null;
+        _oldboundsarray[_modalpanel.id + '_gridmagassag'] = null;
+        _oldboundsarray[_modalpanel.id + '_isfullscreenstate'] = null;
+        _modalpanel._runCounter = 0;
+        _modalpanel = null;
+
+        Array.removeAt(ModalCollection, ModalCollection.length - 1);
+    }
+
+    // modal popup nev eltuntetese
+    var divModalUserCtrl = $('#divModalUserCtrl');
+    if (divModalUserCtrl.length > 0)
+        divModalUserCtrl.text('');
+
+    // eltuntetem a tooltip-et, ha látszik, hogy feleslegesen már ne legyen látható
+    var toolTip = $('#GridTooltip');
+    if (toolTip != null) {
+        toolTip.html('').css('display', 'none');
+    }
+}
+function OnPopupHideCallBack() {
+    if (PopupHideCallback != undefined)
+        PopupHideCallback();
+
+}
+//idokozonkent meghivja a megadott
+//interval millisecundumban
+var interval;
+function Timer(functionname, interval) {
+    interval = window.setInterval(functionname, interval);
+}
+function StayAlive() {
+    //visszahivok, hogy ne járjon le a session
+    // var prm = Sys.WebForms.PageRequestManager.getInstance();    
+    // prm._doPostBack('hiddensessionend', '');
+
+    $.ajax({
+        type: 'Post',
+        url: 'service.asmx/StayAlive',
+        success: function (data) {
+            InitializeTimer();
+        }
+
+    })
+}
+function StopStayAlive() {
+    window.clearInterval(interval);
+}
+
+/*function DoStayAlive(IsSessionAlive) {        
+if (IsSessionAlive == 'True') {
+//frissitem a visszaszámlálót, ha a session meg aktiv
+InitializeTimer();
+}
+else {
+//ha mar nem aktiv a session, akkor kijelentkezek.
+StopTheClock();
+location.href = 'Login.aspx?timeout=';
+}
+}*/
+
+
+// elmenti a szakdolgozat témára jelentkezések sorrendjét
+function SaveThesisOrderByStudent(IDs) {
+    PageMethods.SaveThesisOrderByStudent(IDs);
+}
+
+// elmenti a szakdolgozat témára jelentkezések sorrendjét
+function SaveErasmusjelentkezesSorrend(IDs) {
+    PageMethods.SaveErasmusjelentkezesSorrend(IDs);
+}
+//elmenti a kollégiumi jelentkezések sorrendjét
+function SaveKollegiumijelentkezesSorrend(IDs) {
+    PageMethods.SaveKollegiumijelentkezesSorrend(IDs);
+}
+
+
+origKozteruletSelectedIndex = 0;
+function onAddressChange1(value, txtKozteruletID, ddlKozteruletJellegeID, txtHazszamID, txtEpuletID, txtLepcsohazID, txtEmeletID, txtAjtoID) {
+    var txtKozterulet = $get(txtKozteruletID);
+    var ddlKozteruletJellege = $get(ddlKozteruletJellegeID);
+    var txtHazszam = $get(txtHazszamID);
+    var txtEpulet = $get(txtEpuletID);
+    var txtLepcsohaz = $get(txtLepcsohazID);
+    var txtEmelet = $get(txtEmeletID);
+    var txtAjto = $get(txtAjtoID);
+
+    if (txtKozterulet != null)
+        txtKozterulet.disabled = value;
+    if (ddlKozteruletJellege != null)
+        ddlKozteruletJellege.disabled = value;
+    if (txtHazszam != null)
+        txtHazszam.disabled = value;
+    if (txtEpulet != null)
+        txtEpulet.disabled = value;
+    if (txtLepcsohaz != null)
+        txtLepcsohaz.disabled = value;
+    if (txtEmelet != null)
+        txtEmelet.disabled = value;
+    if (txtAjto != null)
+        txtAjto.disabled = value;
+
+    if (value == true) {
+        txtKozterulet.value = txtKozterulet.defaultValue;
+        ddlKozteruletJellege.selectedIndex = origKozteruletSelectedIndex;
+        txtHazszam.value = txtHazszam.defaultValue;
+        txtEpulet.value = txtEpulet.defaultValue;
+        txtLepcsohaz.value = txtLepcsohaz.defaultValue;
+        txtEmelet.value = txtEmelet.defaultValue;
+        txtAjto.value = txtAjto.defaultValue;
+    }
+    else
+        origKozteruletSelectedIndex = ddlKozteruletJellege.selectedIndex;
+
+}
+
+function onAddressChange2(value, txtAddressID) {
+    var txtAddress = $get(txtAddressID);
+    if (txtAddress != null)
+        txtAddress.disabled = value;
+
+    if (value == true)
+        txtAddress.value = txtAddress.defaultValue;
+}
+
+function TieButton(event, ButtonToTie) {
+    if (document.all) event = window.event; // for IE
+    if ((event.which && event.which == 13) || (event.keyCode && event.keyCode == 13)) {
+        document.getElementById(ButtonToTie).focus();
+        return false;
+    }
+    else
+        return false;
+}
+
+function TieMenuDropdownButton(event, ButtonToTie, HiddenName) {
+    if (document.all) event = window.event; // for IE
+    if ((event.which && event.which == 13) || (event.keyCode && event.keyCode == 13)) {
+        document.getElementById(HiddenName).value = this.value;
+        document.getElementById(ButtonToTie).focus();
+        return false;
+    }
+    else
+        return false;
+}
+
+// letiltja vagy engedelyezi a validatort a gridnel
+function SetValidatorInGrid(cmbColumnID, validSearchID) {
+    var cmbColumn = $get(cmbColumnID);
+    var validSearch = $get(validSearchID);
+
+    if (cmbColumn.value.indexOf('_DNAME') > -1) {
+        ValidatorEnable(validSearch, true);
+    }
+    else {
+        ValidatorEnable(validSearch, false);
+    }
+}
+
+// Tovabb lepteti a kovetkezo kontrollra a fokuszt, ha beirt 8 karaktert
+function BankszamlaszamLeptetes(currctrlid, nextctrlid) {
+    var currctrl = $get(currctrlid);
+    var nextctrl = $get(nextctrlid);
+
+    if (nextctrl != null && currctrl != null
+        && currctrl.value.length == 8) {
+        nextctrl.focus();
+    }
+}
+
+// Beallitja a TooltipExtendernel a szoveget, ha a szoveg = null, akkor nem jelenik meg
+function SetTooltip(tooltipclientid, headertext, text) {
+    var tooltip = $find(tooltipclientid);
+    var tooltiptext = null;
+    if (tooltip != null) {
+        if (text != null) {
+            tooltiptext = '<div class="tooltip_header">' + headertext + '</div><div class="tooltip_content">' + text + '</div>';
+        }
+        tooltip.set_Text(tooltiptext);
+    }
+}
+
+function SetLinkButtonEnabled(linkbuttonid) {
+    var lb = document.getElementById(linkbuttonid);
+    lb.disabled = true;
+    return false;
+}
+
+// A fajl letoltesehez kell, beregisztralodik az _endRequest esemenybe
+// letrehoz egy IFRAME-t, ami mukodik AJAX alatt is es a Session-be berakott GUID alapjan
+// majd a FileDownload.aspx oldalon letolti vagy megjeleniti az adott fajlt
+function FileDownloadEndRequest(sender, args) {
+    // Check to be sure this async postback is actually 
+    //   requesting the file download.
+    if (sender._postBackSettings.sourceElement != undefined && sender._postBackSettings.sourceElement.id.indexOf('download') > -1) {
+        // Create an IFRAME.
+        var iframe = document.createElement("iframe");
+
+        // Point the IFRAME to FileDownload
+        iframe.src = "FileDownload.aspx";
+
+        // This makes the IFRAME invisible to the user.
+        iframe.style.display = "none";
+
+        // Add the IFRAME to the page.  This will trigger
+        //   a request to FileDownload now.
+        document.body.appendChild(iframe);
+    }
+}
+//Addpost megjelenítés 
+var AddPostStateP;
+var ButtonP;
+var CtrlP;
+var HtmlEditorP;
+var Controlname;
+//klines oldalról állígatjuk az Addpost állapotát
+function SetAddPostShowState() {
+    if (AddPostStateP.value == 'true')
+        AddPostStateP.value = 'false';
+    else
+        AddPostStateP.value = 'true';
+    ShowAppPost();
+}
+//PageLoadnál beállítja a változókat és annak megfelelően megjeleníti
+function ShowHideAddPost(Button, Ctrl, AddPostState, HtmlEditor, controlname, fn) {
+    Controlname = controlname;
+    HtmlEditorP = iged_getById(HtmlEditor);
+    AddPostStateP = $get(AddPostState);
+    if (AddPostStateP.value == '')
+        AddPostStateP.value = 'false';
+    ButtonP = document.getElementById(Button);
+    CtrlP = document.getElementById(Ctrl);
+    ShowAppPost();
+    Sys.Application.remove_load(fn);
+}
+function ShowAppPost() {
+    if (AddPostStateP.value == 'true') {
+        ButtonP.style.display = 'none';
+        CtrlP.style.display = 'block';
+        if (navigator.userAgent.indexOf("Firefox") > -1) {
+            SimaulteMD(Controlname);
+            SimaulteMU(Controlname);
+        }
+        HtmlEditorP.focus();
+    }
+    else {
+        ButtonP.style.display = 'block';
+        CtrlP.style.display = 'none';
+    }
+}
+
+function SimaulteMD(controlname) {
+    var btn = $get(controlname);
+    var evtMD = document.createEvent("MouseEvents");
+    evtMD.initMouseEvent("mousedown", true, true, window, 0, btn.x + 1, btn.y + 1, btn.x + 1, btn.y + 1, false, false, false, false, 0, null);
+    btn.dispatchEvent(evtMD);
+
+}
+function SimaulteMU(controlname) {
+    var btn = $get(controlname);
+    var evtMU = document.createEvent("MouseEvents");
+    evtMU.initMouseEvent("mouseup", true, true, window, 0, btn.x + 1, btn.y + 1, btn.x + 1, btn.y + 1, false, false, false, false, 0, null);
+    btn.dispatchEvent(evtMU);
+}
+
+function newHtmlEdior(HidAddPostNew) {
+    var hidnew = $get(HidAddPostNew);
+    hidnew.value = 'true';
+}
+function ClearHtmlEditor(HtmlEditor, TextBox, elozmeny) {
+    var ihtmleditor = iged_getById(HtmlEditor);
+    var txtbox = $get(TextBox);
+    var pre = $get(elozmeny);
+    ihtmleditor.setText('');
+    txtbox.value = '';
+    txtbox.removeAttribute('readOnly');
+    if (pre != null)
+        pre.style.display = 'none';
+}
+// az alábbi kódok a htmltexteditor-nál a vágólapról bemásolt szövegek formázását végzik
+function edAfterAction(oEditor, actID, oEvent, p4, p5, p6, p7, p8) {
+    if (actID == 'Paste' || actID == 'PasteHtml') {
+        oEditor.setText(cleanXhtml(oEditor.getText()));
+    }
+}
+
+function cleanXhtml(dirty) {
+    //remove comments
+    clean = dirty.replace(/<!–/g, '')
+
+    //remove blank lines
+    clean = clean.replace(/<p>(&nbsp;){0,1}<\/p>/ig, '')
+
+    //remove whole tags
+    clean = clean.replace(/<\/?(onmouseover|iframe|noscript|font|span|shape|path|shapetype|stroke|textbox).*?>/ig, '');
+
+    //remove some known Word styles
+    clean = clean.replace(/class=[\'""]{0,1}(MsoNormal)[\'""]{0,1}/ig, '');
+
+    //change characters
+    clean = clean.replace(/[§]/ig, '&bull;');
+
+    //remove doctype declarations
+    clean = clean.replace(/<!DOCTYPE[.]*>/ig, '');
+
+    //clean up spacing
+    clean = clean.replace(/ /ig, ' ');
+    clean = clean.replace(' >', '>');
+    clean = clean.replace('> <', '><');
+    clean = clean.replace(/(&nbsp;){2,}/ig, '&nbsp;');
+
+    // torlom a scriptet es az abban levo tartalmat regexel
+    var expression = /<script\b[^>]*>((.|\r|\n|\t)*?)<\/script>/gi;
+    clean = clean.replace(expression, '');
+
+    // word comment törlése
+    clean = dirty.replace(/<!--[\s\S]*?-->/g, '');
+
+    return clean;
+}
+
+var isEditorCtrl = false;
+function edKeyDown(oEditor, keyCode, oEvent) {
+    //this function is only for IE
+    if (keyCode == 17) {
+        isEditorCtrl = true;
+    }
+    if ((keyCode == 36 || keyCode == 35) && isEditorCtrl) {
+        var editor = $('#' + oEditor.ID);
+        var elemek = $(editor).parents("div").find("input[type!='hidden'][disabled!='disabled'], .htmlEditorTextWindow, submit, select, a, #" + oEditor.ID);
+        var editorIndex = jQuery.inArray(editor[0], elemek);
+        var kovetkezoIndex = keyCode == 35 ? editorIndex + 1 : editorIndex - 1;
+        if ($('#' + elemek[kovetkezoIndex].id).hasClass('htmlEditorTextWindow') && keyCode == 35)
+            kovetkezoIndex += 1;
+        elemek[kovetkezoIndex].focus();
+        isEditorCtrl = false;
+        return;
+    }
+
+    if (!window.event || !window.clipboardData) return;
+
+    //pressed 'ctrl' and 'v'
+    if (window.event.ctrlKey == 1 && keyCode == 86) {
+        //wait a little bit, then clean the pasted xhtml
+        window.setTimeout('cleanCurrentEditorXhtml("' + oEditor.ID + '")', 100);
+        //cleanCurrentEditorXhtml(''+oEditor.ID+'');        
+    }
+}
+
+// tobb bongeszo nem menti el a beirt szoveget, ezert kell ez
+function WebEditorWorkAround(oEditorClientID) {
+    var oEditor = iged_getById(oEditorClientID);
+    if (oEditor) {
+        var text = oEditor.getText();
+        oEditor.setText(text);
+    }
+}
+
+function cleanCurrentEditorXhtml(editorId) {
+
+    var oEditor = iged_getById(editorId);
+
+    if (oEditor) oEditor.setText(cleanXhtml(oEditor.getText()));
+
+}
+
+function IgmenuInit(menuId) {
+    while (ig_menuObject && ig_menuObject.ItemQueue.length > 0) {
+        ig_menuObject.ItemQueue.pop();
+    }
+}
+
+var _oEditorID = null;
+
+function WebEditorInit(oEditor) {
+    var htmleditorpics = $('#' + oEditor.ID + ' img');
+    for (var i = 0; i < htmleditorpics.length; i++) {
+        htmleditorpics[i].alt = "";
+    }
+
+    $('#' + oEditor.ID).keyup(function (event) {
+        if (event.keyCode == 17)
+            isCtrlVakok = false;
+    });
+
+    _oEditorID = oEditor.ID;
+    PageMethods.GetStringFromJS(6119, AddSegitsegToEditor);
+}
+
+function AddSegitsegToEditor(result) {
+    $('#' + _oEditorID).find('.htmlEditorTextWindow').parent().append('<div aria-live="polite" style="display: block; position : absolute; left : 10px; top :10px; z-index : -9999" aria-hidden="false">' + result + '</div>');
+    $('#' + _oEditorID).find('.htmlEditorTextWindow').parent().css('position', 'relative');
+}
+
+var _oEditorOnFocus = null;
+// felolvasáshoz segítség
+function WebEditorHelp(oEditor) {
+    var oEditorSegitseg = $('#' + oEditor.ID).find('.htmlEditorTextWindow').siblings('div[aria-live="polite"]');
+    if (oEditorSegitseg.length > 0) {
+        _oEditorOnFocus = oEditorSegitseg[0];
+        PageMethods.GetStringFromJS(6119, AddSegitsegToEditorOnFocus);
+    }
+}
+
+function AddSegitsegToEditorOnFocus(result) {
+    $(_oEditorOnFocus).html(result);
+}
+
+var TimeDiff = 2 * 60 * 60 * 1000; //2óra millisecundumban
+var tbStartDate;
+var tbEndDate;
+function CalculateExamEndDate(tbStartDateID, tbEndDateID, fn) {
+    if (tbStartDate == null) {
+        tbStartDate = $('#' + tbStartDateID);
+    }
+    if (tbEndDate == null) {
+        tbEndDate = $('#' + tbEndDateID);
+    }
+
+    /*
+    if (tbStartDate.val() != "" && tbEndDate.val() != "") {
+        TimeDiff = tbEndDate.datetimepicker("getDate") - tbStartDate.datetimepicker("getDate");
+    }
+    */
+    $(tbStartDate).change(CalculateExamEndTimeBlur);
+    Sys.Application.remove_load(fn);
+}
+
+function CalculateExamEndTimeBlur(e) {
+    var startDate = new Date(tbStartDate.datetimepicker("getDate"));
+    if (startDate != null) {
+        var endDate = new Date(startDate);
+        endDate.setTime(endDate.getTime() + TimeDiff)
+        tbEndDate.datepicker('setDate', endDate);
+
+        /*
+        $(tbEndDate).change(function (e) {
+            TimeDiff = tbEndDate.datetimepicker("getDate") - tbStartDate.datetimepicker("getDate");
+        });
+        */
+    }
+}
+
+// GyP - A kapott kontroll-ban valtoztatja a kapott szovegbol a megadott hosszusagu szoveget a 
+// label-re valo kattintasra
+var full = new Array();
+function ChangeTitle(ID, fullText, firstNchar) {
+    var text = $get(fullText).value;
+    var head1 = $get(ID);
+    var firschars = text.substring(0, firstNchar);
+
+    if (full[ID] == null)
+        full[ID] = true;
+
+    if (full[ID]) {
+        if (firschars == text)
+            head1.innerHTML = text;
+        else {
+            if (head1.innerHTML.endsWith('...'))
+                head1.innerHTML = text;
+            else
+                head1.innerHTML = firschars + '...';
+        }
+
+        full[ID] = false;
+    }
+    else {
+        if (head1.innerHTML.endsWith('...'))
+            head1.innerHTML = text;
+        else
+            head1.innerHTML = firschars + '...';
+
+        full[ID] = true;
+    }
+}
+
+function MetaEdit(tbId, ddlId, type) {
+    var tb = $get(tbId);
+    var ddl = $get(ddlId);
+
+    if (type == 'filter') {
+        tb.value += ddl.value + "(1, /*Itt egy TCS függvényt kell meghívni*/) ";
+    }
+    else if (type == 'aggregator') {
+        tb.value += ddl.value + "( ) ";
+    }
+    else
+        tb.value += ddl.value + " ";
+}
+
+// a dialogban kivalasztott smile-t illeszti be
+function myDialogClick(imgAlt, webhtmlctrlID, srcImageName) {
+    var object = document.createElement('SPAN');
+    //object.innerHTML = '<img alt=' + imgAlt + ' src=' + srcImageName + ' />';
+    object.innerHTML = '<img src=' + srcImageName + ' />';
+
+    if (typeof iged_insNodeAtSel == "function")//Mozilla 
+        iged_insNodeAtSel(object);
+    else//IE 
+        iged_insText(object.outerHTML);
+}
+
+// That function is called when WebHtmlEditor1 was initialized.
+function htmleditor_Initialize(oEditor) {
+    initializeMyDialog();
+}
+
+// GyP - ez a fv. egyenlore nem hasznal semmit a dialog oldal elcsusztato problema ellen (a dialog elso megjelenitese eseten latvanyosan elcsusztatja az oldalt lefele.
+// Az elso becsukas utan visszaugrik az oldal, es ezutan jol mukodik. Ez az eset elofordul a keresesnel is.) Ezzel meg foglalkozni kellene!!!)
+
+// That function is called by WebHtmlEditor1_Initialize in order to 
+// initialize content of custom dialog, which is defined explicitly within aspx 
+var myDialogWasConnected = false;
+function initializeMyDialog() {
+    if (myDialogWasConnected)
+        return;
+    myDialogWasConnected = true;
+    //---------------- 
+    // Find reference to html-element container for MyDialogID. 
+    // That value was set to ToolbarDialogButton.Dialog.DialogContentID 
+    var dialog = document.getElementById("MyDialogID");
+    if (!dialog)
+        return;
+    //---------------- 
+    // Find reference to html-element content for MyDialog. 
+    // The html element with that id was created within aspx.
+    var content = document.getElementById("kollab_posts_kollab_addpost1_MyDialogContentID");
+    //---------------- 
+    // Remove MyDialogContentID from its temporary container (body of asxp-page) 
+    // and insert it into MyDialogID container, which is used by WebHtmlEditor. 
+    content.parentNode.removeChild(content);
+    dialog.appendChild(content);
+    //---------------- 
+    // Undo initial hidden state. 
+    content.style.display = "";
+    content.style.visibility = "visible";
+}
+
+function showWait(fuFileUploadID, UPID) {
+    if ($get(fuFileUploadID).value.length > 0) {
+        $get(UPID).style.display = 'block';
+    }
+}
+
+function ShowTroubleShootingWindow() {
+    var wnd = window.open('troubleshooting.aspx', 'troubleshooting', '', 'new_Win');
+
+    if (wnd == null) {
+        location.href = 'troubleshooting.aspx';
+    }
+}
+
+function trim(str) {
+    str = str.replace(/^\s+/, '');
+    for (var i = str.length - 1; i >= 0; i--) {
+        if (/\S/.test(str.charAt(i))) {
+            str = str.substring(0, i + 1);
+            break;
+        }
+    }
+    return str;
+}
+
+// **************BEGIN ******* SDAWeekTimeChooser javascriptje* **********************
+
+function SetDateFromControls(chkEnablePar, cmbDayPar, wdeTimePar, mEditValPar, mEditTime) {
+    var chkEnabled = $get(chkEnablePar);
+    var cmbDay = $get(cmbDayPar);
+    var wdeTime = $get(wdeTimePar);
+    var mEditVal = $get(mEditValPar);
+    var mEditTime = $find(mEditTime);
+
+    if (chkEnabled.checked) {
+        cmbDay.disabled = false;
+        wdeTime.disabled = false;
+        ValidatorEnable(mEditVal, true);
+    }
+    else {
+        cmbDay.disabled = true;
+        wdeTime.disabled = true;
+        ValidatorEnable(mEditVal, false);
+    }
+}
+// *************END******** SDAWeekTimeChooser javascriptje* **********************
+
+function ShowHideEmaterialRow(chkGeneral, trEmaterial) {
+
+    var chk = $get(chkGeneral);
+    var emateiralrow = $get(trEmaterial);
+
+    if (chk.checked) {
+        emateiralrow.style.display = 'table-row';
+    }
+    else {
+        emateiralrow.style.display = 'none';
+    }
+
+
+    return false;
+}
+var state = true;
+var state2 = true;
+
+/* a tema valaszto megjeleniteseert es az elonezeti kep megjeleniteseert felel */
+function ShowHideThemeChooser() {
+
+    if ($('.skinchooserimgcollapsed')[0] != null) {
+        $('.skinchooserimg').width("20px");
+        $('.skinchooserimg').animate({ height: "0px" }, 300);
+        $('.skinchooserimg').animate({ height: "20px" }, 150);
+        $('.skinchooserimgcollapsed').toggleClass("skinchooserimgcollapsed skinchooserimgexpanded", 300);
+    }
+    else {
+        $('.skinchooserimgexpanded').toggleClass("skinchooserimgexpanded skinchooserimgcollapsed", 300);
+    }
+
+    state = !state;
+    SetAriaHiddenAttributeToSkinChooserImages(state);
+
+    var skinchooserimg_blue = $('.skinchooserimg_blue');
+    var skinchooserimg_green = $('.skinchooserimg_green');
+    var skinchooserimg_pink = $('.skinchooserimg_pink');
+    var skinchooserimg_orange = $('.skinchooserimg_orange');
+    var skinchooserimg_teacher = $('.skinchooserimg_teacher');
+    var skinchooserimg_purple = $('.skinchooserimg_purple');
+    var skinchooserimg_szte = $('.skinchooserimg_szte');
+
+    setSkinImageUrl();
+
+    skinchooserimg_blue.bind('mouseover', { skinName: 'Blue' }, showSkinPreview);
+    skinchooserimg_green.bind('mouseover', { skinName: 'Green' }, showSkinPreview);
+    skinchooserimg_pink.bind('mouseover', { skinName: 'Pink' }, showSkinPreview);
+    skinchooserimg_orange.bind('mouseover', { skinName: 'Orange' }, showSkinPreview);
+    skinchooserimg_teacher.bind('mouseover', { skinName: 'Teacher' }, showSkinPreview);
+    skinchooserimg_purple.bind('mouseover', { skinName: 'Purple' }, showSkinPreview);
+    skinchooserimg_szte.bind('mouseover', { skinName: 'SZTE' }, showSkinPreview);
+
+    skinchooserimg_blue.bind('mouseout', { skinName: 'Blue' }, hideSkinPreview);
+    skinchooserimg_green.bind('mouseout', { skinName: 'Green' }, hideSkinPreview);
+    skinchooserimg_pink.bind('mouseout', { skinName: 'Pink' }, hideSkinPreview);
+    skinchooserimg_orange.bind('mouseout', { skinName: 'Orange' }, hideSkinPreview);
+    skinchooserimg_teacher.bind('mouseout', { skinName: 'Teacher' }, hideSkinPreview);
+    skinchooserimg_purple.bind('mouseout', { skinName: 'Purple' }, hideSkinPreview);
+    skinchooserimg_szte.bind('mouseout', { skinName: 'SZTE' }, hideSkinPreview);
+}
+
+function SetAriaHiddenAttributeToSkinChooserImages(value) {
+    var skinchooserimg_blue = $('.skinchooserimg_blue');
+    var skinchooserimg_green = $('.skinchooserimg_green');
+    var skinchooserimg_pink = $('.skinchooserimg_pink');
+    var skinchooserimg_orange = $('.skinchooserimg_orange');
+    var skinchooserimg_teacher = $('.skinchooserimg_teacher');
+    var skinchooserimg_purple = $('.skinchooserimg_purple');
+    var skinchooserimg_szte = $('.skinchooserimg_szte');
+
+    skinchooserimg_blue.attr('aria-hidden', value);
+    skinchooserimg_green.attr('aria-hidden', value);
+    skinchooserimg_pink.attr('aria-hidden', value);
+    skinchooserimg_orange.attr('aria-hidden', value);
+    skinchooserimg_teacher.attr('aria-hidden', value);
+    skinchooserimg_purple.attr('aria-hidden', value);
+    skinchooserimg_szte.attr('aria-hidden', value);
+}
+
+function SetAriaHiddenAttributeToLanguageChooserImages(value) {
+    $('#divLang input').each(function () {
+        $(this).attr('aria-hidden', value);
+    });
+}
+
+/* beállítja a skin képeket, amikor kinyitja a téma választót */
+function setSkinImageUrl() {
+    var skinimgdiv = $('.skinsmallimage');
+
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imageBlue');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_blue_thumb.png');
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imageGreen');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_green_thumb.png');
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imagePink');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_pink_thumb.png');
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imagePurple');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_city_thumb.png');
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imageOrange');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_orange_thumb.png');
+    // blue
+    var skinimgBlue = skinimgdiv.find('#imageTeacher');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_classic_thumb.png');
+    // szte
+    var skinimgBlue = skinimgdiv.find('#imageSZTE');
+    skinimgBlue.attr('src', 'App_Themes/New_Common_Images/skin_szte_thumb.png');
+}
+
+/* téma választónál az előnézeti kép megjelenítése */
+function showSkinPreview(event) {
+
+    var skinName = event.data.skinName;
+    var skinimgdiv = $('.skinsmallimage');
+    var skinimg = skinimgdiv.find('#image' + skinName);
+
+    skinimgdiv.show();
+    skinimg.show();
+}
+
+/* téma választónál az előnézeti kép eltüntetése */
+function hideSkinPreview(event) {
+    var skinName = event.data.skinName;
+    var skinimgdiv = $('.skinsmallimage');
+    var skinimg = skinimgdiv.find('#image' + skinName);
+
+    skinimgdiv.hide();
+    skinimg.hide();
+}
+
+/* téma választásnál */
+function SkinChoose(skin_name) {
+    var href = location.href;
+
+    // ha nincs egy parameter sem az href-ben
+    if (href.indexOf('?') == -1) {
+        dochangeSkin(href + '?skinname=' + skin_name, skin_name);
+    }
+    else if (href.indexOf('skinname') > -1) { // ha volt mar skin valasztva, azaz van az href-ben skinname parameter
+        var hrefarray = href.split('?')[1].split('&');
+        var hrefresult = href.split('?')[0];
+
+        // vegigmegyek a letezo parametereken es osszefuzom azokat
+        for (var i = 0; i < hrefarray.length; i++) {
+            if (hrefarray[i].indexOf('skinname') == -1) {
+                if (i > 0) { // a tobbi parametert &-el fuzom az href-hez
+                    hrefresult += '&' + hrefarray[i];
+                }
+                else { // az elso parametert kerdojellel fuzom az href-hez
+                    hrefresult += '?' + hrefarray[i];
+                }
+            }
+        }
+
+        // ha nincs mas parameter, akkor ?-el fuzom a href-hez
+        if (hrefresult.indexOf('?') == -1) {
+            //alert('2');
+            dochangeSkin(hrefresult + '?skinname=' + skin_name, skin_name);
+        }
+        else // ha van mas parameter, akkor &-el fuzom a tobbi parameterhez
+        {
+            //alert('3');
+            //location.href = hrefresult + '&skinname=' + skin_name;
+            dochangeSkin(hrefresult + '&skinname=' + skin_name, skin_name);
+
+        }
+    }
+    else // ha van valamilyen mas parameter, akkor hozzafuzom a temat
+    {
+        //alert(href + '&skinname=' + skin_name);
+        dochangeSkin(href + '&skinname=' + skin_name, skin_name);
+    }
+}
+
+/***************language chooser begin *****************/
+
+function ShowHideLanguageChooser() {
+    if ($('.langchooserimgcollapsed')[0] != null) {
+        $('.languagechooserbutton').width("30px");
+        $('.languagechooserbutton').animate({ height: "0px" }, 300);
+        $('.languagechooserbutton').animate({ height: "18px" }, 150);
+        $('.langchooserimgcollapsed').toggleClass("langchooserimgcollapsed langchooserimgexpanded", 300);
+    }
+    else {
+        $('.langchooserimgexpanded').toggleClass("langchooserimgexpanded langchooserimgcollapsed", 300);
+    }
+
+    state2 = !state2;
+    SetAriaHiddenAttributeToLanguageChooserImages(state2);
+}
+
+/***************language chooser end *****************/
+
+function getRSSInfo(query, apiKey) {
+    $.ajax({
+        type: "GET",
+        contentType: "application/json;charset=utf-8",
+        dataType: "json",
+        data: null,
+        url: "http://integra/wire/?controlCode=" + query + "&top=3&sdakey=" + apiKey + "&$format=json",
+        success: function (result) {
+            $("#myTemplate").tmpl(result.feed.Items).appendTo("#newsListRoot");
+        }
+    });
+}
+
+/*azért került bele, hogy a modal ne veszítse el a focust*/
+var lastFocusedControlId = "";
+function focusHandler(e) {
+    document.activeElement = e.originalTarget;
+}
+
+function appInit() {
+    if (typeof (window.addEventListener) !== "undefined") {
+        window.addEventListener("focus", focusHandler, true);
+
+        window.addEventListener("paste", function (e) {
+            try {
+                if (e.target.id.startsWith('tPassword')) {
+                    var pastedText = undefined;
+                    if (window.clipboardData && window.clipboardData.getData) { // IE
+                        pastedText = window.clipboardData.getData('Text');
+                    } else if (e.clipboardData && e.clipboardData.getData) {
+                        pastedText = e.clipboardData.getData('text/plain');
+                    }
+
+                    var tBox = $('#' + e.target.id);
+                    var hBox = tBox.nextUntil('td', '.passwordhidden');
+                    var hCh = tBox.nextUntil('td', "input[id^='hChkShowPassword']");
+
+                    // ha latszik a jelszo
+                    if (hCh.val() == "1") {
+                        setTimeout(function () {
+                            hBox.val($('#' + e.target.id).val());
+                            //console.log($('#' + e.target.id).val());
+                        }, 100);
+                    }
+                    else {
+                        //console.error('nem latszik a jelszo');
+                        CancelPress(e);
+
+                        // ha az egesz ki van jelolve
+                        if ($('#' + e.target.id).val().length ==
+                            $('#' + e.target.id)[0].selectionEnd - $('#' + e.target.id)[0].selectionStart) {
+                            // atirom, ha az egész ki van jelölve
+                            var lngth = pastedText.length;
+                            var ps = '';
+                            for (i = 0; i < lngth; i++) {
+                                ps += '*';
+                            }
+
+                            e.target.value = ps;
+
+                            // mentem kesleltetes nelkul, mert csak az egesz paste-elheto
+                            hBox.val(pastedText);
+                        }
+
+                        return;
+                    }
+                }
+                // ha az a textbox + nincs megjelenítve a jelszó
+                else if (e.target.id.endsWith('_txtUniPassword')) {
+                    var pastedText = undefined;
+                    if (window.clipboardData && window.clipboardData.getData) { // IE
+                        pastedText = window.clipboardData.getData('Text');
+                    } else if (e.clipboardData && e.clipboardData.getData) {
+                        pastedText = e.clipboardData.getData('text/plain');
+                    }
+
+                    var $chkShowUniPassword = $("#" + $("#" + e.target.id).attr("chkinputid"));
+                    var $hUniPassword = $("#" + $("#" + e.target.id).attr("hiddeninputid"));
+
+                    // ha meg van jelenitve
+                    if ($chkShowUniPassword.is(':checked')) {
+                        //console.log("paste - not checked - " + $('#o_exam_modify_txtUniPassword')[0].selectionStart + " - " +$('#o_exam_modify_txtUniPassword')[0].selectionEnd);
+
+                        // csak kesleltetve kapom meg a paste-elt value-t
+                        setTimeout(function () {
+                            $hUniPassword.val($('#' + e.target.id).val());
+                            //console.log($('#' + e.target.id).val());
+                        }, 100);
+                    }
+                    else { // ha nincs
+                        CancelPress(e);
+
+                        // ha az egesz ki van jelolve
+                        if ($('#' + e.target.id).val().length ==
+                            $('#' + e.target.id)[0].selectionEnd - $('#' + e.target.id)[0].selectionStart) {
+                            // atirom, ha az egész ki van jelölve
+                            var lngth = pastedText.length;
+                            var ps = '';
+                            for (i = 0; i < lngth; i++) {
+                                ps += '*';
+                            }
+
+                            e.target.value = ps;
+
+                            // mentem kesleltetes nelkul, mert csak az egesz paste-elheto
+                            $hUniPassword.val(pastedText);
+                        }
+                        else {
+                            //console.log("paste - cancelled");
+                            CancelPress(e);
+                        }
+
+                        return false;
+                    }
+                }
+            }
+            catch (err) { }
+        });
+    }
+
+    Sys.WebForms.PageRequestManager.getInstance().add_pageLoading(pageLoadingHandler);
+    Sys.WebForms.PageRequestManager.getInstance().add_pageLoaded(pageLoadedHandler);
+    BrowserDetect.init();
+
+}
+
+function pageLoadingHandler(sender, args) {
+    if (document.activeElement != null)
+        lastFocusedControlId = typeof (document.activeElement) === "undefined" ? "" : document.activeElement.id;
+}
+
+function focusControl(targetControl) {
+    if (Sys.Browser.agent === Sys.Browser.InternetExplorer) {
+        var focusTarget = targetControl;
+        if (focusTarget && (typeof (focusTarget.contentEditable) !== "undefined")) {
+            oldContentEditableSetting = focusTarget.contentEditable;
+            focusTarget.contentEditable = false;
+        }
+        else {
+            focusTarget = null;
+        }
+        if (targetControl.visible) {
+            targetControl.focus();
+        }
+
+        if (focusTarget) {
+            focusTarget.contentEditable = oldContentEditableSetting;
+        }
+    }
+    else {
+        if (targetControl.visible) {
+            targetControl.focus();
+        }
+    }
+}
+
+function pageLoadedHandler(sender, args) {
+    if (typeof (lastFocusedControlId) !== "undefined" && lastFocusedControlId != "") {
+        var newFocused = $get(lastFocusedControlId);
+        if (newFocused) {
+            focusControl(newFocused);
+        }
+    }
+}
+
+function ShowLeftBoxes(sender) {
+
+    var item = $get('upBoxes_leftbox')
+    var visible = true;
+    if (item.style.display != 'none') {
+        item.style.display = 'none';
+        sender.className = 'OpenLeftBox';
+        visible = false;
+        PageMethods.GetStringFromJS(4917, SetTitle);
+    }
+    else {
+        item.style.display = '';
+
+        sender.className = 'CloseLeftBox';
+        PageMethods.GetStringFromJS(4916, SetTitle);
+    }
+
+    PageMethods.SaveLeftBoxState(visible);
+
+}
+function ShowHeader(sender) {
+
+    var item = $get('panHeader');
+    var changeproject = $('#span_changeproject');
+    var visible = true;
+    if (item.style.display != 'none') {
+        item.style.display = 'none';
+        sender.className = 'OpenHeader';
+        visible = false;
+        PageMethods.GetStringFromJS(4987, SetHeaderTitle);
+
+        changeproject.show();
+    }
+    else {
+        item.style.display = '';
+
+        sender.className = 'CloseHeader';
+        PageMethods.GetStringFromJS(4986, SetHeaderTitle);
+
+        changeproject.hide();
+    }
+
+    PageMethods.SaveHeaderState(visible);
+
+}
+function SetHeaderTitle(result) {
+    $get('panCloseHeader').setAttribute("title", result);
+}
+function SetTitle(result) {
+    $get('upBoxes_CloseLeftBoxTD').setAttribute("title", result);
+}
+
+jQuery.fn.countdown = function (options) {
+    /**
+    * app init
+    */
+    if (!options) options = '()';
+    if (jQuery(this).length == 0) return false;
+    var obj = this;
+
+    /**
+    * break out and execute callback (if any)
+    */
+    if (options.seconds < 0 || options.seconds == 'undefined') {
+        if (options.callback) eval(options.callback);
+        return null;
+    }
+
+    var secCounter = Math.floor(options.seconds % 60);
+    var minCounter = Math.floor(options.seconds / 60);
+    /**
+    * recursive countdown
+    */
+    window.setTimeout(
+        function () {
+            jQuery(obj).html(String(minCounter + ' : ' + secCounter));
+            --options.seconds;
+            jQuery(obj).countdown(options);
+        }
+        , 1000
+    );
+
+    /**
+    * return null
+    */
+    return this;
+}
+
+//check refresh
+function Unload() {
+    CloseModalPopup(true);
+    PageMethods.ClearPopupState();
+}
+
+//var childWindow;
+function SetModalChild(child) {
+    //if (childWindow == undefined)
+    //var childWindow = child;
+    //childWindow.registerID = 'unipollOpen_' + Math.round(Math.random() * 254 + 1).toString();
+
+    //if ($(childWindow) != undefined) {
+    //        $(child).bind('beforeunload', function (e) {
+    //            test();
+    //        });
+    //childWindow.opener = self;
+
+    /********************************************/
+    //        $(childWindow).bind({
+    //            beforeunload: function () {
+    //                test();
+    //                //childWindow = undefined;
+    //                //                $.ajaxSetup({ cache: false });
+    //                //$(this).unbind('beforeunload');
+    //            }
+    //        });
+    /********************************************/
+    // $(childWindow).bind('mouseup', function () { test(); });
+    /********************************************/
+    //}
+
+    //return false;
+
+    //    $(window).bind('unload', function (e) {
+    //        test();
+    //    });
+}
+
+function closeautomodal() {
+    // test();
+}
+
+function test() {
+    //if ($(".modaldetail_table") != null)
+    //$(".modaldetail_table").css("border", "3px solid red");
+
+
+    var red = Math.round(Math.random() * 254 + 1);
+    var green = Math.round(Math.random() * 254 + 1);
+    var blue = Math.round(Math.random() * 254 + 1);
+    var color = 'rgb(' + red + ',' + green + ',' + blue + ')';
+    //var reverse = 'rgb(' + (255 - red) + ',' + (255 - green) + ',' + (255 - blue) + ')';
+
+    //    $('p#rnumber4').css('background', color)
+    //               .css('color', reverse)
+    //               .fadeTo('slow', '0.35')
+    //               .fadeTo('slow', 1.0);
+
+
+    if ($(".captiontable") != null)
+        $(".captiontable").css("background", color);
+
+
+
+    //alert('hehe');
+}
+
+// ARIA Felolvasáshoz
+var modalElozoFocus = new Array();
+var modalAktualisFocusIndex = -1;
+
+function modalTitleLoad(modalTitleID) {
+    if (jQuery.inArray(modalTitleID, modalElozoFocus) < 0) {
+        modalAktualisFocusIndex = modalAktualisFocusIndex + 1;
+        modalElozoFocus[modalAktualisFocusIndex] = modalTitleID;
+    }
+}
+
+function modalFelolvasas(modalTitleId, gombId, Id) {
+    var modalTitle = document.getElementById(modalTitleId);
+    if (modalTitle != null) {
+        modalTitle.style.display = "none";
+        modalTitle.style.display = "block";
+        if (modalElozoFocus[modalAktualisFocusIndex] != Id) {
+            modalAktualisFocusIndex = modalAktualisFocusIndex + 1;
+            modalElozoFocus[modalAktualisFocusIndex] = Id;
+        }
+    }
+    var gomb = $get(gombId);
+    if (gomb != null)
+        gomb.focus();
+    else
+        $(modalTitle).next().focus();
+}
+
+function modalBezarasFocus() {
+    while (true) {
+        var modalElozoFocusTorles = modalElozoFocus[modalAktualisFocusIndex];
+        modalElozoFocus = jQuery.grep(modalElozoFocus, function (value) {
+            return value != modalElozoFocusTorles;
+        });
+        modalAktualisFocusIndex = modalAktualisFocusIndex - 1;
+        if (modalAktualisFocusIndex >= 0) {
+            var modalUjFocus = $get(modalElozoFocus[modalAktualisFocusIndex]);
+            if (modalUjFocus != null && modalUjFocus != 'undefine') {
+                try {
+                    modalUjFocus.focus();
+                }
+                catch (err) { }
+                break;
+            }
+        }
+        else {
+            break;
+        }
+    }
+}
+
+var dcTitle = "";
+var dcDescription = "";
+var dcOkText = "";
+var dcCancelText = "";
+var dcBtnUniqueID = "";
+var dcEvent = null;
+
+// notext: a confirm nem gombjának felirata
+// plusjavascriptforcancel: cancel gombhoz rendelt javascript
+// plusjavascriptforok: ok gombhoz rendelt javascript
+// ezeket egyenlőre csak abban az esetben használjuk, ha 3 gomb van
+function DialogConfirmation(title, description, okText, cancelText, btnUniqueID, imagename, okTextForAlert, e, noText, plusjavascriptforcancel, plusjavascriptforok) {
+    if (e != null && e != undefined)
+        CancelEvent(e);
+    // ez azért kell, mert az evalban egy olyan CancelEvent van, ahol nem e-t, hanem event-et vár
+    // ha ez nincs itt, akkor mozillában elszáll
+
+    // ez azért kell, mert a "function createModal"-ban is felül van írva, ami erre hatással van, ezért itt is felül kell írni
+    $.widget("ui.dialog", $.extend({}, $.ui.dialog.prototype, {
+        _title: function (titl) {
+            if (title.length == 0)
+                titl.html('&nbsp;');
+            else
+                titl.html(title);
+        }
+    }));
+
+    var event = e;
+    if (okTextForAlert != "") {
+        $("<div title=\"" + title + "\" id=\"confirm\"><img src=\"App_Themes/Common_Images/" + imagename + "\" /><p>" + description + "</p></div>").dialog({
+            autoOpen: true,
+            modal: true,
+            resizable: false,
+            width: 500,
+            height: 180,
+            dialogClass: 'dialog_confirm44',
+            open: function (event, ui) {
+                $("div.ui-dialog-buttons").on('keydown', function (event) {
+                    if (event.keyCode == $.ui.keyCode.ESCAPE) {
+                        $("div.ui-dialog-buttons").off('keydown');
+                        jquerydialogclosed = true;
+                    }
+                });
+
+
+            },
+            close: function (ev, ui) {
+                $(this).remove();
+            },
+            buttons: [
+                {
+                    text: okTextForAlert,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                    }
+                }
+            ]
+        });
+    }
+    else if (noText != undefined && noText != '') {
+        $("<div title=\"" + title + "\" id=\"confirm\"><img src=\"App_Themes/Common_Images/" + imagename + "\" /><p>" + description + "</p></div>").dialog({
+            autoOpen: true,
+            modal: true,
+            resizable: false,
+            width: 500,
+            height: 160,
+            //zIndex: 10002,
+            dialogClass: 'dialog_confirm44',
+            open: function (event, ui) {
+                $("div.ui-dialog-buttons").on('keydown', function (event) {
+                    if (event.keyCode == $.ui.keyCode.ESCAPE) {
+                        $("div.ui-dialog-buttons").off('keydown');
+                        jquerydialogclosed = true;
+                    }
+                });
+
+            },
+            close: function (ev, ui) {
+                $(this).remove();
+            },
+            buttons: [
+                {
+                    text: okText,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                        if (plusjavascriptforok != undefined && plusjavascriptforok.length > 0) {
+                            eval(plusjavascriptforok);
+                        }
+                        else {
+                            // Eddig csak dropdownlistnél kell visszatérési érték
+                            __doPostBack(btnUniqueID, 'true:' + cmbOldValue);
+                        }
+                    }
+                },
+                {
+                    text: noText,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                        __doPostBack(btnUniqueID, 'false');
+                    }
+                },
+                {
+                    text: cancelText,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                        if (plusjavascriptforcancel != undefined && plusjavascriptforcancel.length > 0)
+                            eval(plusjavascriptforcancel);
+                        return false;
+                    }
+                }
+            ]
+        });
+        $(".ui-widget-overlay").last().addClass('dialog_confirm4');
+    }
+    else {
+        $("<div title=\"" + title + "\" id=\"confirm\"><img src=\"App_Themes/Common_Images/" + imagename + "\" /><p>" + description + "</p></div>").dialog({
+            autoOpen: true,
+            modal: true,
+            resizable: false,
+            width: 500,
+            height: 160,
+            dialogClass: 'dialog_confirm44',
+            open: function (event, ui) {
+                $("div.ui-dialog-buttons").on('keydown', function (event) {
+                    if (event.keyCode == $.ui.keyCode.ESCAPE) {
+                        $("div.ui-dialog-buttons").off('keydown');
+                        jquerydialogclosed = true;
+                    }
+                });
+            },
+            close: function (ev, ui) {
+                $(this).remove();
+            },
+            buttons: [
+                {
+                    text: okText,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                        __doPostBack(btnUniqueID, 'true');
+                    }
+                },
+                {
+                    text: cancelText,
+                    click: function () {
+                        $(document).off('keydown');
+                        $(this).dialog("close");
+                        return false;
+                    }
+                }
+            ]
+        });
+    }
+    return false;
+}
+// DropDownList korábbi értéke
+var cmbOldValue = -1;
+
+// Visszaállítja a cmb kiválaszott értékét az előzőre
+function returnOldValueforCmb(cmbUniqueId) {
+    $('#' + cmbUniqueId).prop('selectedIndex', cmbOldValue);
+}
+
+// Keresünk egy gombot a modalon
+// pl.: cmb-hez kell, hogy lefusson a mentés gomb kliens oldali eseménye
+//function serachButtononModal(modalclinetid, commandname, attributum) {
+//    var ezazattributum = "" + attributum;
+//    var result = $('#' + modalclinetid).parent().parent().parent().find('input[commandname="' + commandname + '"]').attr(ezazattributum);
+//    return result;
+//}
+
+function serachButtononModal(n, t, i) {
+    //alert($("input[commandname='" + t + "']").last().attr("" + i));   
+    return "try{event=e;}catch(e){}" + $("input[commandname='" + t + "']").last().attr("" + i);
+    //alert($("#" + n).first('.ui-dialog').first('input[commandname="' + t + '"]').attr(r));    
+    //return $("#" + n).parent().parent().parent().find('input[commandname="' + t + '"]').attr(r)
+}
+
+// Visszaadja egy cmb kiválasztott értékét
+function cmbSelectedValue(id) {
+    return $('#' + id).prop('selectedIndex');
+}
+
+// Változott-e a jhtmlarea szövege
+var jhtmlAreaChangedText = false;
+
+function CancelEvent(e) {
+    //event = e;
+    if (e != null && e != undefined) {
+        e.returnValue = false;
+        e.cancelBubble = true;
+        if (e.preventDefault) { e.preventDefault(); }
+        if (e.stopPropagation) { e.stopPropagation(); }
+        return false;
+    }
+}
+
+// DialogConfirmation hívás esemény előtti server behívással
+function DialogConfirmationWithOnBeforeHandler(title, description, okText, cancelText, btnUniqueID, handlerType, paramString, e) {
+    CancelEvent(e);
+    // mentjük a dialoghoz szükséges paramétereket
+    dcTitle = title;
+    dcDescription = description;
+    dcOkText = okText;
+    dcCancelText = cancelText;
+    dcBtnUniqueID = btnUniqueID;
+    dcEvent = e;
+
+    var paramArray = paramString.split(',');
+
+    if (handlerType == "KervenyMellekletFileNameExistance") {
+        var kervenyId = paramArray[0];
+        var fileUploadClientID = paramArray[1];
+        var fileName = $('#' + fileUploadClientID).val().split('\\').pop();
+        PageMethods.IsExistKervenyMellekletFileName(kervenyId, fileName, OnPageMethodAnswer);
+    }
+}
+
+function OnPageMethodAnswer(result) {
+    if (result == 'true')
+        DialogConfirmation(dcTitle, dcDescription, dcOkText, dcCancelText, dcBtnUniqueID, "mini_help.png", '', dcEvent);
+    else
+        __doPostBack(dcBtnUniqueID, null);
+}
+
+var txtRecipients = "";         //Címzettek
+var txtRecipientsBCC = "";      //Titkos címzettek
+var IsBCC = "F";                //Titkosmásolatra kattintottak-e
+var lblWarning = "";            //Figyelmeztető szöveg
+
+var warningString = "";          //Figyelmeztető szöveg
+
+//Tíltandó kontrollok
+var txtsubjectID = "";           //Tárgy mező
+var jqDatePickerID = "";         //Dátumválasztó
+var htmlEditorID = "";           //Üzenet szövegének HTML szerkesztője
+var signatureID = "";            //Üzenet aláírásának HTML editora
+var sendButtonID = "";           //Elküldés gomb
+var addDocumentButtonID = "";    //Dokumentum hozzáadása gomb
+var newDocumentButtonID = "";    //Új dokumentum feltöltése gomb
+var modalPopUpID = "";
+
+var disableControls;            //Kell-e tiltani a kontrolokat
+
+function onMessageRecipientChange(txtNeptunCodesID, txtNeptunCodesBCCID, lblWarningID, PageClientID, IsBCCChanged, _txtsubjectID, _jqDatePickerID, _htmlEditorID, _signatureID, _sendButtonID, _addDocumentButtonID, _newDocumentButtonID, _modalPopUpID) {
+    txtRecipients = txtNeptunCodesID;
+    txtRecipientsBCC = txtNeptunCodesBCCID;
+    IsBCC = IsBCCChanged;
+    lblWarning = lblWarningID;
+
+
+    txtsubjectID = _txtsubjectID;
+    jqDatePickerID = _jqDatePickerID;
+    htmlEditorID = _htmlEditorID;
+    signatureID = _signatureID;
+    sendButtonID = _sendButtonID;
+    addDocumentButtonID = _addDocumentButtonID;
+    newDocumentButtonID = _newDocumentButtonID;
+    modalPopUpID = _modalPopUpID;
+
+    PageMethods.CheckMessageRecivingUserPermission($get(txtNeptunCodesID).value, $get(txtNeptunCodesBCCID).value, PageClientID, IsBCC, checkRecipientCallBack);
+}
+function checkRecipientCallBack(result) {
+    if (result != '') {
+        if (result == 7268) {
+            disableControls = false;
+        }
+        else {
+            disableControls = true;
+        }
+
+        PageMethods.GetStringFromJS(result, SetRecipientWarning);
+    }
+    else {
+        ResetRecipientWarning('');
+    }
+}
+
+function SetWarningString(result) {
+    warningString = result;
+}
+function SetRecipientWarning(result) {
+    if (disableControls === false) {
+        if ($('#' + txtsubjectID).attr('disabled') == 'disabled') {
+            ResetRecipientWarning('');
+        }
+    }
+    $('#' + lblWarning).text(result);
+
+    if (disableControls) {
+        $('#' + txtsubjectID).attr('title', result).attr('disabled', 'disabled').removeClass('requiredTxb');
+        $('#' + jqDatePickerID).attr('title', result).attr('disabled', 'disabled');
+        $('#' + htmlEditorID).attr('title', result);
+        $('#' + signatureID).attr('title', result);
+
+        CKEDITOR.instances[htmlEditorID].setReadOnly(true);
+        CKEDITOR.instances[signatureID].setReadOnly(true);
+
+        $('[id$=' + sendButtonID + ']').attr('title', result).attr('disabled', 'disabled').addClass('ui-state-disabled');
+        $('[id$=' + addDocumentButtonID + ']').attr('title', result).attr('disabled', 'disabled').addClass('ui-state-disabled');
+        $('[id$=' + newDocumentButtonID + ']').attr('title', result).attr('disabled', 'disabled').addClass('ui-state-disabled');
+    }
+}
+function ResetRecipientWarning(result) {
+    $('#' + lblWarning).text(result);
+
+    $('#' + txtsubjectID).removeAttr('tooltipText', result).removeAttr('disabled').addClass('requiredTxb');
+    $('#' + jqDatePickerID).removeAttr('tooltipText', result).removeAttr('disabled');
+    $('#' + htmlEditorID).removeAttr('tooltipText', result);
+    $('#' + signatureID).removeAttr('tooltipText', result);
+
+    CKEDITOR.instances[htmlEditorID].setReadOnly(false);
+    CKEDITOR.instances[signatureID].setReadOnly(false);
+
+    $('[id$=' + sendButtonID + ']').removeAttr('tooltipText', result).removeAttr('disabled').removeClass('ui-state-disabled');
+    $('[id$=' + addDocumentButtonID + ']').removeAttr('tooltipText', result).removeAttr('disabled').removeClass('ui-state-disabled');
+    $('[id$=' + newDocumentButtonID + ']').removeAttr('tooltipText', result).removeAttr('disabled').removeClass('ui-state-disabled');
+}
+/*--------------------------------------------------------*/
+
+function reorderItems(things, parent) {
+    for (var i = 1; i <= $(things).length; i++) {
+        $(things).each(function () {
+            var x = parseInt($(this).find('input').val(), 10);
+            if (x === i) {
+                $(this).appendTo(parent);
+            }
+        });
+    }
+}
+
+function OnDormitorySaveClick(uniqueid, sortid, e) {
+    reorderItems('.sortable_container_div > div', '.sortable_container_div');
+    CancelEvent(e);
+    var sortedids = $('#' + sortid).sortable('toArray').join(',');
+    __doPostBack(uniqueid, sortedids);
+}
+
+function OnDormitorySaveClickScroll() {
+    setTimeout(function () {
+        $(this).scrollTop(9999999);
+    }, 5);
+}
+
+function OnDormitorySaveClick2(uniqueid, sortid, e) {
+
+    // CancelEvent(e);
+    var sortedids = $('#' + sortid).sortable('toArray').join(',');
+    $("#" + uniqueid).val(sortedids);
+    //__doPostBack(uniqueid, sortedids);
+}
+
+// true : validálás
+// false : tab váltás
+var fromValidatorcall = null;
+var behavid = null;
+//var eltolasegyszer = true;
+//var arrayEltoltak = [];//new Array();
+function selectedtabforvalidator(validateostabchange, modalpopupbehaviorid, innen, activetabindex) {
+    if (validateostabchange == true) {
+        fromValidatorcall = innen;
+        //ajax__tab_active, visibility: visible; ajax__tab_panel
+        // Tabon
+        //var tabonvane = $('.' + modalpopupbehaviorid).find('.ajax__tab_panel:visible');
+        //if (tabonvane.length > 0) {
+        //    if ($('.' + modalpopupbehaviorid).find('.ajax__tab_panel:visible').find($('.ajax__validatorcallout_')).parent().length > 0) {
+        //        $('.ajax__validatorcallout_').show();
+        //        behavid = modalpopupbehaviorid;
+        //    }
+        //    var a = $('.' + modalpopupbehaviorid).find('.ajax__tab_panel:visible').find($('.ajax__validatorcallout_'));
+        //    a.appendTo($('.' + modalpopupbehaviorid).parent());
+        //    //pozicio frissites hack
+        //    if (a.length > 0)
+        //        a[0]._behaviors[0].set_y(-1);
+        //}
+        //else {
+        //    if ($('.' + modalpopupbehaviorid).find($('.ajax__validatorcallout_')).parent().length > 0) {
+        //        $('.ajax__validatorcallout_').show();
+        //        behavid = modalpopupbehaviorid;
+        //    }
+        //    var a = $('.' + modalpopupbehaviorid).find($('.ajax__validatorcallout_'));
+        //    a.appendTo($('.' + modalpopupbehaviorid).parent());
+        //    //pozicio frissites hack
+        //    if (a.length > 0)
+        //        a[0]._behaviors[0].set_y(-1);
+        //}
+    }
+    else {
+        if (fromValidatorcall != null && behavid != null) {
+            ($('.' + behavid).parent().find($('.ajax__validatorcallout_'))).appendTo($(fromValidatorcall));
+        }
+        ($('.' + behavid).find($('.ajax__validatorcallout_'))).hide();
+        if (fromValidatorcall != null && behavid != null) {
+            fromValidatorcall = null;
+            behavid = null;
+        }
+    }
+}
+
+var iconX = iconY = 0;
+var StringResID = null;
+var RoleRequestInfo = null;
+function editLabelShowIcon(sender, fromIcon, hiddenID) {
+    if (fromIcon == false) {
+        $('#upEditLabelIcon_editLabelIcon').children().css('display', 'block');
+        iconX = $(sender).offset().left + $(sender).width() - 1 - $(document).scrollLeft();
+        iconY = $(sender).offset().top - $(sender).scrollTop() - $(document).scrollTop()/* - $(sender).height()*/;
+        $('#upEditLabelIcon_editLabelIcon').css({ left: iconX, top: iconY });
+        if (iconX + $('.editLabelIcon').width() > $(document).width()) {
+            $('#upEditLabelIcon_editLabelIcon').css({ left: '', right: 0 });
+        }
+        StringResID = $(sender).attr('stringResID');
+        RoleRequestInfo = $(sender).attr('rolerequestinfo');
+        if (StringResID == null) {
+            $('#upEditLabelIcon_lbtnEditLabel').css('display', 'none');
+            $('#spanNotEdit').css('display', 'block');
+        }
+        else {
+            $('#upEditLabelIcon_lbtnEditLabel').css('display', 'block');
+            $('#spanNotEdit').css('display', 'none');
+        }
+        if (RoleRequestInfo == null) {
+            $('#upEditLabelIcon_lbtnRoleRequest').css('display', 'none');
+            $('#spanNotRequest').css('display', 'block');
+        }
+        else {
+            $('#upEditLabelIcon_lbtnRoleRequest').css('display', 'block');
+            $('#spanNotRequest').css('display', 'none');
+        }
+    }
+    $('#upEditLabelIcon_editLabelIcon').css({ display: 'block' });
+}
+
+function getAttributeForEditLabelModal(attrib, hiddenID) {
+    if (attrib === 'stringResID')
+        $('#' + hiddenID).val(StringResID);
+    else if (attrib === 'rolerequestinfo')
+        $('#' + hiddenID).val(RoleRequestInfo);
+}
+
+function editLabelHideIcon(sender) {
+    $('#upEditLabelIcon_editLabelIcon').css({ right: '', display: 'none' });
+}
+
+function multiselectReturnValues(sender) {
+    return $('#' + sender).multiselect("getChecked").map(function () { return this.value }).get().join(',');
+}
+
+//BrowserDetect.init();
+
+var BrowserDetect = {
+    init: function () {
+        this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+        this.version = this.searchVersion(navigator.userAgent)
+            || this.searchVersion(navigator.appVersion)
+            || "an unknown version";
+        this.OS = this.searchString(this.dataOS) || "an unknown OS";
+    },
+    searchString: function (data) {
+        for (var i = 0; i < data.length; i++) {
+            var dataString = data[i].string;
+            var dataProp = data[i].prop;
+            this.versionSearchString = data[i].versionSearch || data[i].identity;
+            if (dataString) {
+                // IE eseteben a 11-est maskepp kell azonositani
+                if (data[i].subString == 'MSIE') {
+                    var trident = !!dataString.match(/Trident\/7.0/);
+                    var net = !!dataString.match(/.NET4.0E/);
+                    if (trident && net) // ha IE 11
+                        return data[i].identity;
+                }
+
+                if (dataString.indexOf(data[i].subString) != -1)
+                    return data[i].identity;
+
+            }
+            else if (dataProp)
+                return data[i].identity;
+        }
+    },
+    searchVersion: function (dataString) {
+        var index = dataString.indexOf(this.versionSearchString);
+        if (this.versionSearchString == 'MSIE') {
+            var trident = !!dataString.match(/Trident\/7.0/);
+            var net = !!dataString.match(/.NET4.0E/);
+            if (trident && net) {   // ha IE 11
+                index = dataString.indexOf('rv');
+                return parseFloat(dataString.substring(index + 2 + 1));
+            }
+        }
+
+        if (index == -1) return;
+        return parseFloat(dataString.substring(index + this.versionSearchString.length + 1));
+    },
+    dataBrowser: [
+        {
+            string: navigator.userAgent,
+            subString: "Chrome",
+            identity: "Chrome"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "OmniWeb",
+            versionSearch: "OmniWeb/",
+            identity: "OmniWeb"
+        },
+        {
+            string: navigator.vendor,
+            subString: "Apple",
+            identity: "Safari",
+            versionSearch: "Version"
+        },
+        {
+            prop: window.opera,
+            identity: "Opera",
+            versionSearch: "Version"
+        },
+        {
+            string: navigator.vendor,
+            subString: "iCab",
+            identity: "iCab"
+        },
+        {
+            string: navigator.vendor,
+            subString: "KDE",
+            identity: "Konqueror"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "Firefox",
+            identity: "Firefox"
+        },
+        {
+            string: navigator.vendor,
+            subString: "Camino",
+            identity: "Camino"
+        },
+        {		// for newer Netscapes (6+)
+            string: navigator.userAgent,
+            subString: "Netscape",
+            identity: "Netscape"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "MSIE",
+            identity: "Explorer",
+            versionSearch: "MSIE"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "Gecko",
+            identity: "Mozilla",
+            versionSearch: "rv"
+        },
+        { 		// for older Netscapes (4-)
+            string: navigator.userAgent,
+            subString: "Mozilla",
+            identity: "Netscape",
+            versionSearch: "Mozilla"
+        }
+    ],
+    dataOS: [
+        {
+            string: navigator.platform,
+            subString: "Win",
+            identity: "Windows"
+        },
+        {
+            string: navigator.platform,
+            subString: "Mac",
+            identity: "Mac"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "iPhone",
+            identity: "iPhone/iPod"
+        },
+        {
+            string: navigator.platform,
+            subString: "Linux",
+            identity: "Linux"
+        }
+    ]
+
+};
+
+/*--------------------------------------------------------*/
+
+
+
+Sys.Application.add_init(appInit);
+
+/*Scrollnál ott maradtak elemek ez tünteti el őket hisz ekkor már nem ír bele (pl. autocomplete)*/
+$(window).scroll(function () {
+    $(".ui-autocomplete").css("display", "none");
+});
+
+
+
+
+// kikenyszerítem a szinkron behivást, ezért a postback csak a session torlese utan fog lefutni
+//$().ready(function () {
+//    $(window).on('beforeunload', function () {
+
+//        //        var cucc = '';
+//        //        $.ajax({
+//        //            type: "POST",
+//        //            url: "/main.aspx/ClearPopupState",
+//        //            contentType: "application/json; charset=utf-8",
+//        //            dataType: "json",
+//        //            async: false,
+//        //            success: function (data) { },
+//        //            complete: function (data) { },
+//        //            error: function (data) { }
+//        //        });
+//    });
+//});
+/*
+function onPostBack() {
+var y = generateRandomSequence();
+//var hdnGuid = document.getElementById("hdnGuid");
+//hdnGuid.value = y;
+//$("#uF5_hdnGuid").val(y);
+$("#hdnGuid").attr('value', y);
+
+$.ajax({
+type: "POST",
+url: "/main.aspx/CreateNewGuid",
+contentType: "application/json; charset=utf-8",
+dataType: "json",
+async: false,
+success: function (data) { },
+complete: function (data) { },
+error: function (data) { }
+});
+}
+
+function generateRandomSequence() {
+var g = "";
+for (var i = 0; i < 32; i++)
+g += Math.floor(Math.random() * 0xF).toString(0xF)
+return g;
+}
+*/
+
+function SetFocusOnIframe(index) {
+    //window.setTimeout('$(".ui-widget-overlay").last().first("iframe")[0].contentWindow.focus()', 30);
+
+    //if (index = 1)
+    //window.setTimeout('$(".ui-widget-overlay").last().first(".jHtmlArea").first("#iframe")[0].contentWindow.focus()', 50);
+
+    //    if (index = 0)
+    //      window.setTimeout('$(""iframe"")[0].contentWindow.focus()', 30);
+}
+
+function SetFocusOnComlbo(cmbClientID) {
+
+    $('#' + cmbClientID).mousedown(function () {
+        this.focus();
+    });
+
+}
+
+/* Látássérültek kollégiumi jelentkezéséhez sorrendezés*/
+function LatasserultSorrendezes() {
+    getInitialOrder('.sortable_container_div');
+
+    $('.sortable_container_div input[type="number"]').focus(function () {
+        $(this).select();
+    }).change(function () {
+        updateAllNumbers($(this), '.sortable_container_div input');
+    }).keyup(function () {
+        updateAllNumbers($(this), '.sortable_container_div input');
+    });
+}
+function getInitialOrder(obj) {
+    var num = 1;
+    var inputok = $(obj).find('input[type="number"]');
+    $(inputok).each(function () {
+
+        $(this).val(num).attr('data-initial-value', num);
+        num++;
+    });
+    $(obj).find('input[type="number"]').attr('max', num - 1); //give it an html5 max attr based on num of objects
+}
+
+function updateAllNumbers(currObj, targets) {
+    var delta = currObj.val() - currObj.attr('data-initial-value'), //if positive, the object went down in order. If negative, it went up.
+        c = parseInt(currObj.val(), 10), //value just entered by user
+        cI = parseInt(currObj.attr('data-initial-value'), 10), //original object val before change
+        top = $(targets).length;
+
+    if (c > top) {
+        currObj.val(top);
+    } else if (c < 1) {
+        currObj.val(1);
+    }
+
+    $(targets).not($(currObj)).each(function () {
+        var v = parseInt($(this).val(), 10);
+
+        if (v >= c && v < cI && delta < 0) {
+            $(this).val(v + 1);
+        } else if (v <= c && v > cI && delta > 0) {
+            $(this).val(v - 1);
+        }
+    }).promise().done(function () {
+
+        $(targets).each(function () {
+            if ($(this).val() !== "") {
+                $(this).attr('data-initial-value', $(this).val());
+            }
+        });
+    });
+}
+/*-----------------------------------------------------------------------*/
+
+function UsefullClickCounter(clientid, value) {
+    $('#' + clientid).val(value);
+}
+
+function OrarendTervezoMozgatas(clientid) {
+    $('#' + clientid).draggable({
+        handle: 'h2',
+        containment: 'document'
+    });
+}
+
+function dochangeLanguage(index, lcid) {
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    var param = 'btnLang_' + index;
+    prm._doPostBack(param, lcid);
+}
+
+function dochangeSkin(href, skin_name) {
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    var param = 'btnSkin_';
+    prm._doPostBack(param, skin_name);
+}
+
+function langmouseout(btnID, percent) {
+    $('#' + btnID).css({
+        'opacity': '0.' + percent,//'0.65',
+        'filter': 'alpha(opacity=' + percent + ')',
+        '-moz-opacity': '0.' + percent//'0.65'
+    });
+}
+
+function langmouseover(btnID) {
+    $('#' + btnID).css({
+        'opacity': '1',
+        'filter': 'alpha(opacity=100)',
+        '-moz-opacity': '1'
+    });
+}
+
+function RedirectToCash(tabID) {
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    var param = 'tabIndex_' + tabID;
+    prm._doPostBack(param, tabID);
+}
+
+var oSecondJudgementModalScrollTop = null;
+function oSecondJudgementModalScroll() {
+    setTimeout(function () {
+        if (oSecondJudgementModalScrollTop) {
+            $('#upFunction_o_second_judgement_upModal_upmodalIdoszakAdatok_divpopup').scrollTop(oSecondJudgementModalScrollTop);
+            oSecondJudgementModalScrollTop = null;
+        }
+    }, 10);
+}
+
+var oFirstJudgementModalScrollTop = null;
+function oFirstJudgementModalScroll() {
+    setTimeout(function () {
+        if (oFirstJudgementModalScrollTop) {
+            $('#upFunction_o_first_judgement_upModal_upmodalIdoszakAdatok_divpopup').scrollTop(oFirstJudgementModalScrollTop);
+            oFirstJudgementModalScrollTop = null;
+        }
+    }, 10);
+}
+
+
+function Megosztas(egyiktextboxid,masiktextboxid,osszeg) {
+    $('#'+ egyiktextboxid).focusout(function () {
+        if ($('#' + egyiktextboxid).val().length > 0) {
+            if (($('#' + egyiktextboxid).val() < osszeg) && $('#' + egyiktextboxid).val() > 0) {
+                $('#' + masiktextboxid).val(osszeg - $('#' + egyiktextboxid).val());
+            }
+            else {
+                $('#' + masiktextboxid).val('0');
+            }
+        }
+        });
+$('#' + masiktextboxid).focusout(function () {
+      
+    if ($('#' + masiktextboxid).val().length > 0) {
+        if ($('#' + masiktextboxid).val() < osszeg) {
+            $('#' + egyiktextboxid).val(osszeg - $('#' + masiktextboxid).val());
+            }
+            else {
+            $('#' + egyiktextboxid).val('0');
+            }
+        }
+    });
+}
+
+function base64EncodeUnicode(str) {
+    // First we escape the string using encodeURIComponent to get the UTF-8 encoding of the characters, 
+    // then we convert the percent encodings into raw bytes, and finally feed it to btoa() function.
+    utf8Bytes = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+        return String.fromCharCode('0x' + p1);
+    });
+
+    return btoa(utf8Bytes);
+}

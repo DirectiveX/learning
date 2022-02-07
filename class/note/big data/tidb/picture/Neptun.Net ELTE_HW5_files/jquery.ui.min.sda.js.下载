@@ -1,0 +1,9 @@
+﻿
+function SDAJQuery_1(ev) {
+    if ($(ev.target).closest('.cke_dialog').length)
+        return true;
+
+    if ($(ev.target).closest('.cke').length)
+        return true;
+
+}

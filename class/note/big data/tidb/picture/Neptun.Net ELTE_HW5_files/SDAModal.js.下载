@@ -1,0 +1,636 @@
+﻿var dialogclass = "dialog_modal";
+var dialogclassdisplaynone = "dialog_modal_displaynone";
+var modallevel = 0;
+var szulo = "";
+var CloseSender = "x";
+var OpenedDialogs = new Array();
+var modalCaption = "";
+
+function SetModalTitle(behaviorID, title)
+{
+    modalCaption = title;
+    $('.' + behaviorID).dialog('option', 'title', title);
+}
+
+// ModalPopup létrehozása
+function createModal(behaviorID, footerId, caption, uniqueID, width, height, headerTooltip, helpURL, hideclosebutton, defaultbuttonforenter, mustdopostback, openMaximized, iframemaximalize/*, hidemaximizebutton*/) {
+    var classIndex = modallevel + 1; // pl: '1'
+    var uj = dialogclass + classIndex; // pl: 'dialog_modal1'
+
+    var overlayZIndex = 100 + (modallevel * 4);
+    var modalZIndex = overlayZIndex + 1;
+    
+    modalCaption = caption;
+
+    while (modalCaption.indexOf('%27') > -1) {
+        modalCaption = modalCaption.replace("%27", "'");
+    }
+    
+    var up = $('.' + behaviorID);
+
+    // ez a sor a firefox escape-el valo becsukasa miatt kell
+    up.attr('tabindex', '-1');
+    
+    // Ezzel felül definiálom a title generálását, mert enélkül nem lehet html a title-ben
+    // ez a szerkeszthetőséghez kell
+    $.widget("ui.dialog", $.extend({}, $.ui.dialog.prototype, {
+        _title: function (title) {
+            if (modalCaption.length == 0)
+                title.html('&nbsp;');
+            else
+                title.html(modalCaption);
+        }
+    }));
+
+    up.dialog({
+        autoOpen: false,
+        modal: true,
+        //dialogClass: uj + classIndex, // dupla index, pl: 'dialog_modal11'
+        stack: true,
+        //title: newcaption,
+        draggable: true,
+        resizable: true,
+        closeOnEscape: !(hideclosebutton == "True"),
+        dragStart: function (event, ui) {
+            if (BrowserDetect.browser == "Chrome") {
+                //$(document).scrollTop('0');
+            }
+        },
+        open: function (type, data) {
+            var modal = $(this).parent();
+            var modalStyle = "";
+            if (modal.attr("style") != undefined) { modalStyle = modal.attr("style"); }
+            modal.attr("style", modalStyle + "z-index: " + modalZIndex + " !important;");
+
+            var overlay = $(".ui-widget-overlay").last();
+            var overlayStyle = "";
+            if (overlay.attr("style") != undefined) { overlayStyle = overlay.attr("style"); }
+            overlay.attr("style", overlayStyle + "z-index: " + overlayZIndex + " !important;");
+
+            $(".ui-widget-overlay").last().attr('modallevel', classIndex); // pl: '1'
+
+            //var classIndexAct = modallevel;
+            //SetPositionLogoutLink(classIndexAct + 1);
+
+            // Footer-t a megfelelő helyre teszi
+            $('#' + footerId).parent().appendTo($(this).parent());
+
+            if (modallevel == 0) {
+                szulo = $('.' + behaviorID).parent().parent();
+            }
+            else {
+                $(this).parent().parent().appendTo(szulo);
+            }
+
+            $(this).parent().appendTo('form');
+
+            if (typeof (hideclosebutton) != "undefined" && hideclosebutton == "True")
+                // this azért kell, mert ha több modal van nyitva, akkor csak erről töntesse el
+                $(this).find(".ui-dialog-titlebar-close").hide();
+
+            modallevel = modallevel + 1;
+
+            if (!Array.contains(OpenedDialogs, behaviorID)) {
+                Array.add(OpenedDialogs, behaviorID);
+
+                var modals = "";
+                for (var i = 0; i < OpenedDialogs.length; i++) {
+                    modals = modals + OpenedDialogs[i];
+                    if (i != OpenedDialogs.length - 1)
+                        modals = modals + ",";
+                }
+
+                $('#ActiveModalBehaviourID').val(modals);
+            }
+
+            // resetelnem kell, mert a modal ujboli megnyitasakor a js-ben levo Array feltoltve marad
+            //try {
+            //    arrayEltoltak = [];
+            //}
+            //catch (err) { }
+
+            if (behaviorID == "behaviorupNewsDetails_modal_NewsDetails")//if ($('.behaviorupNewsDetails_modal_NewsDetails').length > 0))
+            {
+                // ez csak a login.aspx-en kell
+                $(this).parent().offset({ top: 50 });
+                $('html, body').animate({
+                    scrollTop: 0
+                }, 1);
+            }
+            
+            // ha van előző modál és kisebb nála a mostani, akkor azt fókuszálnom kell az előző fölé
+            if (modallevel-1 > 0)
+            {
+                try
+                {
+                    var elozomodal = $('.' + dialogclass + (modallevel - 1) + (modallevel - 1))[0];
+
+                    if (elozomodal) {
+                        // ha kisebb a modál , mint az előző
+                        if ($(this).parent()[0].offsetHeight < elozomodal.offsetHeight) {
+                            var topp = elozomodal.offsetTop + elozomodal.offsetHeight / 2 - ($(this).parent()[0].offsetHeight / 2) + $(document).scrollTop;
+                            $(this).parent().offset({ top: topp /*, left: $(this).parent().offset().left */ });
+                        }
+                    }
+                }
+                catch(error){}
+            }
+
+            $(this).focus();
+        },
+        //show: function (type,data) {
+        //    //alert('show');
+        //},
+        beforeClose: function (type, data) {
+            if (modallevel == 1) {
+                szulo = "";
+            }
+            // Tooltip eltüntetése
+            $('div.tooltip').remove();
+            modallevel = modallevel - 1;
+            //SetPositionLogoutLink();
+            if (CloseSender == "x") {
+                DoPostBackModal(null, "close", null, uniqueID, null, null, null, null, mustdopostback, true);
+                //__doPostBack(uniqueID, "close");
+                //return false;
+                //
+            }
+            CloseSender = "x";
+            // Ha a modalon van grid és tartozik hozzá tooltip, ráállunk és esc-t nyomunk, akkor a tooltip ott marad
+            // ezzel eltüntetem
+            var gridtooltip = $('.tooltipbase');
+            if (gridtooltip.length > 0) {
+                gridtooltip.css('display', 'none');
+            }
+        },
+        close: function (type, data) {
+            $(this).dialog('destroy');
+            if (Array.contains(OpenedDialogs, behaviorID)) {
+                Array.remove(OpenedDialogs, behaviorID);
+                var modals = "";
+                for (var i = 0; i < OpenedDialogs.length; i++) {
+                    modals = modals + OpenedDialogs[i];
+
+                    if (i != OpenedDialogs.length - 1)
+                        modals = modals + ",";
+                }
+            }
+            $('#ActiveModalBehaviourID').val(modals);
+
+            // csak firefox-nal escape-re nem csukta be pl. a masodik csukando modalt
+            // GyP - 20131106 - háromszintű modál esetén is működik, ja és IE-n is kell, mert ott is csak az első modál csukódott be
+            //if (BrowserDetect.browser == "Firefox") {
+            try {
+                if (modals.length > 0) {
+                    if (modals.split(',').length > 0)
+                        var $mod = $('.' + modals.split(',')[modals.split(',').length - 1]).find("[aria-selected='true']");
+                    if ($mod.length > 0) {
+                        // mindig 0-dik a legfelső becsukandó modál
+                        $mod[0].focus();
+                    }
+                }
+                else if (behaviorID == "behaviorupNewsDetails_modal_NewsDetails") { // ha loginon news-t nyit meg    
+                    document.forms[0].user.focus();
+                    $("html, body").animate({ scrollTop: 0 }, 1);
+                }
+            }
+            catch (error) { }
+        },
+        resize: function (event, ui) {
+            if (iframemaximalize)
+                SetIframeStyle(this);
+        }
+        }).dialogExtend({
+            "close": !(hideclosebutton == "True"),
+            "maximize": true,//!(hidemaximizebutton== "True"),
+            "help": helpURL != "",
+            "helpUrl": helpURL,
+            "events": {
+                "maximize": function (event, ui) {
+                    if (iframemaximalize)
+                        SetIframeStyle(this);
+                },
+                "restore": function (event, ui) {
+                    if (iframemaximalize)
+                        SetIframeStyle(this);
+                }
+            }
+        }).keypress(function (e) {
+            // Textarea-ban figyelmen kívül kell hagyni, mivel ott sortöréseket szeretnénk tenni...
+            if (e.keyCode == $.ui.keyCode.ENTER && $(e.target).is('textarea') == false) {
+                $(this).parent().find('.ui-dialog-footerbar input[commandname="' + defaultbuttonforenter + '"]').click();
+                return false;
+        }
+        //else if (e.keyCode == $.ui.keyCode.ESCAPE) {
+        //    //   $(this).parent().find('.ui-dialog-footerbar input[commandname="' + defaultbuttonforenter + '"]').click();
+        //    alert('hhh');
+        //    return false;
+        //}
+        //}).keyup(function (e) {
+        //if (e.keyCode == $.ui.keyCode.ESCAPE) {
+        //alert('keyup');
+        //}
+    });
+
+    // Szélesség, magasság, min. szélesség, min magasság beállítás
+    if (height > 0) {
+        up.dialog("option", "height", height);
+        up.dialog("option", "minHeight", height);
+    }
+    if (width > 0) {
+        up.dialog("option", "width", width);
+        up.dialog("option", "minWidth", width);
+    }
+    if (typeof (headerTooltip) != undefined && headerTooltip != null && headerTooltip != '')
+        Modaltoolip(behaviorID, headerTooltip);
+
+    // Maximum meretben nyitjuk meg
+    if (openMaximized == "True") {
+        up.dialogExtend('maximize');
+        // le kell vonni a lablec magassaga miatt
+        var _height = up.dialog("option", "height");
+        up.dialog("option", "height", _height - 25);
+    }
+
+    // Neptun.js-ben van, validálásnál nem IE alatt a popup eltolásához kell
+    //eltolasegyszer = true;
+
+    if (iframemaximalize)
+        SetIframeStyle(up);
+
+    //    $('.ui-dialog-footerbar').focus();
+    // $('.ui-dialog-footerbar').attr('tabindex','-1');
+}
+
+function SetIframeStyle(caller) {
+    if ($(caller).find('iframe').length > 0)
+        $(caller).find('iframe').css('height', $(caller).find('iframe').parent().parent().css('height').replace('px', '') - 10 + 'px');
+}
+
+//var timerModal = null;
+//var $modalForFocus = null;
+//function SetFocus($modal) {
+//    if (timerModal != null) {
+//        window.clearTimeout(timerModal);
+//        timerModal = null;
+//    }
+    
+//    //$modalForFocus.attr('tabindex', 1);
+    
+//    if ($modalForFocus)
+//        $modalForFocus.focus();
+    
+//    //$('.ui-dialog-footerbar').attr('tabindex', -1);
+//}
+
+function SetPositionLogoutLink(classIndexAct) {
+
+    var parentTag = $('.top_logout_link').parent().get(0).tagName;
+    if (parentTag.toLowerCase() != 'form')
+        $('.top_logout_link').appendTo('form');
+
+    var ujAct = dialogclass + classIndexAct;
+
+    var zInd = "99";
+    var overl = $("." + ujAct);
+
+    // ha megvan a keresett overlay
+    if (overl.length > 0) {
+        $('.top_logout_link').insertAfter(overl);
+        zInd = overl.css('z-index');
+    }
+
+    if ($(".ui-widget-overlay").length > 0) {
+        $("#lbtnQuit").addClass('top_logout_link_modal');
+    }
+    else {
+        $("#lbtnQuit").removeClass('top_logout_link_modal');
+        // ha nincs tobb overlay, visszateszem a kijelentkezest a helyere
+        $('.top_logout_link').appendTo('.mainPageHeader');
+    }
+
+    $(".top_logout_link").css('z-index', parseInt(zInd));
+}
+
+var modalCreated = [];
+var footer = [];
+function ShowDialog2(behaviorID) {
+    CloseSender = "x";
+
+    //Ha még nincs a tömbben
+    if ($.inArray(behaviorID, modalCreated) == -1) {
+        x = 'CallCreateModal_' + behaviorID;
+        eval(x + "()");
+
+        modalCreated.push(behaviorID);
+
+        // Hekk - ez a sor kell a lablec tarolasahoz az ujabb megnyitas miatt
+        var waitfooter = document.getElementById($('.' + behaviorID).parent().attr('id'));
+
+        //$('.' + behaviourID).parent().find('.ui-dialog-footerbar').parent().clone();
+
+        if (footer[behaviorID] != undefined && waitfooter == null)
+            $('.' + behaviorID).append(footer[behaviorID]);
+
+        $('.' + behaviorID).dialog("open");
+        //footer.push($footer);  Elvileg a login.js-ben már beletesszük, ha még nem volt ott, a behaviorID indexe alapján
+        if (behaviorID == 'loginwaitbehaviour')
+            starttimer();
+    }
+}
+
+
+
+
+
+// ModalPopup megjelenítése
+function ShowDialog(behaviorID) {
+    CloseSender = "x";
+    $('.' + behaviorID).dialog("open");
+}
+
+// ModalPopup bezárása
+function closeModal(behaviorID, updatepanelclientid) {
+    CloseSender = "button";
+    // csak akkor zárjuk be, ha még látható (pl.kliens oldali x után már ne akarjuk mégegyszer)
+    if ($('.' + behaviorID).length > 0 && $('.' + behaviorID)[0].style.display == '')
+        $('.' + behaviorID).dialog('close');
+}
+
+var ModalPopupIds = [];
+// Kiteszem a modalban lévő user control id-jét fentre
+function WriteModalId(userctrlcaption, csakkiirni) {
+    var destination = $('#upTraining_lblPageInfoText');
+    if (destination) {
+        var divModalUserCtrl = destination.find('#divModalUserCtrl');
+        if (csakkiirni == 'False')
+            ModalPopupIds[modallevel] = userctrlcaption;
+        else
+            if (modallevel > 0)
+                userctrlcaption = ModalPopupIds[modallevel - 1];
+            else
+                userctrlcaption = '';
+        if (divModalUserCtrl.length == 0)
+            destination.html(destination.html() + ' <div id="divModalUserCtrl" style="position:absolute; z-index:10001;"><strong>' + userctrlcaption + '</strong></div>');
+        else
+            divModalUserCtrl.text(userctrlcaption);
+    }
+}
+
+// Dialog ModalPopup létrehozása
+function DialogConfirmationModal(title, description, okText, cancelText, btnUniqueID, imagename, okTextForAlert, e, ModalUniqueID, CommandName,ConfirmationCausePostback) {
+    CancelEvent(e);
+
+    var ujclass = 'dialog_confirm' + modallevel;
+
+    $("<div title=\"" + title + "\" id=\"confirm\"><img src=\"App_Themes/Common_Images/" + imagename + "\" /><p>" + description + "</p></div>").dialog({
+        autoOpen: true,
+        modal: true,
+        resizable: false,
+        width: 500,
+        height: 160,
+        //zIndex: 101,
+        dialogClass: ujclass + modallevel,
+        open: function (event, ui) {
+            $("div.ui-dialog-buttons").on('keydown', function (event) {
+                if (event.keyCode == $.ui.keyCode.ESCAPE) {
+                    $("div.ui-dialog-buttons").off('keydown');
+                    jquerydialogclosed = true;
+                }
+            });
+
+            $(".ui-widget-overlay").last().addClass(ujclass);
+        },
+        close: function (ev, ui) {
+            $(this).remove();
+        },
+        buttons: [
+    {
+        text: okText,
+        click: function () {
+            $(document).off('keydown');
+            $(this).dialog("close");
+            if(ConfirmationCausePostback == "True")
+                __doPostBack(ModalUniqueID, CommandName);
+        }
+    },
+    {
+        text: cancelText,
+        click: function () {
+            $(document).off('keydown');
+            $(this).dialog("close");
+            return false;
+        }
+    }
+        ]
+    });
+
+}
+
+// RaisePostBack hívása a megfelelő paraméterrel
+function DoPostBackModal(clientid, postbackarg, bezarni, uniqueID, e, validationgroup, javascript, fullpostbackid, mustdopostback, callfromx, behaviorid) {
+    if (fullpostbackid != "" && fullpostbackid != undefined ) {
+        $('#'+fullpostbackid).click();
+        return;
+    }
+    if (postbackarg === 'close' && mustdopostback == "False") {
+        var names = uniqueID.split('$');
+        var name = names[names.length - 1];
+        $('.' + name).val('Visible:false');
+    }
+    
+    if (validationgroup != null && validationgroup != "") {
+        if (DoValidateGroupModalPopup(validationgroup) == false) {
+            //var qwe = $('.ajax__validatorcallout_');
+            //var qwe = $('.modify_directory');
+            selectedtabforvalidator(true, behaviorid, $('.' + behaviorid).find('.ajax__tab_panel:visible').find($('.ajax__validatorcallout_')).parent());
+            //$('.ajax__validatorcallout_').appendTo($('.' + behaviorid).parent());
+            return;
+        }
+    }
+    else {
+        DoValidateGroupModalPopup("ModalFakeValidation");
+    }
+    
+    if (javascript != null && javascript.length > 0) {
+        var seged = javascript.split('|');
+        var HtmlEditorStr = "";
+        if (seged.length > 1)
+            javascript = seged[0];
+
+        if (javascript.indexOf("HtmlEditor2") !== -1) {
+            for (var i = 1; i < seged.length; i++) {
+                HtmlEditorStr += eval('CKEDITOR.instances.' + seged[i] + '.getData()');
+                if (seged.length - 1 != i)
+                    HtmlEditorStr += "♣♣♣";
+            }
+            jhtmlAreaChangedText = false;
+        }
+        else if ((javascript.indexOf("HtmlEditor") !== -1) && javascript !== "HtmlEditor" && javascript !== "HtmlEditoronhtmleditormodal") {
+            for (var i = 0; i < seged.length; i++) {
+                eval("$('#" + seged[i] + "').htmlarea('updateTextArea');")
+                HtmlEditorStr += eval("$('#" + seged[i] + "').val();")
+                if (seged.length - 1 != i)
+                    HtmlEditorStr += "♣♣♣";
+            }
+
+            jhtmlAreaChangedText = false;
+        }
+        else if (javascript == "HtmlEditor") {
+            $('#HtmlEditor').htmlarea("updateTextArea");
+            javascript = "$('#HtmlEditor').val();";
+        }
+        else if (javascript == "HtmlEditoronhtmleditormodal") {
+            $('#HtmlEditoronhtmleditormodal').htmlarea("updateTextArea");
+            javascript = "$('#HtmlEditoronhtmleditormodal').val();";
+        }
+        else if (javascript == "filedownload")
+            javascript = "Sys.WebForms.PageRequestManager.getInstance().add_endRequest(FileDownloadEndRequest); theForm.setAttribute('encType', 'multipart/form-data');";
+        else if (javascript == "print1")
+            javascript = "/print.aspx?gridid=signin_print1_cSignInPrint&header=&printheader=&footer=&session=true";
+        else if (javascript == "updateall") {
+            javascript = "UpdateAll('" + uniqueID + "','save');";
+            eval(javascript);
+            return;
+        }
+        else if (javascript == "updateallrefuse") {
+            javascript = "UpdateAll('" + uniqueID + "','refuse');";
+            eval(javascript);
+            return;
+        }
+        else if (javascript.indexOf("WebEditorWorkAround") != -1) // ha ezzel kezdodik
+        {
+            var params = javascript.split(":");
+            var descriptionID = params[1];
+
+            javascript = "WebEditorWorkAround('" + descriptionID + "'); cleanCurrentEditorXhtml('" + descriptionID + "');";
+            eval(javascript);
+        }
+        else if (javascript == "ValidateEmaterialRow") {
+            javascript = "ValidateEmaterialRow('" + seged[1] + "','" + seged[2] + "','" + seged[3] + "','" + seged[4] + "');";
+        }
+        else if (javascript == "KervenyFelfuggesztes") {
+            javascript = /*StopStayAlive();*/ "DisableKervenyButtons(postbackarg);";
+        }
+        else if (javascript == "KervenyPageChange") {
+            //StopStayAlive();
+            javascript = "";
+            if (CheckControls() == false) {
+                mustdopostback = 'False';
+            } else {
+                DisableKervenyButtons(postbackarg);
+            }
+        }
+        else if (javascript == "KervenyLeadas") {
+            javascript = "";
+            DisableKervenyButtons(postbackarg);
+        }
+        else if (javascript.indexOf("multiselect") != -1) {
+            var temp = javascript.split(':');
+            javascript = "multiselectReturnValues('" + temp[1] + "');";
+        }
+        else if (javascript.indexOf("nyomtatasikep") != -1) {
+            var temp = javascript.split(';');
+            javascript = "Nyomtatasikep('" + temp[1] + "');";
+        }
+        if (HtmlEditorStr.length == 0) {
+            if (javascript != "HtmlEditor2") {
+                postbackarg = postbackarg + "|" + eval(javascript) + "|" + validationgroup;
+            }
+            else {
+                postbackarg = postbackarg + "|" + "|" + validationgroup;
+            }
+        }
+        else
+            postbackarg = postbackarg + "|" + HtmlEditorStr + "|" + validationgroup;
+    }
+    postbackarg = postbackarg + "|" + "" + "|" + validationgroup;
+
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    
+    if (mustdopostback == "True") {
+        __doPostBack(uniqueID, postbackarg);
+    }
+    else {
+        if (callfromx != true) {
+            $($('#' + clientid)[0]).dialog("close");
+        }
+    }
+};
+
+function Nyomtatasikep(url) {
+    myWindow = window.open(url);
+    myWindow.focus();
+}
+ 
+//function CancelEvent(e) {
+//    var i, j;
+//    if (e != undefined)
+//    {
+//        e.returnValue = false;
+//        e.cancelBubble = true;
+//        if (e.preventDefault) { e.preventDefault(); }
+//        if (e.stopPropagation) { e.stopPropagation(); } 
+//    }
+//    return false;
+//}
+
+//ValidationGroupra hiv kliens oldali validalast
+//ModalPopup-oknal hivjuk a btn ClientClickre
+function DoValidateGroupModalPopup(validationGroup) {
+    Page_InvalidControlToBeFocused = null;
+    if (typeof (Page_Validators) != "undefined") {
+        if (typeof (Page_ClientValidate) == 'function') {
+            Page_ClientValidate(validationGroup);
+        }
+        return Page_IsValid;
+    }
+    return true;
+}
+
+// Toolitp a ModalPopup fejlécében
+function Modaltoolip(behaviorID, headerTooltip, unbind) {
+    var changeTooltipPosition = function (event) {
+        var tooltipX = event.pageX - 8;
+        var tooltipY = event.pageY + 10;
+
+        var spaceOnRight = 5; //px
+
+        if ((tooltipX + spaceOnRight + $(".tooltip").width()) > $("body").width()) {
+            tooltipX = $("body").width() - $(".tooltip").width() - spaceOnRight;
+        }
+        $('div.tooltip').css({ top: tooltipY, left: tooltipX, display: 'block', width: 'auto' });
+    };
+
+    var showTooltip = function (event) {
+        $('div.tooltip').remove();
+        $('<div class="tooltip">' + headerTooltip + '</div>').appendTo(szulo);
+        changeTooltipPosition(event);
+    };
+
+    var hideTooltip = function () {
+        $('div.tooltip').remove();
+    };
+
+    var elsogyerek = $('.' + behaviorID).parent().children()[0];
+    $(elsogyerek).bind({
+        mousemove: changeTooltipPosition,
+        mouseenter: showTooltip,
+        mouseleave: hideTooltip
+    });
+};
+
+function ShowPasswordTask() {
+    var $tds = $("table#Table1").find("input.inputtext").last();    
+    var txtPassword = $tds;
+    if (txtPassword.is(':visible')) {
+        txtPassword.after('<input onchange="PasswordChangedTask(this);" class="passwordtext" id = "txt_' + txtPassword.attr("id") + '" type = "text" value = "' + txtPassword.val() + '" autocomplete="off" />');
+        txtPassword.hide();
+    } else {
+        txtPassword.val(txtPassword.next("[id = 'txt_" + txtPassword.attr("id") + "']").val());
+        txtPassword.next("[id = 'txt_" + txtPassword.attr("id") + "']").remove();
+        txtPassword.show();
+    };
+};
+
+function PasswordChangedTask(txt) {$(txt).prev().val($(txt).val());};

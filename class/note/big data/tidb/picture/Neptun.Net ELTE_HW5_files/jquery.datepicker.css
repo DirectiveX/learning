@@ -1,0 +1,3 @@
+/*A timepicker részhez kiegészítõ*/
+.ui-timepicker-div dd{ margin-top: -15px; margin-bottom : 20px; }
+.ui-timepicker-div { padding-bottom : 5px; }
