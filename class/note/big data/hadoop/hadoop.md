@@ -209,7 +209,7 @@ export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
 **修改配置文件**
 
-etc/hadoop/core-site.xml:（配置nn）
+etc/hadoop/core-site.xml:（配置nn位置）
 
 ```xml
 <configuration>
@@ -248,7 +248,7 @@ etc/hadoop/hdfs-site.xml:（配置副本， 设置保险的目录防止nn，dn�
 </configuration>
 ```
 
-etc/hadoop/workers
+etc/hadoop/workers（dn位置）
 
 ```xml
 node01
@@ -258,23 +258,97 @@ node01
 
 见官网
 
-**格式化硬盘(初始化nn)**
+**格式化硬盘(初始化nn，创建nn目录)**
 
 ```sh
 bin/hdfs namenode -format
 # 其中nn的clusterId相同才能连接对应的dn
 ```
 
+**第一次启动创建dn和snn目录（启动时）**
+
+```sh
+start-dfs.sh
+```
+
 **修改配置项**
 
-**访问node01:50070端口有页面显示**
+**访问node01:9870端口有页面显示**
 
-**使用**
+**使用（使用dfs子命令，类似于linux的文件系统）**
 
 ```sh
 hdfs dfs -help
 hdfs dfs -put xxx.zip /directory
+hdfs dfs -mkdir /bigdata
+hdfs dfs -mkdir -p /user/root
+hdfs dfs -dfs.blocksize
+# 可以注意到datanode里面有meta 校验和 文件（block）
 ```
+
+**注意**
+
+psdh默认采用rsh登陆，要用ssh登陆要修改下
+
+export PDSH_RCMD_TYPE=ssh
+
+## HA
+
+单点产生的两个问题（单独问题）？
+
+1. 单点故障
+
+   > 高可用方案，主备切换
+
+2. 压力过大
+
+   > 联邦机制：Federation（元数据分片）
+   >
+   > 多个NN，管理不同的元数据
+
+### 单点故障问题解决
+
+HDFS通过实现了Paxos协议的JN（分布式存储）实现分布式存储通讯，用于同步editslog，保证数据最终一致性
+
+写数据时，主NN向JN写数据，等待JN返回，备机会读取JN（JournalNode）中的数据
+
+JN实现：主从模式，通过Paxos协议进行数据传递和保证数据一致性
+
+HDFS通过实现了ZAB协议的ZK实现分布式协调，快速选择主节点
+
+![1647075431(1)](picture/1647075431(1).png)
+
+ZK客户端的FailoverController 会干一些事情，并且与NN存在同一个物理机上，保证监控的准确性
+
+1.初始化的时候，所有FailoverController 会抢锁，先抢到锁的作为active，其他为standby NN
+
+2.FailoverController 检测当前master NN是否宕机，如果宕机，则删除当前在ZK上的临时节点，触发事件回调机制，回调之前其他FailoverController 在ZK上注册的事件
+
+3.其他机器接收到事件先进行主存活判断（连接主IP的NN查看是否真正死亡），如果真正死亡就将自己设置成master；如果由于FailoverController宕机造成的删除事件，则将当前的master降级成standby，然后将自己本机设成standby；如果由于FailoverController网与主机NN不通产生的问题，无法将当前升级成master。
+
+![1647076714](picture/1647076714.png)
+
+#### HA模式下的SNN
+
+1.HA模式不存在SNN，备机的NN会定时做出fsimage给主机
+
+2.非HA模式下，SNN定期拉取editslog去合并，而HA模式NN通过JournalNode实时同步editslog
+
+#### HA下的角色
+
+ACTIVE，STANDBY，JN,ZK，FailoverController（ZKFC）
+
+### 压力过大，内存受限问题解决
+
+联邦制解决，元数据分治，复用DN存储，DN使用目录隔离block（DN会为每个NN创建一个目录 ）
+
+**注意**
+
+访问的时候要搭建一个中转（中台 ）去访问，抽象层
+
+### HA模式搭建
+
+[HA](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HDFSHighAvailabilityWithQJM.html)
 
 
 
@@ -293,3 +367,6 @@ lambda 权限参考 data_npd_funded_research_lambda
 
 data_npd_entity_info_change_lambda 的编辑和发布权限
 
+## ZK和JN的区别
+
+ZK做分布式协调，JN做分布式存储

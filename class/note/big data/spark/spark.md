@@ -14,6 +14,22 @@ spark的数据处理模型，将作业的处理结果存放入内存中，方便
 
 Spark多个作业之间数据通讯基于内存，hadoop基于磁盘，对于选择上，需要具体问题具体分析，如果内存不够，只能使用MapReduce进行操作，各有利弊，并不能完全代替MapReduce
 
+**spark core取代MP**
+
+1.spark申请资源的时候是粗粒度申请资源
+
+①先申请资源②task执行③等全部task执行完毕才关闭资源
+
+而map reduce细粒度资源调度，为每个task分配资源并执行，然后关闭
+
+2.不落磁盘，直接内存计算（cache persist）
+
+内存计算 pipeline （链条）
+
+
+
+**spark streaming取代storm**
+
 ## 核心模块
 
 Spark SQL：操作结构化数据

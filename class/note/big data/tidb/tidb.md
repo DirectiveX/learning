@@ -244,6 +244,101 @@ KeyN_Version1 -> Value
 
 #### TiDB Operator（简化云上管理）
 
+## 指令
+
+- 执行以下命令确认当前已经部署的集群列表：
+
+  ```shell
+  tiup cluster list
+  ```
+
+- 执行以下命令查看集群的拓扑结构和状态：
+
+  ```shell
+  tiup cluster display <cluster-name>
+  ```
+
+## SQL
+
+**创建表**
+
+要创建一个名为 `samp_db` 的数据库，可使用以下语句：
+
+```sql
+CREATE DATABASE IF NOT EXISTS samp_db;
+```
+
+添加 `IF NOT EXISTS` 可防止发生错误。
+
+**添加索引**
+
+```sql
+CREATE INDEX person_id ON person (id);
+ALTER TABLE person ADD INDEX person_id (id)
+```
+
+**唯一索引**
+
+对于值唯一的列，可以创建唯一索引。例如：
+
+```sql
+CREATE UNIQUE INDEX person_unique_id ON person (id);
+ALTER TABLE person ADD UNIQUE person_unique_id (id);
+```
+
+**查看索引**
+
+ ```sql
+ SHOW INDEX FROM person;
+ ```
+
+**删除索引**
+
+```sql
+DROP INDEX person_id ON person;
+ALTER TABLE person DROP INDEX person_unique_id;
+```
+
+**创建、授权和删除用户**
+
+使用 `CREATE USER` 语句创建一个用户 `tiuser`，密码为 `123456`：
+
+```sql
+CREATE USER 'tiuser'@'localhost' IDENTIFIED BY '123456';
+```
+
+授权用户 `tiuser` 可检索数据库 `samp_db` 内的表：
+
+```sql
+GRANT SELECT ON samp_db.* TO 'tiuser'@'localhost';
+```
+
+查询用户 `tiuser` 的权限：
+
+```sql
+SHOW GRANTS for tiuser@localhost;
+```
+
+删除用户 `tiuser`：
+
+```sql
+DROP USER 'tiuser'@'localhost';
+```
+
+
+
+## Grafana
+
+监控页面
+
+## TiDB Dashboard
+
+看SQL的地方
+
+## Prometheus
+
+自动报警系统
+
 ## 与MySQL差别
 
 |                                                              | TiDB                                                         | MySQL        |
