@@ -350,7 +350,189 @@ ACTIVE，STANDBY，JN,ZK，FailoverController（ZKFC）
 
 [HA](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HDFSHighAvailabilityWithQJM.html)
 
+#### 目标
 
+|        | NN   | JN   | DN   | ZK   | ZKFC |
+| :----- | ---- | ---- | ---- | ---- | ---- |
+| node01 | *    | *    |      | *    | *    |
+| node02 | *    | *    | *    |      | *    |
+| node03 |      | *    | *    | *    |      |
+| node04 |      |      | *    | *    |      |
+
+#### 操作
+
+**基础设置**
+
+ssh免密：
+
+1.由于启动时NN要ssh连接其他机器去启动集群，所以启动机器一定得能免密登录其他机器
+
+2.由于ZKFC要监控NN的状态，还要检测其他NN的状态，所以这些机器之间也要能免密登陆
+
+#### 配置文件
+
+按照官网要求配置文件
+
+*hdfs-site.xml中*
+
+要配置集群映射
+
+```xml
+<property>
+  <name>dfs.nameservices</name>
+  <value>hdfsCluster</value>
+</property>
+<property>
+  <name>dfs.ha.namenodes.hdfsCluster</name>
+  <value>nn1,nn2</value>
+</property>
+<property>
+  <name>dfs.namenode.rpc-address.hdfsCluster.nn1</name>
+  <value>node01:8020</value>
+</property>
+<property>
+  <name>dfs.namenode.rpc-address.hdfsCluster.nn2</name>
+  <value>node02:8020</value>
+</property>
+<property>
+  <name>dfs.namenode.http-address.hdfsCluster.nn1</name>
+  <value>node01:9870</value>
+</property>
+<property>
+  <name>dfs.namenode.http-address.hdfsCluster.nn2</name>
+  <value>node02:9870</value>
+</property>
+```
+
+要配置JN
+
+```xml
+<property>
+  <name>dfs.namenode.shared.edits.dir</name>
+  <value>qjournal://node01:8485;node02:8485;node03:8485/hdfscluster</value>
+</property>
+<property>
+  <name>dfs.journalnode.edits.dir</name>
+  <value>/var/bigdata/hadoop/ha/jn/dfs/data</value>
+</property>
+```
+
+要配置FC代理方法
+
+```xml
+<property>
+  <name>dfs.client.failover.proxy.provider.hdfsCluster</name> <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+</property>
+```
+
+要配置FC远程连接模式
+
+```xml
+<property>
+      <name>dfs.ha.fencing.methods</name>
+      <value>sshfence</value>
+    </property>
+
+    <property>
+      <name>dfs.ha.fencing.ssh.private-key-files</name>
+      <value>/root/.ssh/id_rsa</value>
+    </property>
+ <property>
+   <name>dfs.ha.automatic-failover.enabled</name>
+   <value>true</value>
+ </property>
+<!-- 这个不可以配 -->
+<property>
+  <name>dfs.ha.nn.not-become-active-in-safemode</name>
+  <value>true</value>
+</property>
+```
+
+*core-site.xml中*
+
+修改defaultFS为集群
+
+```xml
+<property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hdfsCluster</value>
+    </property>
+<!-- zk 配置 -->
+ <property>
+   <name>ha.zookeeper.quorum</name>
+   <value>node01:2181,node03:2181,node04:2181</value>
+ </property>
+
+<!-- 由于启动脚本的问题，NN启动后，十秒内会检测JN是否启动，如果没启动，NN自动退出，把尝试次数和间隔调长就好了 -->
+<property>
+    <name>ipc.client.connect.max.retries</name>
+    <value>100</value>
+    <description>Indicates the number of retries a client will make to establish a server connection.</description>
+</property>
+<property>
+    <name>ipc.client.connect.retry.interval</name>
+    <value>10000</value>
+    <description>Indicates the number of milliseconds a client will wait for before retrying to establish a server connection.</description>
+</property>
+```
+
+*安装zk*
+
+在zoo.cfg
+
+```xml
+server.1=node01:2888:3888
+server.2=node03:2888:3888
+server.3=node04:2888:3888
+```
+
+配置myid，环境变量
+
+启动 zkServer.sh start
+
+#### 启动
+
+**启动前注意**
+
+1.加载journalnode（*hdfs --daemon start journalnode*）
+
+2.加载NN 并格式化JN和NN（主节点格式化，备机同步：同步前启动主机NN  hdfs --daemon start namenode）（*hdfs namenode -format*）（*hdfs namenode -bootstrapStandby*）
+
+3.启动自动故障恢复 hdfs zkfc -formatZK
+
+4.配置用户
+
+5.start-dfs.sh
+
+### Hadoop用户
+
+hadoop的用户跟随着本机，启动nn的用户为超级用户，其他为普通用户，无法进行用户的创建，但是可以进行用户的管理，用户的根目录在 user/ {user}下
+
+#### 验证
+
+步骤
+
+- 添加用户
+
+  > useradd -m {user} //带目录创建user
+  >
+  > passwd {user}
+
+- 资源分配给用户
+
+  > chown -R meijiaojiao /home/timo/hadoop/hadoop-3.3.1
+  >
+  > chown -R meijiaojiao /var/bigdata/hadoop/ha
+
+- 配置hdfs-site.xml的免密
+
+- 切换用户启动
+
+### ssh
+
+复制密钥到其他机器
+
+ssh-copy-id -i id_rsa node02
 
 # 杂项
 
@@ -359,14 +541,7 @@ ACTIVE，STANDBY，JN,ZK，FailoverController（ZKFC）
 机架：扁直长方体
 刀片：刀片式服务器可以一片一片的叠放在机柜上
 
-CBI-2742自动更新需要监控表变化
-新建 一个 lambda data_npd_entity_info_change_lambda
-
-新建 一个 触发器 data_npd_entity_info_change_lambda关联 corpdata_factset_corptree表，corpdata_factset_entity表，corpdata_factset_entity_offset表
-lambda 权限参考 data_npd_funded_research_lambda 
-
-data_npd_entity_info_change_lambda 的编辑和发布权限
-
 ## ZK和JN的区别
 
 ZK做分布式协调，JN做分布式存储
+
