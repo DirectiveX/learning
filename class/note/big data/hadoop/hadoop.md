@@ -113,7 +113,7 @@ FsImage：镜像，快照（恢复速度块，容易丢失数据，体积小）
 
 - Client和NN连接创建文件元数据
 - NN判定元数据是否有效
-- NN处发副本放置策略，返回一个有序的DN列表
+- NN触发副本放置策略，返回一个有序的DN列表
 - Client和DN建立Pipeline连接
 - Client将块切分成packet（64KB），并使用chunk（512B）+chucksum（4B）填充
 - Client将packet放入发送队列dataqueue中，并向第一个DN发送
@@ -352,12 +352,12 @@ ACTIVE，STANDBY，JN,ZK，FailoverController（ZKFC）
 
 #### 目标
 
-|        | NN   | JN   | DN   | ZK   | ZKFC |
-| :----- | ---- | ---- | ---- | ---- | ---- |
-| node01 | *    | *    |      | *    | *    |
-| node02 | *    | *    | *    |      | *    |
-| node03 |      | *    | *    | *    |      |
-| node04 |      |      | *    | *    |      |
+|        | NN   | JN   | DN   | ZK   | ZKFC | NM   | RS   |
+| :----- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| node01 | *    | *    |      | *    | *    |      |      |
+| node02 | *    | *    | *    |      | *    | *    |      |
+| node03 |      | *    | *    | *    |      | *    | *    |
+| node04 |      |      | *    | *    |      | *    | *    |
 
 #### 操作
 
@@ -528,11 +528,286 @@ hadoop的用户跟随着本机，启动nn的用户为超级用户，其他为普
 
 - 切换用户启动
 
+- 创建目录，使用其他用户操作目录
+
+  > hdfs dfs -mkdir /meinv
+  >
+  > hdfs dfs -put b.txt /meinv
+  >
+  > hdfs dfs -get /meinv/b.txt
+  >
+  > hdfs dfs -chmod 770 /meinv
+  >
+  > hdfs dfs -chown meijiaojiao:mygroup /meinv
+  >
+  > useradd -m testUser
+  >
+  > groupadd mygroup
+  >
+  > usermod -a -G mygroup testUser
+  >
+  > hdfs dfsadmin -refreshUserToGroupsMappings
+  >
+  > su testUser
+  >
+  > hdfs dfs -get /meinv/b.txt
+
 ### ssh
 
 复制密钥到其他机器
 
 ssh-copy-id -i id_rsa node02
+
+## 开发
+
+开发hdfs的client所使用的用户为
+
+> 1.当前操作系统用户
+>
+> 2.参考环境变量HADOOP_USER_NAME
+>
+> 3.代码控制
+
+### maven依赖
+
+> hadoop-common
+>
+> hadoop-hdfs
+
+### 操作
+
+```java
+public class Test {
+
+    private Configuration configuration;
+    private FileSystem fileSystem;
+
+    @Before
+    public void before() throws Exception {
+        configuration = new Configuration(true);
+//        fileSystem = FileSystem.get(configuration);
+        fileSystem = FileSystem.get(URI.create("hdfs://hdfsCluster"),configuration,"meijiaojiao");
+    }
+
+    @org.junit.Test
+    public void mkdir() throws IOException {
+        fileSystem.mkdirs(new Path("bigdata1"));
+    }
+
+    @org.junit.Test
+    public void upload() throws IOException {
+        FileInputStream fileInputStream = new FileInputStream("E:\\workspace\\src\\test\\test.txt");
+        FSDataOutputStream bigdata1 = fileSystem.create(new Path("bigdata1/out.txt"));
+        IOUtils.copyBytes(fileInputStream,bigdata1,1024,true);
+    }
+
+    @org.junit.Test
+    public void download() throws IOException {
+        FSDataInputStream bigdata1 = fileSystem.open(new Path("bigdata1/out.txt"));
+        FileOutputStream fileInputStream = new FileOutputStream("E:\\workspace\\src\\test\\test1.txt");
+        IOUtils.copyBytes(bigdata1,fileInputStream,1024,true);
+    }
+
+    @org.junit.Test
+    public void delete() throws IOException {
+        fileSystem.deleteOnExit(new Path("bigdata1/out.txt"));
+    }
+
+    @After
+    public void after() throws IOException {
+        fileSystem.close();
+    }
+}
+```
+
+**块级操作（可以做到计算向数据移动，分治）**
+
+```java
+ @org.junit.Test
+    public void block() throws IOException {
+        Path path = new Path("a.txt");
+        FileStatus fileStatus = fileSystem.getFileStatus(path);
+        BlockLocation[] fileBlockLocations = fileSystem.getFileBlockLocations(fileStatus, 0, fileStatus.getLen());
+
+        for (BlockLocation i : fileBlockLocations){
+            System.out.println(i.toString());
+            //块信息
+            //0,1048576,node03,node02
+            //1048576,927032,node02,node04
+        }
+        //由于文件被划分为各个块，块存在于不同的宿主机上，依存于距离（取得最近的块，能本机就本机，不行就机房，依次类推），可以通过seek实现做到计算向数据移动，分治
+        FSDataInputStream open = fileSystem.open(path);
+        open.seek(1048576);
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+        System.out.println((char)open.readByte());
+}
+```
+
+# MapReduce
+
+Map:以一条记录为单位进行映射
+
+Reduce:以一组为单位进行计算
+
+描述：数据以一条记录为单位经过map方法映射成KV，相同的Key为一组，这一组数据调用一次reduce方法，在方法内迭代计算这一组数据
+
+![1651496744](picture/1651496744.png)
+
+![1651498014(1)](picture/1651498014(1).png)
+
+## MapReduce 原理
+
+**MR计算框架**
+
+思考：如何实现计算向数据移动？
+
+## MR角色
+
+### hadoop1 角色
+
+Cli：客户端
+
+> 1.client通过NN获取hadoop区块信息，进行split的计算，获得切片清单（获得locations信息和offset信息），map数量就有了
+>
+> 2.客户端生成计算程序未来运行时的相关文件
+>
+> 3.未来的移动应该相对可靠
+>
+> - cli会将jar包，split清单，配置xml上传到hdfs（副本数10）
+
+JobTracker：资源管理，任务调度
+
+> 1.从hdfs中取回split清单
+>
+> 2.根据清单，根据TaskTracker上报的心跳信息进行资源分配，确定需要执行split对应的map的节点
+>
+> 3.未来，TaskTracker通过心跳获取自己是否有分配的任务，从而拉取jar包和xml进行任务的启动和管理
+
+TaskTracker：任务管理，资源汇报
+
+> 1.定时上报心跳信息
+>
+> 2.从hdfs拉取任务信息（jar包和xml）
+>
+> 3.管理计算资源，启动任务，执行map方法或reduce方法
+
+最终，代码在某一个节点被启动，是通过cli上传，TT下载的方式去完成的
+
+**JobTracker的问题**
+
+1.单点故障
+
+2.压力过大
+
+3.集成任务调度和资源管理，耦合过高
+
+- 弊端：未来新的计算框架不能复用资源管理
+- 重复造轮子
+- 因为各自实现资源管理，不能够感知对方的使用，产生资源争抢
+
+### hadoop2.x
+
+为了解决JobTracker的问题，hadoop进行了重构，产生了yarn架构
+
+#### yarn架构图
+
+![1651586959(1)](picture/1651586959(1).png)
+
+
+
+##### yarn角色（主从架构）
+
+Cli：发出请求，计算任务清单，配置文件xml，jar包，提交任务
+
+Resource Manager：
+
+- 资源管理（统一管理，完全解耦）
+- 接收Node Manager和App Mstr上报的信息
+
+Node Manager
+
+- 收集本机的资源信息，上报资源
+- 启动container资源来执行任务
+
+App Mstr
+
+- 接收Resource Manager传来的信息，拉取split，进行任务调度（阉割版的JobTracker）
+
+Container
+
+- 拉取jar包，通过反射调用任务
+
+##### 流程（MR run on yarn）
+
+1.Client请求Resource Manager 获取节点信息
+
+2.Client根据返回的信息进行配置文件xml的生成，split分片文件的生成，将做好的文件上传到HDFS
+
+3.Resource Manager 获得到请求后挑选一个相对空的节点开启App Mstr（原JobTracker，阉割版，无资源分配）
+
+4.开启后的App Mstr会先去Resource Manager获取Node Manager上报的信息，拉取split进行任务调度，请求RS申请资源
+
+5.RS会让NM在指定的机器上启动container
+
+6.container会先去App Mstr上注册自己
+
+7.App Mstr会发送信息给对应的container，让其执行任务
+
+8.container执行任务的时候去拉取对应的配置文件和jar，进行任务执行，反射进行任务调用
+
+9.不管是App Mstr还是container都有task失败重试的机制
+
+**结论**
+
+通过解耦资源分配与任务调度
+
+1.解决了JT压力过大的问题
+
+2.通过RS ha机制解决了JT单点故障问题
+
+3.解决了由多个JT产生的资源无法通讯问题，统一了资源管理
+
+##### MR启动 + yarn启动
+
+*mapreduce on yarn*
+
+1.修改mapreduce配置文件和yarn配置文件，设置YARN_NODEMANAGER_USER
+
+https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/DistributedCacheDeploy.html
+
+https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/ResourceManagerHA.html
+
+2.启动yarn
+
+start-yarn.sh
+
+yarn --daemon start resourcemanager
+
+3.查看对应8088端口
+
+##### 官方案例解读
+
+> 1.构造测试文件：
+>
+> for i in `seq 1 100000`;do echo 'hello hadoop '$i >> a.txt; done
+>
+> 2.上传文件
+>
+> hdfs dfs -D dfs.blocksize=1048576 -put -f a.txt
+>
+> 3.执行wordcount程序
+>
+> cd $HADOOP_HOME/share/hadoop/mapreduce
+>
+> hadoop jar hadoop-mapreduce-examples-3.3.1.jar wordcount a.txt /output/
 
 # 杂项
 
