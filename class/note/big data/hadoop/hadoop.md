@@ -781,9 +781,113 @@ Container
 
 1.修改mapreduce配置文件和yarn配置文件，设置YARN_NODEMANAGER_USER
 
-https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/DistributedCacheDeploy.html
+https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
 
 https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/ResourceManagerHA.html
+
+**mapred-site.xml**
+
+```xml
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+    <property>
+	<name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+    <property>
+        <name>mapreduce.application.classpath</name>
+        <value>$HADOOP_HOME/share/hadoop/mapreduce/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*</value>
+    </property>
+<property>
+  <name>yarn.app.mapreduce.am.env</name>
+  <value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+</property>
+<property>
+  <name>mapreduce.map.env</name>
+  <value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+</property>
+<property>
+  <name>mapreduce.reduce.env</name>
+  <value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+</property>
+</configuration>
+```
+
+**yarn-site.xml**
+
+```xml
+<?xml version="1.0"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+<property>
+  <name>yarn.resourcemanager.ha.enabled</name>
+  <value>true</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.cluster-id</name>
+  <value>yarn-cluster</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.ha.rm-ids</name>
+  <value>rm1,rm2</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.hostname.rm1</name>
+  <value>node03</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.hostname.rm2</name>
+  <value>node04</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.webapp.address.rm1</name>
+  <value>node03:8088</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.webapp.address.rm2</name>
+  <value>node04:8088</value>
+</property>
+<property>
+  <name>hadoop.zk.address</name>
+  <value>node01:2181,node03:2181,node04:2181</value>
+</property>
+</configuration>
+```
+
+
 
 2.启动yarn
 
@@ -808,6 +912,256 @@ yarn --daemon start resourcemanager
 > cd $HADOOP_HOME/share/hadoop/mapreduce
 >
 > hadoop jar hadoop-mapreduce-examples-3.3.1.jar wordcount a.txt /output/
+
+https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
+
+word count sample
+
+[mapper](./code/MyMapper.java)
+
+[reduce](./code/MyReducer.java)
+
+[main](./code/WordCount.java)
+
+##### 执行MR的方式
+
+- 在linux集群上
+
+  > 打jar包，使用hadoop jar xxxx.jar full.name [gloabal param] [private param]
+
+- 在windows单机上
+
+  > 配置单机环境，winutils和hadoop.dll
+  >
+  > 运行模式设置为单机 
+  >
+  > conf.set("mapreduce.framework.name","local"); 
+  >
+  > conf.set("fs.defaultFS","file:///");
+  >
+  > windows平台设置 
+  >
+  > conf.set("mapreduce.app-submission.cross-platform","true");
+
+
+- 在IDE中向集群提交任务
+
+  > windows平台设置 conf.set("mapreduce.app-submission.cross-platform","true");
+  >
+  > 配置上传的jar包 job.setJar("E:\\workspace\\target\\hadoop_training-1.0-SNAPSHOT.jar");
+
+##### 参数个性化定制
+
+hadoop提供了很方便的参数注入器，可以帮助我们配置全局配置并找出自定义传参
+
+```java
+GenericOptionsParser genericOptionsParser = new GenericOptionsParser(args); //设置全局配置，找出以-D 为开始的参数
+String[] remainingArgs = genericOptionsParser.getRemainingArgs(); //剔除后的剩余参数
+```
+
+#### 源码（3.3.1）
+
+问题？MR如何实现计算向数据移动，实现并行计算？
+
+**client端**
+
+1.依赖于conf获取配置项，依赖于job设置好准备的任务，这些均为准备阶段，直到job.waitForCompletion的调用才会真正开始执行任务
+
+2.waitForCompletion方法主要做了
+
+- **异步提交任务**
+- 异步监控任务（verbose控制是否打印log）
+- 任务结束后修改任务状态
+
+3.我们知道，任务的准备阶段是在client执行的，client端通过计算split分片，也就是map的数量（并行度），支撑了任务能够最终实现计算向数据移动。一切秘密都在submit中，主要做了
+
+- 任务状态检查
+- 使用新的hadoop api
+- 连接hadoop
+- **使用配置的用户去提交任务 submitter.submitJobInternal(Job.this, cluster);**
+- 设置任务状态为RUNNING
+
+4.找到提交任务的地方了，进入submitJobInternal进行观察（调用的JobStatus的submitJobInternal方法，这是核心方法），主要做了
+
+- 输出目录检查，包括输出目录是否干净，传入的输出目录是否为空等检测
+- addMRFrameworkToDistributedCache（加缓存，加速计算）
+- 任务初始化（包括stage初始化，命令行初始化等，产生jobId，设置用户名，设置执行的目录等，设置一些连接的token）（copyAndConfigureFiles这个方法，把资源上传到了submit dir（stage目录下的对应的job id下）中）
+- **核心！创建splits，为计算向数据移动做好支撑 int maps = writeSplits(job, submitJobDir);**
+- 把准备好的若干文件提交到submit dir中
+- 调用ClientProtocol真正去提交任务
+
+5.writeSplits方法真正开始制作分片文件
+
+- 进入 writeNewSplits(job, jobSubmitDir);
+- **反射获取输入类，通过输入类去获取需要被分片的文件集合，开始分片input.getSplits(job);**
+- 创建split逻辑分割文件 JobSplitWriter.createSplitFiles(jobSubmitDir, conf, 
+      jobSubmitDir.getFileSystem(conf), array);
+  - createSplitFiles中的writeNewSplits(conf, splits, out);将文件从block根据split策略进行逻辑分块，封装成SplitMetaInfo并返回
+
+    - 获取mapreduce.job.max.split.locations配置项，获得split对应的最大块机器位置，如果块所在不同机器的位置超过这个值，就取最多这个数目，默认为15
+    - 新建Split分片信息，传入参数为块所在位置，偏移和split的大小 new JobSplit.SplitMetaInfo( 
+          locations, offset,
+          split.getLength());
+
+6.平时用的是FileInputFormat的getSplits方法，这边正式的创建了分片数据，存在内存中
+
+- 通过 mapreduce.input.fileinputformat.split.minsize，mapreduce.input.fileinputformat.split.maxsize 设置分片的最大最小值
+
+- 获取hdfs上的文件信息，获得到FileStatus的list： List<FileStatus> files = listStatus(job);
+
+- 根据最大最小值计算分割大小： long splitSize = computeSplitSize(blockSize, minSize, maxSize);
+
+- **以下代码为根据split块大小来分割block，可以得出，最终剩余的块是可能存在大于split最大值的情况的，因为有10%的震荡，SPLIT_SLOP默认1.1**
+
+- ```java
+  while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
+    int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+    splits.add(makeSplit(path, length-bytesRemaining, splitSize,
+                blkLocations[blkIndex].getHosts(),
+                blkLocations[blkIndex].getCachedHosts()));
+    bytesRemaining -= splitSize;
+  }
+  //makeSplit传入五个参数分别为文件路径，块偏移，分片大小（长度），块所在主机位置，缓存
+  if (bytesRemaining != 0) {
+    int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+    splits.add(makeSplit(path, length-bytesRemaining, bytesRemaining,
+       blkLocations[blkIndex].getHosts(),
+       blkLocations[blkIndex].getCachedHosts()));
+  }
+  //放入剩余的，最后一个块
+  ```
+
+- 保存输入文件数量，返回分片信息
+
+7.综上，hadoop在client端进行了数据预处理，将物理块转成逻辑分片，以支撑后续的计算向数据移动与并行计算
+
+**Map**
+
+AppMstr请求RS开启container，container反向注册AppMstr后，AppMstr会给container分配消息，启动任务，container会反序列化传入的Mapper和Reduce类，进行对应的方法调用，先查看Mapper类，入口为MapTask的run方法
+
+1.如果不存在reduce就不排序，存在就按map与sort为2：1的资源进行排序
+
+```java
+if (isMapTask()) {
+  // If there are no reducers then there won't be any sort. Hence the map 
+  // phase will govern the entire attempt's progress.
+  if (conf.getNumReduceTasks() == 0) {
+    mapPhase = getProgress().addPhase("map", 1.0f);
+  } else {
+    // If there are reducers then the entire attempt's progress will be 
+    // split between the map phase (67%) and the sort phase (33%).
+    mapPhase = getProgress().addPhase("map", 0.667f);
+    sortPhase  = getProgress().addPhase("sort", 0.333f);
+  }
+}
+```
+
+2.初始化
+
+- 准备的outputFormat默认为TextOutputFormat.class（->FileOutputFormat->OutputFormat）配置项mapreduce.job.outputformat.class
+- 初始化commiter设置输出路径
+
+3.runNewMapper启动执行mapper
+
+- 反序列化Mapper类和InputFormat类
+
+- 获取分片信息，初始化记录读取器等，默认为NewTrackingRecordReader，其实最终实际作用的是LineRecordReader
+
+  ```java
+  this.real = inputFormat.createRecordReader(split, taskContext);
+  
+  public RecordReader<LongWritable, Text> 
+    createRecordReader(InputSplit split,
+                       TaskAttemptContext context) {
+    String delimiter = context.getConfiguration().get(
+        "textinputformat.record.delimiter");
+    byte[] recordDelimiterBytes = null;
+    if (null != delimiter)
+      recordDelimiterBytes = delimiter.getBytes(Charsets.UTF_8);
+    return new LineRecordReader(recordDelimiterBytes);
+  }
+  ```
+
+
+4.try方法中正式执行任务
+
+**输入部分**
+
+- **input.initialize(split, mapperContext);使用了LineRecordReader的初始化方法，如果不是第一个切片的话，总是会丢弃掉切片的第一行（保证数据拼接的时候是一行），并设置pos到文件头**
+
+  ```java
+  // If this is not the first split, we always throw away first record
+  // because we always (except the last split) read one extra line in
+  // next() method.
+  ```
+
+**map部分**
+
+- **调用Mapper类的run方法，传入context，run中会执行对应的setup，map和cleanup方法，用户均可以自己定制**
+
+- **里面准备了上下文，上下文中使用了context.nextKeyValue()，context.getCurrentKey()，context.getCurrentValue()方法，需要我们去了解**
+
+- context.nextKeyValue() -> reader.nextKeyValue()(也就是NewTrackingRecordReader的方法) -> boolean result = real.nextKeyValue();最终调用了LineRecordReader
+
+- LineRecordReader将key设置为当前偏移，将value设置为输入的一行，然后移动偏移pos（读到最后时候会多读一行以保证数据完整）
+
+- getCurrentKey()方法返回设置好的key，getCurrentValue()方法返回设置好的value
+
+
+**输出部分**
+
+- 在map的时候会通过context.write进行结果输出，最终调用的是NewOutputCollector的输出方法
+
+- NewOutputCollector在创建后的init()会创建排序收集器 `collector`，创建分区器`partitioner`，默认的分区器当reduce数量为1的时候，为
+
+  ```java
+  partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+    @Override
+    public int getPartition(K key, V value, int numPartitions) {
+      return partitions - 1;
+    }
+  };
+  ```
+  如果大于1,可以使用用户给定的分区器mapreduce.job.partitioner.class,没有就用Hash分区器
+
+  ```java
+  public int getPartition(K key, V value,
+                          int numReduceTasks) {
+    return (key.hashCode() & Integer.MAX_VALUE) % numReduceTasks;
+  }
+  ```
+
+  分区器的作用就是根据kv和分区数计算所在的分区,收集器的作用就是在内存中对数据进行排序,以分区为主,key排序为辅,以kvp的形式落盘
+
+- **重要配置** 在创建收集器的时候会初始化对应的类,涉及到了部分调优,需要牢记(这边可以获取一个信息就是collector可以是多个,但是会被覆盖)
+
+  ```java
+  mapreduce.job.map.output.collector.class; //自定义收集器(比较难写,默认MapOutputBuffer.class)
+  
+  //以下配置项在 MapOutputBuffer 的init方法中,初始化的时候会调用,以下值均为默认值
+  mapreduce.map.sort.spill.percent = 0.8; //溢写百分比,当达到总大小的百分之80时溢写,因为在进行数据收集的时候会新开线程对内存数据块进行锁定并溢写,这样可以保证任务不阻塞
+  mapreduce.task.io.sort.mb = 100; //溢写内存大小,最大是100M的内存
+  map.sort.class = QuickSort.class; //默认排序方法为快排,如果要自己实现得继承IndexedSorter.class
+  mapreduce.map.output.key.class = null; //map key的输出
+  mapreduce.map.output.value.class = null; //map value的输出
+  mapreduce.job.output.key.comparator.class = null; //比较器,用于排序,自己实现继承RawComparator.class
+  //重要参数,默认无combiner,用于在输出到磁盘后,对数据进行合并,从而减少网络IO流量,提高速度
+  mapreduce.job.combine.class = null;
+  ```
+
+  init方法的最后,开启溢写线程
+
+- 在输出时会调用收集器的collect方法,调用到内部类MapOutputBuffer的collect方法,通过序列化保证存储在内存中的数据不会被后续引用所修改
+
+  ```java
+  collector.collect(key, value,partitioner.getPartition(key, value, partitions));
+  ```
+  
+- 当前map线程判断是否数据已经写完了,写完就把剩余的溢写到磁盘,不然就序列化后把数据写到buffer里面
+
+- 把数据的元信息放入kvmeta中,方便之后读取
+
+**Reduce**
 
 # 杂项
 
