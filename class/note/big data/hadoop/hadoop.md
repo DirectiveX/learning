@@ -1144,8 +1144,8 @@ if (isMapTask()) {
   map.sort.class = QuickSort.class; //默认排序方法为快排,如果要自己实现得继承IndexedSorter.class
   mapreduce.map.output.key.class = null; //map key的输出
   mapreduce.map.output.value.class = null; //map value的输出
-  mapreduce.job.output.key.comparator.class = null; //比较器,用于排序,自己实现继承RawComparator.class
-  //重要参数,默认无combiner,用于在输出到磁盘后,对数据进行合并,从而减少网络IO流量,提高速度
+  mapreduce.job.output.key.comparator.class = null; //比较器,用于排序,自己实现继承RawComparator.class，当找不到的时候会去取当前输出类自身的比较器
+  //重要参数,默认无combiner,用于在输出到磁盘后和溢写时,对数据进行合并,从而减少IO流量,提高速度
   mapreduce.job.combine.class = null;
   ```
 
@@ -1159,9 +1159,94 @@ if (isMapTask()) {
   
 - 当前map线程判断是否数据已经写完了,写完就把剩余的溢写到磁盘,不然就序列化后把数据写到buffer里面
 
-- 把数据的元信息放入kvmeta中,方便之后读取
+- 把数据的元信息放入kvmeta中,方便之后读取（KVP数据）
+
+- **注意点**
+
+- 当数据写入缓冲区时，为了让数据边存储边溢写，并且很好的取出数据，需要存储index来记录数据位置
+
+- 为了保证数据和索引充分利用好缓冲区的内存，所以将键值对和索引放在一块缓冲区上
+
+- 为了每次操作时都是固定位置，采用了环形缓冲区的设计（数组实现），存储时，先将数据从数组头尾分别插入kv和index，然后到达阈值（默认80%缓冲区）时产生溢写，溢写线程锁住对应缓冲区，并且切分剩余缓冲区，切分线叫赤道，向赤道两端进行反方先写入kv和index，循环往复，数组头尾也叫赤道，所以一个环形缓冲区有两个赤道
+
+- 索引的长度为默认16字节：p,kstart,vstart,vlength
+
+  ```java
+  kvmeta.put(kvindex + PARTITION, partition);
+  kvmeta.put(kvindex + KEYSTART, keystart);
+  kvmeta.put(kvindex + VALSTART, valstart);
+  kvmeta.put(kvindex + VALLEN, distanceTo(valstart, valend));
+  ```
+
+- 发生溢写时，会调用sort排序器进行快速排序，排序为二次排序，分区有序，分区内key有序，均是为了让reduce拉取的时候不产生全表扫描
+
+- 紧接着，如果有用户自定义的combiner，会调用combiner进行整合，combiner的主要作用范围为：
+
+  - 溢写时
+  - MapOutPutBuffer有一个mapreduce.map.combine.minspills配置，默认每三次进行小文件整合成大文件，优化多个reduce拉取时的随机IO，将随机IO变为顺序IO，加快拉取速度
+
+- 所以要注意自定义的combiner需要幂等，不能由于重复执行改变最后的计算结果（例如求均值的时候）
 
 **Reduce**
+
+AppMstr请求连接的container进行reduce任务的执行，container反射加载用户的reduce类，进行reduce计算，入口为ReduceTask类
+
+1.打开源码，有一个粗略的介绍，reduce做了三步：
+
+- shuffle 拉取数据，拉到一个分区
+- sort 根据分组器（先被使用）和排序器（组内排序，因为reduce可能从所有map中拉取数据，拉过来的数据每一笔都是有序的，但是归并的时候需要比较器）进行归并排序，与shuffle并行
+- reduce 计算数据
+
+2.查看run方法
+
+- shuffle获取数据包装成rItr迭代器（真）（匿名内部类）
+
+- RawComparator comparator = job.getOutputValueGroupingComparator(); 获取分组器 mapreduce.job.output.group.comparator.class，如果有用户定义就用用户的，没有就用用户定义的key比较器，都没有就用当前key自身的比较器
+
+- 查看run方法,由于reduce的语义是分组处理，所以reduce传入的key对应的value是一组value
+
+- 首先可以看到调用了reduce上下文的nextkey方法，实际调用的是ReduceContextImpl类的nextkey方法，然后循环调用nextKeyValue方法，通过判断key是否相同来进行分组，从而最终获取对应的一组values
+
+  - **nextKeyValue做了如下工作**
+
+  - 通过input.getKey和getValue方法获取的数据作为当前key和value（input就是rIter，最终调用真迭代器进行数据读取，getKey和getValue会读取当前一行，next方法会去读取文件下一行）
+
+  - ```java
+    final RawKeyValueIterator rawIter = rIter;
+    rIter = new RawKeyValueIterator() {
+      public void close() throws IOException {
+        rawIter.close();
+      }
+      public DataInputBuffer getKey() throws IOException {
+        return rawIter.getKey();
+      }
+      public Progress getProgress() {
+        return rawIter.getProgress();
+      }
+      public DataInputBuffer getValue() throws IOException {
+        return rawIter.getValue();
+      }
+      public boolean next() throws IOException {
+        boolean ret = rawIter.next();
+        reporter.setProgress(rawIter.getProgress().getProgress());
+        return ret;
+      }
+    };
+    ```
+
+  - 然后调用next方法，获取下一个key，使用分组比较器比较（通过设置nextKeyIsSame来判断）是否为同一组，记录一个组数据量inputKeyCounter
+
+- getCurrentKey()方法返回当前key
+
+-  getValues()方法返回一个包装好的假迭代器对象，实际调用了ValueIterator的假迭代器对象，最终还是调用了nextKeyValue方法从内存中一一读取记录，注意前面nextKey()仅仅移动了一行，并不会读取全部数据，在getValues获取iterator对象后，继续调用nextKeyValue方法最终把所有数据一一加载出来
+
+思考？为什么要包装迭代器
+
+1.因为这样的话，多线程情况下如果游标绑定数据，数据游标会被多线程同时移动，无法单独遍历整个数据集，而迭代器模式的游标只属于迭代器，每个线程都用自己的迭代器，不会产生这样的问题
+
+2.迭代器模式优美的处理了超大数据量情况下的数据读取问题，防止内存溢出问题
+
+3.一次IO读取所有数据
 
 # 杂项
 
