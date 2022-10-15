@@ -41,7 +41,7 @@ hadoop是apache旗下的顶级项目
 - 一次写入多次读取，不支持修改
 - 支持追加数据
 
-### 架构设计
+### HDFS架构设计
 
 - 主从架构
 - 由NameNode和一些DataNode组成
@@ -352,12 +352,12 @@ ACTIVE，STANDBY，JN,ZK，FailoverController（ZKFC）
 
 #### 目标
 
-|        | NN   | JN   | DN   | ZK   | ZKFC | NM   | RS   |
-| :----- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| node01 | *    | *    |      | *    | *    |      |      |
-| node02 | *    | *    | *    |      | *    | *    |      |
-| node03 |      | *    | *    | *    |      | *    | *    |
-| node04 |      |      | *    | *    |      | *    | *    |
+|        | NN   | JN   | DN   | ZK   | ZKFC | NM   | RS   | METASTORE | HMaster | HRegionServer |
+| :----- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | --------- | ------- | ------------- |
+| node01 | *    | *    |      | *    | *    |      |      |           | *       | *             |
+| node02 | *    | *    | *    |      | *    | *    |      |           |         | *             |
+| node03 |      | *    | *    | *    |      | *    | *    | 服务器    |         | *             |
+| node04 |      |      | *    | *    |      | *    | *    | 客户端    | *       |               |
 
 #### 操作
 
@@ -438,7 +438,8 @@ ssh免密：
       <value>/root/.ssh/id_rsa</value>
     </property>
  <property>
-   <name>dfs.ha.automatic-failover.enabled</name>
+   <name>dfs.ha.automatic-fayarn
+       ilover.enabled</name>
    <value>true</value>
  </property>
 <!-- 这个不可以配 -->
@@ -779,7 +780,7 @@ Container
 
 *mapreduce on yarn*
 
-1.修改mapreduce配置文件和yarn配置文件，设置YARN_NODEMANAGER_USER
+1.修改mapreduce配置文件和yarn配置文件，设置YARN_NODEMANAGER_USER，YARN_RESOURCEMANAGER_USER
 
 https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
 
@@ -937,9 +938,7 @@ word count sample
   >
   > conf.set("mapreduce.framework.name","local"); 
   >
-  > conf.set("fs.defaultFS","file:///");
-  >
-  > windows平台设置 
+  > windows跨平台设置 
   >
   > conf.set("mapreduce.app-submission.cross-platform","true");
 
